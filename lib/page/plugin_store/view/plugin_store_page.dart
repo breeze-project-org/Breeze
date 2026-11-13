@@ -192,9 +192,8 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
               children: [
                 Text(
                   state.cloudError,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: colorScheme.error),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -212,9 +211,8 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               t.plugin.noCloudPlugins,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: colorScheme.outline),
             ),
           )
         else if (displayPlugins.isEmpty)
@@ -222,9 +220,8 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               t.plugin.noMatchingPlugins,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: colorScheme.outline),
             ),
           )
         else
@@ -245,9 +242,8 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
           const SizedBox(height: 8),
           Text(
             state.cloudError,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: colorScheme.error),
           ),
         ],
       ],

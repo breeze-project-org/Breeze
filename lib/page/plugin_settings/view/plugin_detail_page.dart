@@ -204,9 +204,8 @@ class _PluginDetailPageState extends State<PluginDetailPage> {
         Text(
           widget.pluginDisplayName,
           textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.headlineSmall
+              ?.copyWith(fontWeight: FontWeight.bold),
         ),
         if (_version.isNotEmpty) ...[
           const SizedBox(height: 4),

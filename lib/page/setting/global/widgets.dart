@@ -268,9 +268,9 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primaryContainer,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   constraints: const BoxConstraints(
@@ -286,9 +286,9 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             fontSize: 13,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onPrimaryContainer,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimaryContainer,
                                           ),
                                         ),
                                       ),

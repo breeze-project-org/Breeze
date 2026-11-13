@@ -281,9 +281,8 @@ class _ReleaseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final dateStr = DateFormat(
-      'yyyy-MM-dd HH:mm',
-    ).format(release.publishedAt.toLocal());
+    final dateStr = DateFormat('yyyy-MM-dd HH:mm')
+        .format(release.publishedAt.toLocal());
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),

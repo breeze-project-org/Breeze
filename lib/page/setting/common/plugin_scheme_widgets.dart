@@ -67,9 +67,9 @@ class _PluginSettingSchemeSectionState
         }
 
         final envelope = snapshot.data!;
-        final sections = asJsonList(
-          envelope.scheme['sections'],
-        ).map((item) => asJsonMap(item)).toList();
+        final sections = asJsonList(envelope.scheme['sections'])
+            .map((item) => asJsonMap(item))
+            .toList();
         final values = asJsonMap(envelope.data['values']);
         final widgets = <Widget>[];
 
@@ -83,9 +83,8 @@ class _PluginSettingSchemeSectionState
               ),
             );
           }
-          final fields = asJsonList(
-            section['fields'],
-          ).map((item) => asJsonMap(item));
+          final fields = asJsonList(section['fields'])
+              .map((item) => asJsonMap(item));
           for (final field in fields) {
             widgets.add(_buildField(field, values));
           }
@@ -103,9 +102,9 @@ class _PluginSettingSchemeSectionState
     final value = values[key];
 
     if (kind == 'select') {
-      final options = asJsonList(
-        field['options'],
-      ).map((e) => e.toString()).toList();
+      final options = asJsonList(field['options'])
+          .map((e) => e.toString())
+          .toList();
       final current =
           value?.toString() ?? (options.isNotEmpty ? options.first : '');
       final effectiveValue = options.contains(current)
@@ -207,9 +206,9 @@ class _PluginAdvancedActionSectionState
           return const SizedBox.shrink();
         }
 
-        final actions = asJsonList(
-          snapshot.data!.scheme['actions'],
-        ).map((item) => asJsonMap(item)).toList();
+        final actions = asJsonList(snapshot.data!.scheme['actions'])
+            .map((item) => asJsonMap(item))
+            .toList();
         if (actions.isEmpty) {
           return const SizedBox.shrink();
         }

@@ -146,9 +146,9 @@ class _HistoryWidgetState extends State<HistoryWidget> {
                   color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 14,
                 ),
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerLow,
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerLow,
                 side: BorderSide(
                   color: Theme.of(context).colorScheme.outlineVariant,
                   width: 1.0,

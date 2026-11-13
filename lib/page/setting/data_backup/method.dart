@@ -61,9 +61,8 @@ Future<String> exportBreezeBackup({
       'includeDownloads': includeDownloads,
       'exportedAt': DateTime.now().toIso8601String(),
     };
-    await File(
-      p.join(tempDir.path, 'config.json'),
-    ).writeAsString(jsonEncode(config));
+    await File(p.join(tempDir.path, 'config.json'))
+        .writeAsString(jsonEncode(config));
 
     // 2. 写入 objectbox.json
     await File(
@@ -209,9 +208,9 @@ Future<void> applyBreezeBackupImport(BackupConfig config) async {
     // 3. 恢复 ObjectBox 数据
     final objectBoxFile = File(p.join(config.extractDir, 'objectbox.json'));
     if (await objectBoxFile.exists()) {
-      final objectBoxJson =
-          jsonDecode(await objectBoxFile.readAsString())
-              as Map<String, dynamic>;
+      final objectBoxJson = jsonDecode(
+        await objectBoxFile.readAsString(),
+      ) as Map<String, dynamic>;
       await _restoreObjectBoxData(objectBoxJson);
     }
 

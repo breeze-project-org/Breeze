@@ -127,9 +127,8 @@ class AppearanceSettingPage extends StatelessWidget {
       subtitle: Text(t.settings.fontSettingsSubtitle),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const FontSettingPage()));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const FontSettingPage()));
       },
     );
   }

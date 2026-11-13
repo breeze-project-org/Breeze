@@ -50,9 +50,8 @@ class _AllChipWidgetState extends State<AllChipWidget> {
                 children: items
                     .map(
                       (item) => _ClickableChip(
-                        label: processText(
-                          item.name,
-                        ).let(convertChineseForDisplay),
+                        label: processText(item.name)
+                            .let(convertChineseForDisplay),
                         onTap: () => _onTap(item),
                         onLongPress: () {
                           final copyText =

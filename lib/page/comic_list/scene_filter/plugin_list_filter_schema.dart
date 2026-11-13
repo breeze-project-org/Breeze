@@ -67,9 +67,9 @@ class PluginChoiceField {
       key: map['key']?.toString() ?? '',
       label: map['label']?.toString() ?? '',
       kind: map['kind']?.toString() ?? '',
-      options: asJsonList(
-        map['options'],
-      ).map((item) => PluginChoiceOption.fromMap(asJsonMap(item))).toList(),
+      options: asJsonList(map['options'])
+          .map((item) => PluginChoiceOption.fromMap(asJsonMap(item)))
+          .toList(),
     );
   }
 
@@ -178,9 +178,9 @@ class PluginChoiceOption {
       label: map['label']?.toString() ?? map['value']?.toString() ?? '',
       value: map['value']?.toString() ?? '',
       result: asJsonMap(map['result']),
-      children: asJsonList(
-        map['children'],
-      ).map((item) => PluginChoiceOption.fromMap(asJsonMap(item))).toList(),
+      children: asJsonList(map['children'])
+          .map((item) => PluginChoiceOption.fromMap(asJsonMap(item)))
+          .toList(),
     );
   }
 

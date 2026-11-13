@@ -356,9 +356,8 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
         setState(() => _error = normalizeSearchErrorMessage(e));
         if (_phase == _SliderPhase.ready) {
           // 新题已就绪，仅提示上次失败原因。
-          ScaffoldMessenger.maybeOf(
-            context,
-          )?.showSnackBar(SnackBar(content: Text(t.login.sliderFailed)));
+          ScaffoldMessenger.maybeOf(context)
+              ?.showSnackBar(SnackBar(content: Text(t.login.sliderFailed)));
         }
       }
     }
@@ -386,9 +385,8 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
             const SizedBox(height: 8),
             Text(
               _error,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.error),
             ),
           ],
         ],
@@ -486,9 +484,8 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
             bottom: 0,
             width: _knobDx + _knobWidth / 2,
             child: Container(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.18),
+              color: Theme.of(context).colorScheme.primary
+                  .withValues(alpha: 0.18),
             ),
           ),
           Center(

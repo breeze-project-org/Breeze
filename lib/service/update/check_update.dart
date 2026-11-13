@@ -159,9 +159,8 @@ Future<GithubReleaseJson> getCloudVersion() async {
 
   while (true) {
     try {
-      return await fetchReleaseData(
-        releasesApi,
-      ).let(GithubReleaseJson.fromJson);
+      return await fetchReleaseData(releasesApi)
+          .let(GithubReleaseJson.fromJson);
     } catch (e) {
       logger.e(e);
       await Future.delayed(const Duration(minutes: 5));

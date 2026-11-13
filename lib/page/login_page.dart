@@ -149,9 +149,9 @@ class _LoginPageState extends State<LoginPage> {
             ?.toString()
             .trim() ??
         '';
-    final fields = asJsonList(
-      scheme['fields'],
-    ).map((item) => asJsonMap(item)).toList();
+    final fields = asJsonList(scheme['fields'])
+        .map((item) => asJsonMap(item))
+        .toList();
     final specs = <_LoginFieldSpec>[];
     for (final field in fields) {
       final key = field['key']?.toString().trim() ?? '';

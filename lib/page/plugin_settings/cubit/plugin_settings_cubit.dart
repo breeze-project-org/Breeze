@@ -85,9 +85,9 @@ class PluginSettingsCubit extends Cubit<PluginSettingsState> {
         extern: const <String, dynamic>{},
       );
       final settingsEnvelope = UnifiedPluginEnvelope.fromMap(settingsResponse);
-      final settingsSections = asJsonList(
-        settingsEnvelope.scheme['sections'],
-      ).map((item) => asJsonMap(item)).toList();
+      final settingsSections = asJsonList(settingsEnvelope.scheme['sections'])
+          .map((item) => asJsonMap(item))
+          .toList();
       final values = asJsonMap(settingsEnvelope.data['values']);
       final canShowUserInfo = settingsEnvelope.data['canShowUserInfo'] == true;
       final loginSupported = await _resolveLoginSupported(

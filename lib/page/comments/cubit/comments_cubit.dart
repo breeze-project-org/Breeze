@@ -287,9 +287,10 @@ class CommentsCubit extends Cubit<CommentsViewState> {
       );
       final envelope = UnifiedPluginEnvelope.fromMap(response);
       final data = envelope.data;
-      final items = asJsonList(
-        data['items'],
-      ).map(asJsonMap).map(CommentItem.fromMap).toList();
+      final items = asJsonList(data['items'])
+          .map(asJsonMap)
+          .map(CommentItem.fromMap)
+          .toList();
       final paging = asJsonMap(data['paging']);
       final hasReachedMax = paging['hasReachedMax'] == true;
 
@@ -332,12 +333,14 @@ class CommentsCubit extends Cubit<CommentsViewState> {
     );
     final envelope = UnifiedPluginEnvelope.fromMap(response);
     final data = envelope.data;
-    final topItems = asJsonList(
-      data['topItems'],
-    ).map(asJsonMap).map(CommentItem.fromMap).toList();
-    final items = asJsonList(
-      data['items'],
-    ).map(asJsonMap).map(CommentItem.fromMap).toList();
+    final topItems = asJsonList(data['topItems'])
+        .map(asJsonMap)
+        .map(CommentItem.fromMap)
+        .toList();
+    final items = asJsonList(data['items'])
+        .map(asJsonMap)
+        .map(CommentItem.fromMap)
+        .toList();
     final paging = asJsonMap(data['paging']);
     return _CommentFeed(
       topItems: topItems,

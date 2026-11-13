@@ -359,9 +359,8 @@ class _BookmarkEmptyView extends StatelessWidget {
               filtered
                   ? t.searchBookmark.filteredEmpty
                   : t.searchBookmark.empty,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
@@ -369,9 +368,8 @@ class _BookmarkEmptyView extends StatelessWidget {
                   ? t.searchBookmark.filteredEmptyHint
                   : t.searchBookmark.emptyHint,
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -430,9 +428,8 @@ class _BookmarkRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final cover = _resolveBookmarkCover(item);
-    final timeText = DateFormat(
-      'yyyy-MM-dd HH:mm:ss',
-    ).format(item.createdAt.toLocal());
+    final timeText = DateFormat('yyyy-MM-dd HH:mm:ss')
+        .format(item.createdAt.toLocal());
     final anchorTitle = item.anchorTitle.trim();
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
