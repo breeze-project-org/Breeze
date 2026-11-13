@@ -3532,8 +3532,9 @@ dependencies = [
 
 [[package]]
 name = "rquickjs-sys"
-version = "0.12.1"
-source = "git+https://github.com/deretame/rquickjs.git?branch=fix%2Fandroid-windows-bindgen#0575b50c4c2f4a403f5efa1dc9cf961e09f29833"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a13ac243b86a74120814ef7e9e30ad5a2c1199b7b9963b1cf7c84e4cdc1cad99"
 dependencies = [
  "bindgen",
  "cc",
