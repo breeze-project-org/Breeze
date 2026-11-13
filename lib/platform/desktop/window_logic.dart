@@ -77,8 +77,9 @@ class WindowLogic {
       'initWindow: $width x $height @ $savedX,$savedY (valid=$isPositionValid), maximized=$wasMaximized',
     );
 
-    // 窗口此时尚未显示（runner 会在首帧后显示），先把状态摆好再 show，
-    // 避免出现闪烁跳动。
+    // runner 用 CreateWindow 创建的是隐藏窗口（没有 WS_VISIBLE），
+    // FlutterWindow::OnCreate 的 SetNextFrameCallback 也是空的；真正 show 的是
+    // 这里的 window.show()。先把尺寸/位置/最大化摆好再 show，避免闪烁跳动。
     window.titleBarStyle = TitleBarStyle.hidden;
     window.isWindowControlButtonsVisible = true;
     window.backgroundColor = Colors.transparent.toNative();
