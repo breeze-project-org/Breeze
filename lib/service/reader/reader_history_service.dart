@@ -249,21 +249,41 @@ Future<Map<String, dynamic>> _upsertUnifiedHistoryOnWorker(
 
   final box = await ObjectBox.create(dbRootPath: dbRootPath);
   final key = '$source:$comicId';
+  final downloadQuery = box.unifiedDownloadBox
+      .query(UnifiedComicDownload_.uniqueKey.equals(key))
+      .build();
+  final download = downloadQuery.findFirst();
+  downloadQuery.close();
+  final titleOverride = download != null && !download.deleted
+      ? download.titleOverride?.trim() ?? ''
+      : '';
+  final coverOverride = download != null && !download.deleted
+      ? download.coverOverride?.trim() ?? ''
+      : '';
+  final effectiveTitle = titleOverride.isNotEmpty
+      ? download!.title
+      : normalInfo.title;
+  final effectiveCover = coverOverride.isNotEmpty
+      ? download!.cover
+      : _normalizeWorkerFlexMapString(normalInfo.cover);
   final query = box.unifiedHistoryBox
       .query(UnifiedComicHistory_.uniqueKey.equals(key))
       .build();
 
   try {
     final existing = query.findFirst();
+    final nextCover = existing != null && _isLocalCover(existing.cover)
+        ? existing.cover
+        : effectiveCover;
     final entity =
         existing ??
         UnifiedComicHistory(
           uniqueKey: key,
           source: source,
           comicId: comicId,
-          title: normalInfo.title,
+          title: effectiveTitle,
           description: normalInfo.description,
-          cover: _normalizeWorkerFlexMapString(normalInfo.cover),
+          cover: nextCover,
           creator: _normalizeWorkerFlexMapString(normalInfo.creator),
           titleMeta: _normalizeWorkerFlexListString(normalInfo.titleMeta),
           metadata: _normalizeWorkerMetadataString(normalInfo.metadata),
@@ -279,9 +299,9 @@ Future<Map<String, dynamic>> _upsertUnifiedHistoryOnWorker(
         );
 
     entity
-      ..title = normalInfo.title
+      ..title = effectiveTitle
       ..description = normalInfo.description
-      ..cover = _normalizeWorkerFlexMapString(normalInfo.cover)
+      ..cover = nextCover
       ..creator = _normalizeWorkerFlexMapString(normalInfo.creator)
       ..titleMeta = _normalizeWorkerFlexListString(normalInfo.titleMeta)
       ..metadata = _normalizeWorkerMetadataString(normalInfo.metadata)
@@ -298,6 +318,17 @@ Future<Map<String, dynamic>> _upsertUnifiedHistoryOnWorker(
   } finally {
     query.close();
   }
+}
+
+bool _isLocalCover(String raw) {
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is Map) {
+      final extern = decoded['extern'];
+      return extern is Map && extern['local'] == true;
+    }
+  } catch (_) {}
+  return false;
 }
 
 Map<String, dynamic> _toWorkerMap(dynamic value) {

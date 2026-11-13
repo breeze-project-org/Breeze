@@ -483,6 +483,8 @@ UnifiedComicDownload _$UnifiedComicDownloadFromJson(
   downloadedAt: DateTime.parse(json['downloadedAt'] as String),
   deleted: json['deleted'] as bool,
   schemaVersion: (json['schemaVersion'] as num).toInt(),
+  titleOverride: json['titleOverride'] as String?,
+  coverOverride: json['coverOverride'] as String?,
 );
 
 Map<String, dynamic> _$UnifiedComicDownloadToJson(
@@ -515,6 +517,8 @@ Map<String, dynamic> _$UnifiedComicDownloadToJson(
   'downloadedAt': instance.downloadedAt.toIso8601String(),
   'deleted': instance.deleted,
   'schemaVersion': instance.schemaVersion,
+  'titleOverride': instance.titleOverride,
+  'coverOverride': instance.coverOverride,
 };
 
 UserSetting _$UserSettingFromJson(Map<String, dynamic> json) =>

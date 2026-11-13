@@ -470,6 +470,15 @@ Future<void> _importChapters({
   }
 }
 
+String _preferredChapterName(
+  Map<String, dynamic> original,
+  Map<String, dynamic> processed,
+) {
+  final originalName = original['name']?.toString().trim() ?? '';
+  if (originalName.isNotEmpty) return originalName;
+  return processed['name']?.toString() ?? '';
+}
+
 List<Map<String, dynamic>> _buildChapters({
   required Map<String, dynamic> originalJson,
   required Map<String, dynamic> processedJson,
@@ -518,10 +527,7 @@ List<Map<String, dynamic>> _buildChapters({
 
     result.add({
       ...originalChapter,
-      'name':
-          processedChapter['name']?.toString() ??
-          originalChapter['name']?.toString() ??
-          '',
+      'name': _preferredChapterName(originalChapter, processedChapter),
       'order': processedChapter['order'] ?? originalChapter['order'] ?? (i + 1),
       'id': storageKey,
       'storageChapterId': storageKey,
@@ -547,10 +553,7 @@ Map<String, dynamic> _buildDetailJson({
     final originalEp = _matchOriginalChapter(originalEps, processedEp, i);
     newEps.add({
       ...originalEp,
-      'name':
-          processedEp['name']?.toString() ??
-          originalEp['name']?.toString() ??
-          '',
+      'name': _preferredChapterName(originalEp, processedEp),
       'order': processedEp['order'] ?? originalEp['order'] ?? (i + 1),
     });
   }

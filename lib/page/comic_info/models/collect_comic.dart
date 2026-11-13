@@ -82,12 +82,36 @@ String _ensureLocalFavoriteRecord({
       .build()
       .findFirst();
 
+  final download = objectbox.unifiedDownloadBox
+      .query(UnifiedComicDownload_.uniqueKey.equals(key))
+      .build()
+      .findFirst();
+  final titleOverride = download != null && !download.deleted
+      ? download.titleOverride?.trim() ?? ''
+      : '';
+  final coverOverride = download != null && !download.deleted
+      ? download.coverOverride?.trim() ?? ''
+      : '';
+  final effectiveTitle = titleOverride.isNotEmpty
+      ? download!.title
+      : comicInfo.title;
+  final coverMap = _comicImageToMap(comicInfo.cover);
+  final effectiveCover = coverOverride.isNotEmpty
+      ? download!.cover
+      : jsonEncode(coverMap);
+
   if (unified != null && unified.deleted == false) {
+    if (titleOverride.isNotEmpty || coverOverride.isNotEmpty) {
+      unified
+        ..title = effectiveTitle
+        ..cover = effectiveCover
+        ..updatedAt = now;
+      objectbox.unifiedFavoriteBox.put(unified);
+    }
     return key;
   }
 
   final createdAt = unified?.createdAt ?? now;
-  final coverMap = _comicImageToMap(comicInfo.cover);
 
   objectbox.unifiedFavoriteBox.put(
     UnifiedComicFavorite(
@@ -95,9 +119,9 @@ String _ensureLocalFavoriteRecord({
       uniqueKey: key,
       source: pluginId,
       comicId: comicInfo.id,
-      title: comicInfo.title,
+      title: effectiveTitle,
       description: comicInfo.description,
-      cover: jsonEncode(coverMap),
+      cover: effectiveCover,
       creator: jsonEncode(_creatorToMap(comicInfo.creator)),
       titleMeta: jsonEncode(comicInfo.titleMeta.map(_titleMetaToMap).toList()),
       metadata: jsonEncode(comicInfo.metadata.map(_metadataToMap).toList()),

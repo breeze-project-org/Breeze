@@ -16,6 +16,7 @@ import 'package:zephyr/util/context/context_extensions.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/config/router/router.gr.dart';
+import 'package:zephyr/widgets/toast.dart';
 
 class EpButtonWidget extends StatelessWidget {
   static const double fixedHeight = 56;
@@ -165,13 +166,17 @@ class EpButtonWidget extends StatelessWidget {
 
   void _openRead(BuildContext context) {
     final chapter = const DownloadChapterAdapter().fromEp(doc);
+    final local = const DownloadTaskRepository().findDownloadedChapter(
+      from: from,
+      comicId: comicId,
+      chapterKey: chapter.id,
+    );
+    if (local != null && local.images.isEmpty) {
+      showErrorToast(t.comicEdit.emptyChapter);
+      return;
+    }
     // 在线入口统一查库：该章已下载则直接读本地，不再看来源 type。
     if (type == ComicEntryType.normal || type == ComicEntryType.history) {
-      final local = const DownloadTaskRepository().findDownloadedChapter(
-        from: from,
-        comicId: comicId,
-        chapterKey: chapter.id,
-      );
       final record = local == null
           ? null
           : const DownloadTaskRepository().findDownloadRecord(from, comicId);

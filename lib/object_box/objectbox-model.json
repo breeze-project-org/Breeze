@@ -1028,7 +1028,7 @@
     },
     {
       "id": "13:7056956533911703509",
-      "lastPropertyId": "44:6641464605182407416",
+      "lastPropertyId": "46:1414163903663017824",
       "name": "UnifiedComicDownload",
       "properties": [
         {
@@ -1167,6 +1167,16 @@
         {
           "id": "44:6641464605182407416",
           "name": "detailJson",
+          "type": 9
+        },
+        {
+          "id": "45:2614930711082820077",
+          "name": "titleOverride",
+          "type": 9
+        },
+        {
+          "id": "46:1414163903663017824",
+          "name": "coverOverride",
           "type": 9
         }
       ],

@@ -605,6 +605,15 @@ class UnifiedComicDownload {
   bool deleted;
   int schemaVersion;
 
+  /// 用户自定义标题；null/空表示未修改，[title] 为生效值。
+  ///
+  /// 下载保存只更新源站字段，不会清空本字段；读取方继续用 [title]，
+  /// 因此书架/搜索/详情/导出无需感知 override。
+  String? titleOverride;
+
+  /// 用户自定义封面（`ComicImage` JSON）；null/空表示未修改。
+  String? coverOverride;
+
   UnifiedComicDownload({
     this.id = 0,
     required this.uniqueKey,
@@ -633,6 +642,8 @@ class UnifiedComicDownload {
     required this.downloadedAt,
     required this.deleted,
     required this.schemaVersion,
+    this.titleOverride,
+    this.coverOverride,
   });
 
   Map<String, dynamic> toJson() => _$UnifiedComicDownloadToJson(this);

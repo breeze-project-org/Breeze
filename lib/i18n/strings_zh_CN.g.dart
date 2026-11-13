@@ -51,6 +51,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$navigation$zh_CN navigation = Translations$navigation$zh_CN.internal(_root);
 	late final Translations$settings$zh_CN settings = Translations$settings$zh_CN.internal(_root);
 	late final Translations$bookshelf$zh_CN bookshelf = Translations$bookshelf$zh_CN.internal(_root);
+	late final Translations$comicEdit$zh_CN comicEdit = Translations$comicEdit$zh_CN.internal(_root);
 	late final Translations$comicInfo$zh_CN comicInfo = Translations$comicInfo$zh_CN.internal(_root);
 	late final Translations$reader$zh_CN reader = Translations$reader$zh_CN.internal(_root);
 	late final Translations$plugin$zh_CN plugin = Translations$plugin$zh_CN.internal(_root);
@@ -1368,6 +1369,135 @@ class Translations$bookshelf$zh_CN {
 
 	/// zh-CN: '确定要删除选中的 $count 条下载记录及文件吗？'
 	String confirmDeleteSelectedDownloads({required Object count}) => '确定要删除选中的 ${count} 条下载记录及文件吗？';
+}
+
+// Path: comicEdit
+class Translations$comicEdit$zh_CN {
+	Translations$comicEdit$zh_CN.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// zh-CN: '编辑漫画'
+	String get title => '编辑漫画';
+
+	/// zh-CN: '暂时不能编辑'
+	String get lockedTitle => '暂时不能编辑';
+
+	/// zh-CN: '该漫画还有未完成的下载任务，请先在下载任务页完成或取消。'
+	String get lockedMessage => '该漫画还有未完成的下载任务，请先在下载任务页完成或取消。';
+
+	/// zh-CN: '基本信息'
+	String get basicInfo => '基本信息';
+
+	/// zh-CN: '章节'
+	String get chapters => '章节';
+
+	/// zh-CN: '图片'
+	String get images => '图片';
+
+	/// zh-CN: '漫画标题'
+	String get comicTitle => '漫画标题';
+
+	/// zh-CN: '输入新的漫画标题'
+	String get titleHint => '输入新的漫画标题';
+
+	/// zh-CN: '更换封面'
+	String get changeCover => '更换封面';
+
+	/// zh-CN: '从漫画图片选择'
+	String get chooseFromComic => '从漫画图片选择';
+
+	/// zh-CN: '选择封面图片'
+	String get chooseCoverImage => '选择封面图片';
+
+	/// zh-CN: '保存标题'
+	String get saveTitle => '保存标题';
+
+	/// zh-CN: '标题不能为空'
+	String get titleEmpty => '标题不能为空';
+
+	/// zh-CN: '章节名称'
+	String get chapterName => '章节名称';
+
+	/// zh-CN: '输入章节名称'
+	String get chapterNameHint => '输入章节名称';
+
+	/// zh-CN: '章节名称不能为空'
+	String get chapterNameEmpty => '章节名称不能为空';
+
+	/// zh-CN: '新增章节'
+	String get addChapter => '新增章节';
+
+	/// zh-CN: '输入新章节名称'
+	String get addChapterHint => '输入新章节名称';
+
+	/// zh-CN: '重命名章节'
+	String get renameChapter => '重命名章节';
+
+	/// zh-CN: '$count 页'
+	String pagesCount({required Object count}) => '${count} 页';
+
+	/// zh-CN: '本章暂无图片'
+	String get emptyChapter => '本章暂无图片';
+
+	/// zh-CN: '选择章节'
+	String get selectChapter => '选择章节';
+
+	/// zh-CN: '还没有章节'
+	String get noChapters => '还没有章节';
+
+	/// zh-CN: '移动到章节'
+	String get moveToChapter => '移动到章节';
+
+	/// zh-CN: '已选 $count 张'
+	String selectedCount({required Object count}) => '已选 ${count} 张';
+
+	/// zh-CN: '已移动 $count 张图片'
+	String movedCount({required Object count}) => '已移动 ${count} 张图片';
+
+	/// zh-CN: '删除图片'
+	String get deleteImagesTitle => '删除图片';
+
+	/// zh-CN: '确定删除选中的 $count 张图片吗？'
+	String deleteImagesMessage({required Object count}) => '确定删除选中的 ${count} 张图片吗？';
+
+	/// zh-CN: '已删除 $count 张图片'
+	String deletedCount({required Object count}) => '已删除 ${count} 张图片';
+
+	/// zh-CN: '全选'
+	String get selectAll => '全选';
+
+	/// zh-CN: '取消选择'
+	String get clearSelection => '取消选择';
+
+	/// zh-CN: '长按拖动排序'
+	String get reorderHint => '长按拖动排序';
+
+	/// zh-CN: '已保存'
+	String get saveSuccess => '已保存';
+
+	/// zh-CN: '封面已更新'
+	String get coverUpdated => '封面已更新';
+
+	/// zh-CN: '章节已新增'
+	String get chapterAdded => '章节已新增';
+
+	/// zh-CN: '章节已重命名'
+	String get chapterRenamed => '章节已重命名';
+
+	/// zh-CN: '图片文件缺失'
+	String get imageMissing => '图片文件缺失';
+
+	/// zh-CN: '处理中...'
+	String get busy => '处理中...';
+
+	/// zh-CN: '下载记录不存在'
+	String get notFound => '下载记录不存在';
+
+	/// zh-CN: '加载失败'
+	String get loadFailed => '加载失败';
 }
 
 // Path: comicInfo
@@ -3967,6 +4097,9 @@ class Translations$download$zh_CN {
 	/// zh-CN: '等待中 ($count)'
 	String pending({required Object count}) => '等待中 (${count})';
 
+	/// zh-CN: '已选择 $count 章'
+	String selectedChapters({required Object count}) => '已选择 ${count} 章';
+
 	/// zh-CN: '已删除任务'
 	String get taskDeleted => '已删除任务';
 
@@ -4562,6 +4695,46 @@ extension on Translations {
 			'bookshelf.confirmDeleteSelectedFavorites' => ({required Object count}) => '确定要删除选中的 ${count} 条收藏记录吗？',
 			'bookshelf.confirmDeleteSelectedHistory' => ({required Object count}) => '确定要删除选中的 ${count} 条历史记录吗？',
 			'bookshelf.confirmDeleteSelectedDownloads' => ({required Object count}) => '确定要删除选中的 ${count} 条下载记录及文件吗？',
+			'comicEdit.title' => '编辑漫画',
+			'comicEdit.lockedTitle' => '暂时不能编辑',
+			'comicEdit.lockedMessage' => '该漫画还有未完成的下载任务，请先在下载任务页完成或取消。',
+			'comicEdit.basicInfo' => '基本信息',
+			'comicEdit.chapters' => '章节',
+			'comicEdit.images' => '图片',
+			'comicEdit.comicTitle' => '漫画标题',
+			'comicEdit.titleHint' => '输入新的漫画标题',
+			'comicEdit.changeCover' => '更换封面',
+			'comicEdit.chooseFromComic' => '从漫画图片选择',
+			'comicEdit.chooseCoverImage' => '选择封面图片',
+			'comicEdit.saveTitle' => '保存标题',
+			'comicEdit.titleEmpty' => '标题不能为空',
+			'comicEdit.chapterName' => '章节名称',
+			'comicEdit.chapterNameHint' => '输入章节名称',
+			'comicEdit.chapterNameEmpty' => '章节名称不能为空',
+			'comicEdit.addChapter' => '新增章节',
+			'comicEdit.addChapterHint' => '输入新章节名称',
+			'comicEdit.renameChapter' => '重命名章节',
+			'comicEdit.pagesCount' => ({required Object count}) => '${count} 页',
+			'comicEdit.emptyChapter' => '本章暂无图片',
+			'comicEdit.selectChapter' => '选择章节',
+			'comicEdit.noChapters' => '还没有章节',
+			'comicEdit.moveToChapter' => '移动到章节',
+			'comicEdit.selectedCount' => ({required Object count}) => '已选 ${count} 张',
+			'comicEdit.movedCount' => ({required Object count}) => '已移动 ${count} 张图片',
+			'comicEdit.deleteImagesTitle' => '删除图片',
+			'comicEdit.deleteImagesMessage' => ({required Object count}) => '确定删除选中的 ${count} 张图片吗？',
+			'comicEdit.deletedCount' => ({required Object count}) => '已删除 ${count} 张图片',
+			'comicEdit.selectAll' => '全选',
+			'comicEdit.clearSelection' => '取消选择',
+			'comicEdit.reorderHint' => '长按拖动排序',
+			'comicEdit.saveSuccess' => '已保存',
+			'comicEdit.coverUpdated' => '封面已更新',
+			'comicEdit.chapterAdded' => '章节已新增',
+			'comicEdit.chapterRenamed' => '章节已重命名',
+			'comicEdit.imageMissing' => '图片文件缺失',
+			'comicEdit.busy' => '处理中...',
+			'comicEdit.notFound' => '下载记录不存在',
+			'comicEdit.loadFailed' => '加载失败',
 			'comicInfo.follow' => '加入追更',
 			'comicInfo.unfollow' => '不再追更',
 			'comicInfo.exportComic' => '导出漫画',
@@ -4622,6 +4795,8 @@ extension on Translations {
 			'comicInfo.expandFullText' => '展开全文',
 			'comicInfo.readHistory' => '阅读记录',
 			'comicInfo.copied' => ({required Object label}) => '已复制：${label}',
+			_ => null,
+		} ?? switch (path) {
 			'comicInfo.copiedToClipboard' => ({required Object name}) => '已将 ${name} 复制到剪贴板',
 			'comicInfo.liking' => '点赞中...',
 			'comicInfo.unliking' => '取消点赞中...',
@@ -4662,8 +4837,6 @@ extension on Translations {
 			'reader.perComicReadMode' => '启用本漫画设置',
 			'reader.perComicReadModeSubtitle' => '仅当前漫画生效',
 			'reader.perComicFollowGlobal' => '跟随全局',
-			_ => null,
-		} ?? switch (path) {
 			'reader.perComicGlobalIs' => '全局为',
 			'reader.perComicThisComic' => '本漫',
 			'reader.infoDisplay' => '信息项显示',
@@ -5136,6 +5309,8 @@ extension on Translations {
 			'oldHome.noMore' => '没有更多了',
 			'more.common' => '常用',
 			'more.others' => '其他',
+			_ => null,
+		} ?? switch (path) {
 			'more.downloadTasks' => '下载任务',
 			'more.sync' => '同步',
 			'more.comicFollow' => '追更',
@@ -5176,8 +5351,6 @@ extension on Translations {
 			'discover.title' => '发现',
 			'discover.search' => '搜索',
 			'discover.settings' => '设置',
-			_ => null,
-		} ?? switch (path) {
 			'discover.pluginManagement' => '插件管理',
 			'discover.customOrder' => '自定义插件顺序',
 			'discover.resetOrder' => '恢复默认顺序',
@@ -5354,6 +5527,7 @@ extension on Translations {
 			'download.noTasks' => '暂无下载任务',
 			'download.downloading' => '正在下载',
 			'download.pending' => ({required Object count}) => '等待中 (${count})',
+			'download.selectedChapters' => ({required Object count}) => '已选择 ${count} 章',
 			'download.taskDeleted' => '已删除任务',
 			'download.deleteLastChapterContent' => '删除当前章节后，会删除下载记录，是否确认删除？',
 			'download.cancelTask' => '取消任务',

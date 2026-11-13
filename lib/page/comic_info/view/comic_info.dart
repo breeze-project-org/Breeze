@@ -10,10 +10,12 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as p;
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.dart';
+import 'package:zephyr/config/router/router.gr.dart' show ComicEditRoute;
 import 'package:zephyr/cubit/string_select.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
+import 'package:zephyr/page/comic_edit/method/comic_edit_service.dart';
 import 'package:zephyr/page/comic_info/comic_info.dart';
 import 'package:zephyr/page/comic_info/json/normal/normal_comic_all_info.dart';
 import 'package:zephyr/page/download/models/download_chapter.dart';
@@ -31,7 +33,7 @@ import 'package:zephyr/widgets/error_view.dart';
 import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 
-enum MenuOption { export, follow }
+enum MenuOption { export, follow, edit }
 
 @RoutePage()
 class ComicInfoPage extends StatelessWidget {
@@ -254,6 +256,9 @@ class _ComicInfoState extends State<_ComicInfo>
                 case MenuOption.export:
                   _handleExport();
                   break;
+                case MenuOption.edit:
+                  _handleEdit();
+                  break;
                 case MenuOption.follow:
                   _toggleFollow(
                     context.read<ComicFollowCubit>().isFollowing(
@@ -284,6 +289,13 @@ class _ComicInfoState extends State<_ComicInfo>
               ];
 
               if (_type == ComicEntryType.download) {
+                menuItems.add(
+                  FluentPopupMenuItem<MenuOption>(
+                    value: MenuOption.edit,
+                    leading: const Icon(Icons.edit_outlined),
+                    title: Text(t.comicEdit.title),
+                  ),
+                );
                 menuItems.add(
                   FluentPopupMenuItem<MenuOption>(
                     value: MenuOption.export,
@@ -580,9 +592,8 @@ class _ComicInfoState extends State<_ComicInfo>
                 downloadDisabledReason: normalComicAllInfo.allowDownloadReason,
               ),
               if (normalComicAllInfo.recommend.isNotEmpty &&
-                  _resolveRecommendItems(
-                    normalComicAllInfo.recommend,
-                  ).isNotEmpty)
+                  _resolveRecommendItems(normalComicAllInfo.recommend)
+                      .isNotEmpty)
                 _constrainedSliver(
                   SliverToBoxAdapter(
                     child: Column(
@@ -760,6 +771,28 @@ class _ComicInfoState extends State<_ComicInfo>
     showInfoToast(
       t.comicInfo.exportDirectory(displayPath: displayPath),
       duration: const Duration(seconds: 5),
+    );
+  }
+
+  // 编辑逻辑
+  Future<void> _handleEdit() async {
+    const service = ComicEditService();
+    if (service.hasIncompleteDownload(widget.from, _comicId)) {
+      showErrorToast(t.comicEdit.lockedMessage);
+      return;
+    }
+
+    await context.pushRoute(
+      ComicEditRoute(from: widget.from, comicId: _comicId),
+    );
+    if (!mounted) return;
+    context.read<GetComicInfoBloc>().add(
+      GetComicInfoEvent(
+        comicId: _comicId,
+        from: widget.from,
+        type: _type,
+        extern: widget.extern,
+      ),
     );
   }
 
@@ -1168,13 +1201,12 @@ SliverGridDelegate episodeGridDelegateFor(double contentWidth) {
   );
 }
 
-typedef EpisodeRowBuilder =
-    Widget Function(
-      BuildContext context,
-      DownloadChapter chapter,
-      Ep doc,
-      int index,
-    );
+typedef EpisodeRowBuilder = Widget Function(
+  BuildContext context,
+  DownloadChapter chapter,
+  Ep doc,
+  int index,
+);
 
 /// 扁平章节 sliver（单组/老数据）：宽度由外层快照传入，只建可视行。
 class _FlatEpisodeSliver extends StatelessWidget {
