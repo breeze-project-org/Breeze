@@ -530,9 +530,13 @@ fn front_http_client(config: &HttpClientConfig) -> AnyResult<ClientWithMiddlewar
     Ok(wrap_http_client(client))
 }
 
+/// 缓存的前置 client 最长存活时间（与普通 client 一致：兜系统代理变化）。
+const FRONT_CLIENT_TTL: Duration = Duration::from_secs(60);
+
 /// 为前置请求挑选客户端（按当前 worker 配置缓存）。
 ///
-/// 缓存键包含代理配置：用户在宿主设置里改代理后缓存自然换键并重建。
+/// 缓存键包含代理配置：用户在宿主设置里改代理后缓存自然换键并重建；
+/// 系统代理（Clash）变化没有代际信号，靠 [`FRONT_CLIENT_TTL`] 兜底。
 pub(crate) fn cached_front_client(config: &HttpClientConfig) -> AnyResult<ClientWithMiddleware> {
     let key = format!(
         "{}|{}|{}|{}",
@@ -541,18 +545,20 @@ pub(crate) fn cached_front_client(config: &HttpClientConfig) -> AnyResult<Client
         config.http_proxy.as_deref().unwrap_or(""),
         config.socks5_proxy.as_deref().unwrap_or("")
     );
-    static FRONT_CLIENT_CACHE: LazyLock<Mutex<HashMap<String, ClientWithMiddleware>>> =
+    static FRONT_CLIENT_CACHE: LazyLock<Mutex<HashMap<String, (Instant, ClientWithMiddleware)>>> =
         LazyLock::new(|| Mutex::new(HashMap::new()));
 
     let mut guard = match FRONT_CLIENT_CACHE.lock() {
         Ok(g) => g,
         Err(_) => return front_http_client(config),
     };
-    if let Some(client) = guard.get(&key) {
+    if let Some((built_at, client)) = guard.get(&key)
+        && built_at.elapsed() < FRONT_CLIENT_TTL
+    {
         return Ok(client.clone());
     }
     let client = front_http_client(config)?;
-    guard.insert(key, client.clone());
+    guard.insert(key, (Instant::now(), client.clone()));
     Ok(client)
 }
 

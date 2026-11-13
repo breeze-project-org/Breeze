@@ -351,6 +351,14 @@ pub fn current_http_client_config() -> HttpClientConfig {
         .unwrap_or_default()
 }
 
+/// 当前配置代际。
+///
+/// 自己缓存 client 的模块（ECH / 前置）用它判断配置是否变过：代际一变就重建，
+/// 不需要监听任何设置项。
+pub(crate) fn http_config_generation() -> u64 {
+    HTTP_CONFIG_GENERATION.load(Ordering::Acquire)
+}
+
 thread_local! {
     /// 线程本地的 HTTP 配置：(拍下时的代际, 配置, 是否钉住)。
     ///
@@ -389,11 +397,50 @@ pub(crate) fn worker_http_config() -> HttpClientConfig {
     })
 }
 
+/// 缓存 client 的最长存活时间。
+///
+/// 应用内改代理会 bump 代际，立刻重建；系统代理（Clash 的「系统代理」开关）
+/// 只改注册表、没有代际信号，靠这个 TTL 兜底——最多这么久之后自动生效。
+/// 不用监听线程：三套平台代码换来的只是「提前最多 60 秒」。
+const HTTP_CLIENT_TTL: Duration = Duration::from_secs(60);
+
+struct CachedHttpClient {
+    generation: u64,
+    built_at: Instant,
+    client: ClientWithMiddleware,
+}
+
+static HTTP_CLIENT_CACHE: LazyLock<Mutex<Option<CachedHttpClient>>> =
+    LazyLock::new(|| Mutex::new(None));
+
+/// 取（必要时重建）普通请求用的 client。
+///
+/// 以前是每个请求都 `build()` 一次，好处是永远拿到最新配置，代价是每个请求
+/// 都要重新建连（TCP + TLS 握手）。现在按「配置代际 + 60s TTL」缓存：
+/// - 应用内任何代理 / TLS / 内网策略变更 → 代际 +1 → 下一次请求重建；
+/// - 系统代理变化 → 最多 60s 后自动生效；
+/// - 旧 client 被替换时 drop，连接池随之关闭，不会粘在旧代理上。
 fn http_client() -> AnyResult<ClientWithMiddleware> {
-    let state = http_client_state_cell()
+    let config = current_http_client_config();
+    let generation = http_config_generation();
+
+    let mut cache = HTTP_CLIENT_CACHE
         .lock()
-        .map_err(|_| anyhow!(crate::tr!("http-client-state-lock-is-poisoned")))?;
-    build_http_client(&state.config)
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    if let Some(cached) = cache.as_ref()
+        && cached.generation == generation
+        && cached.built_at.elapsed() < HTTP_CLIENT_TTL
+    {
+        return Ok(cached.client.clone());
+    }
+
+    let client = build_http_client(&config)?;
+    *cache = Some(CachedHttpClient {
+        generation,
+        built_at: Instant::now(),
+        client: client.clone(),
+    });
+    Ok(client)
 }
 
 fn normalize_http_proxy_url(raw: &str) -> String {
@@ -410,6 +457,22 @@ fn normalize_socks5_proxy_url(raw: &str) -> String {
         return value.to_string();
     }
     format!("socks5h://{value}")
+}
+
+/// 当前配置下是否真的会走代理。
+///
+/// 与 [`apply_proxy_config`] 保持一致：HTTP 代理优先，没填地址时回落 SOCKS5。
+/// 走代理时域名直接交给代理（CONNECT / `socks5h`），客户端不需要自己解析。
+pub(crate) fn proxy_is_active(config: &HttpClientConfig) -> bool {
+    let has_address = |value: &Option<String>| {
+        value
+            .as_deref()
+            .is_some_and(|address| !address.trim().is_empty())
+    };
+    if config.use_http_proxy && has_address(&config.http_proxy) {
+        return true;
+    }
+    config.use_socks5_proxy && has_address(&config.socks5_proxy)
 }
 
 /// 把当前代理配置应用到 `ClientBuilder`。
@@ -464,7 +527,12 @@ pub fn build_http_client_ex(
     config: &HttpClientConfig,
     options: BuildHttpClientOptions,
 ) -> AnyResult<ClientWithMiddleware> {
-    let mut builder = Client::builder().timeout(options.timeout.unwrap_or(Duration::from_secs(30)));
+    let mut builder = Client::builder()
+        .timeout(options.timeout.unwrap_or(Duration::from_secs(30)))
+        // 复用连接能省掉每请求一次握手；空闲 10s 就断开，这样 Clash 切节点后
+        // 最多粘 10s，不会一直走旧线路。
+        .pool_max_idle_per_host(4)
+        .pool_idle_timeout(Duration::from_secs(10));
     if let Some(connect_timeout) = options.connect_timeout {
         builder = builder.connect_timeout(connect_timeout);
     }
@@ -483,6 +551,15 @@ pub fn build_http_client_ex(
     }
     if let Some(ua) = options.user_agent.as_ref().filter(|s| !s.is_empty()) {
         builder = builder.user_agent(ua);
+    }
+
+    // 没配代理时才挂 DoH：墙内 UDP/53 会被污染，`DohResolver` 失败/熔断时
+    // 会自动回落系统解析。
+    //
+    // 配了代理就跳过：域名直接交给代理（CONNECT / `socks5h`），客户端根本
+    // 不需要解析；而 hickory 的 DoH 不吃代理配置，硬挂上去只会白等超时。
+    if !proxy_is_active(config) {
+        builder = builder.dns_resolver(super::doh::DohResolver);
     }
 
     let client = builder
@@ -699,18 +776,33 @@ async fn http_request_inner_async(
 
     // 连接级失败才把 IP 标记为不健康：4xx/5xx 说明这个 IP 活着，
     // 只是请求被站点拒绝（风控 / 限流），换 IP 也未必有用。
-    let response = match builder.send().await {
+    // ECH 失败时用普通链路再试一次：ECH 只是「更好的握手」，不该让请求直接死掉。
+    // `try_clone` 对流式 body（multipart）返回 None，这时没有回退，行为与之前一致。
+    let request = builder
+        .build()
+        .context(crate::tr!("failed-to-send-http-request"))?;
+    let ech_fallback = if ech_client.is_some() {
+        request.try_clone()
+    } else {
+        None
+    };
+    let response = match client.execute(request).await {
         Ok(response) => response,
         Err(error) => {
             if let Some(target) = &front_target {
                 super::fronting::mark_front_host_unhealthy(&runtime, &target.ip);
             }
-            if ech_client.is_some() {
-                // ECH 的 TLS 抖动（如 InvalidContentType）重建一次大概率就好，
-                // 丢掉缓存让下一次请求重新拉 ECHConfig / 换 hint IP。
-                super::ech::invalidate_ech_client(&runtime, &url);
-            }
-            return Err(error).context(crate::tr!("failed-to-send-http-request"));
+            let Some(fallback) = ech_fallback else {
+                return Err(error).context(crate::tr!("failed-to-send-http-request"));
+            };
+            // ECH 的 TLS 抖动（如 InvalidContentType）重建一次大概率就好，
+            // 丢掉缓存让下一次请求重新拉 ECHConfig / 换 hint IP。
+            super::ech::invalidate_ech_client(&runtime, &url);
+            tracing::debug!("ech: request failed, retrying over the plain path: {error}");
+            http_client()?
+                .execute(fallback)
+                .await
+                .context(crate::tr!("failed-to-send-http-request"))?
         }
     };
     let ttfb = request_started.elapsed();
@@ -947,6 +1039,37 @@ mod tests {
         let error = result.expect_err("blocked request should fail");
         assert!(error.is_middleware());
         assert!(error.to_string().contains("HTTP"));
+    }
+
+    /// 代理是否生效：HTTP 优先，没填地址回落 SOCKS5，空地址不算。
+    #[test]
+    fn proxy_is_active_matches_apply_rules() {
+        let with_http = HttpClientConfig {
+            use_http_proxy: true,
+            http_proxy: Some("http://127.0.0.1:7890".to_string()),
+            ..Default::default()
+        };
+        assert!(proxy_is_active(&with_http));
+
+        let empty_http_fallback_socks = HttpClientConfig {
+            use_http_proxy: true,
+            http_proxy: Some("   ".to_string()),
+            use_socks5_proxy: true,
+            socks5_proxy: Some("127.0.0.1:7891".to_string()),
+            ..Default::default()
+        };
+        assert!(proxy_is_active(&empty_http_fallback_socks));
+
+        let disabled = HttpClientConfig {
+            use_http_proxy: false,
+            http_proxy: Some("http://127.0.0.1:7890".to_string()),
+            use_socks5_proxy: false,
+            socks5_proxy: Some("127.0.0.1:7891".to_string()),
+            ..Default::default()
+        };
+        assert!(!proxy_is_active(&disabled));
+
+        assert!(!proxy_is_active(&HttpClientConfig::default()));
     }
 
     /// 未钉住且代际过期的缓存要被丢弃，回落到全局配置。

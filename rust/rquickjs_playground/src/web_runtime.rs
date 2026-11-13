@@ -45,6 +45,8 @@ use uuid::Uuid;
 mod bridge;
 mod bridge_crypto;
 mod crypto_ops;
+// DoH 解析器：普通客户端与 ECH 引导共用，feature 无关。
+mod doh;
 mod fs_ops;
 // feature 关闭时 http 热路径不会调用本模块的解析函数，显式关掉 dead_code 告警。
 #[cfg(feature = "host-fronting")]

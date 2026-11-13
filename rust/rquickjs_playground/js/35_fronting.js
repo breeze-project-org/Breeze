@@ -8,7 +8,9 @@
  * - `fronting.getHosts()`：读回表与每个 IP 的健康状态
  * - `fronting.clearHosts()`：清空表（等于关闭前置）
  * - `fronting.probe(payload, options)`：测延迟，返回 Promise
- * - `fronting.setEchHosts(table)`：登记走 ECH（加密 SNI）的域名
+ * - `fronting.setEchHosts(table)`：登记走 ECH（加密 SNI）的域名；
+ *   条目写 `{ ips: [...], pin: true }` 表示**只钉 IP、不做 ECH**（保留 SNI），
+ *   给「DNS 被投毒但域名本身没被封」的域用（如 `*.picacomic.com`）
  * - `fronting.getEchHosts()` / `fronting.clearEchHosts()`：读回 / 清空 ECH 表
  *
  * 前置表为空时所有请求走原链路，对既有行为没有影响。
