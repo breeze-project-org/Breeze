@@ -108,3 +108,7 @@ incremental = true
 # 所以这里必须**转发**该 feature，而不是只声明一个空 feature——否则 feature 打开后
 # 门控代码仍不会被编译，三个全局函数不会注册。
 host-fronting = ["rquickjs_playground/host-fronting"]
+
+[patch.crates-io]
+# quickjs-ng 0.15.1 + 安全/性能补丁，补丁清单见 fork 仓库的 PATCHES.md。
+rquickjs-sys = { git = "https://github.com/deretame/breeze-rquickjs-sys", rev = "846889c482ee7511f558595384673f55c00c9f4a" }

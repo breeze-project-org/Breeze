@@ -2602,9 +2602,8 @@ dependencies = [
 
 [[package]]
 name = "rquickjs-sys"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "698077537c286a169de8693b216672bcef148bf2e2e112ebf50758c68e9afa09"
+version = "0.12.2"
+source = "git+https://github.com/deretame/breeze-rquickjs-sys?rev=846889c482ee7511f558595384673f55c00c9f4a#846889c482ee7511f558595384673f55c00c9f4a"
 dependencies = [
  "bindgen",
  "cc",

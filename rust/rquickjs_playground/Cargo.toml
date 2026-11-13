@@ -91,3 +91,6 @@ writeable = "0.6"
 [dev-dependencies]
 tiny_http = "0.12.0"
 regex = "1.12.4"
+
+[patch.crates-io]
+rquickjs-sys = { git = "https://github.com/deretame/breeze-rquickjs-sys", rev = "846889c482ee7511f558595384673f55c00c9f4a" }
