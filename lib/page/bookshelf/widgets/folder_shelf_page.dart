@@ -204,6 +204,8 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
       );
     }
     if (oldWidget.isActive != widget.isActive && mounted) {
+      // 切 tab 只同步返回拦截 entry，不自动重载列表：用户没要求刷新时
+      // 列表不应因切 tab 而重排/换封面。
       // 切 tab 时按新可见性同步：后台 tab 释放 entry，避免抢返回；
       // 前台 tab 按当前 bloc 状态补回 entry。
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -226,9 +228,8 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
       listener: (context, state) {
         final error = state.error;
         if (error != null && error.isNotEmpty) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(error)));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(error)));
         }
         if (state.currentPath != _lastPath) {
           _lastPath = state.currentPath;
@@ -588,6 +589,8 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
             final shelfList = detailed
                 ? CustomScrollView(
                     key: ValueKey('shelf-${state.currentPath}'),
+                    // 内容不足一屏时也要能下拉，否则 RefreshIndicator 收不到手势。
+                    physics: const AlwaysScrollableScrollPhysics(),
                     slivers: [
                       SliverPadding(
                         padding: listPadding,
@@ -601,6 +604,8 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
                   )
                 : GridView.builder(
                     key: ValueKey('shelf-${state.currentPath}'),
+                    // 内容不足一屏时也要能下拉，否则 RefreshIndicator 收不到手势。
+                    physics: const AlwaysScrollableScrollPhysics(),
                     // 悬浮物盖在列表上层：子文件夹有面包屑浮栏，留 64px 顶部滚动边距；
                     // 根目录无顶部悬浮物，选择模式无悬浮物，均保持 10。
                     // 右下角按钮 56px + bottom 16：底部留 88，避免挡住最后一行漫画。
@@ -1167,9 +1172,8 @@ Future<void> _batchExportSelected(
       .toList();
 
   if (selectedComics.isEmpty) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(t.bookshelf.noExportableComics)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(t.bookshelf.noExportableComics)));
     return;
   }
 

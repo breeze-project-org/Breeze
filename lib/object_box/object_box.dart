@@ -50,6 +50,10 @@ class ObjectBox {
     store.close();
   }
 
+  /// 用已有的 [Store] 构造包装器（例如 `Store.runAsync` 回调里传入的 store）。
+  /// 不接管 store 生命周期，调用方负责关闭。
+  factory ObjectBox.fromStore(Store store) => ObjectBox._create(store);
+
   ObjectBox._create(this.store) {
     _bikaComicHistoryBox = store.box<BikaComicHistory>();
     _bikaComicDownloadBox = store.box<BikaComicDownload>();
@@ -77,7 +81,7 @@ class ObjectBox {
   }
 
   static Future<ObjectBox> create({String? dbRootPath}) async {
-    // A. 同 Isolate 保护：如果已经有初始化任务在跑，直接返回同一个 Future
+    // 同 Isolate 保护：如果已经有初始化任务在跑，直接返回同一个 Future
     if (_initFuture != null) return _initFuture!;
 
     _initFuture = _doInit(dbRootPath: dbRootPath);

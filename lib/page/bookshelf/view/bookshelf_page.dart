@@ -417,9 +417,8 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
         .toList();
 
     if (availableSources.isEmpty && currentMode != ShelfPageMode.favorite) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(t.bookshelf.noFilterSource)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t.bookshelf.noFilterSource)));
       return;
     }
 

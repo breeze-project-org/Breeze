@@ -40,6 +40,7 @@ class _CoverWidgetState extends State<CoverWidget> {
   late PictureInfo _pictureInfo;
   late PictureBloc _bloc;
   ImageProvider? _imageProvider;
+  String? _imageProviderPath;
 
   @override
   void initState() {
@@ -121,12 +122,22 @@ class _CoverWidgetState extends State<CoverWidget> {
               case PictureLoadStatus.success:
                 // image 对象缓存：选中切换等无关 rebuild 不 new provider，
                 // DecorationImage 相等就不重新 resolve，封面不闪。
-                _imageProvider ??= ResizeImage(
-                  FileImage(File(state.imagePath!)),
-                  width: decodeWidth < 1 ? 1 : decodeWidth,
-                  height: decodeHeight < 1 ? 1 : decodeHeight,
-                );
+                // 只按目标框等比缩放，保持原图宽高比；再由 BoxFit.cover
+                // 裁切。exact 会把封面强行拉成目标框比例（挤压变形）。
+                if (_imageProvider == null ||
+                    _imageProviderPath != state.imagePath) {
+                  _imageProviderPath = state.imagePath;
+                  _imageProvider = ResizeImage(
+                    FileImage(File(state.imagePath!)),
+                    width: decodeWidth < 1 ? 1 : decodeWidth,
+                    height: decodeHeight < 1 ? 1 : decodeHeight,
+                    policy: ResizeImagePolicy.fit,
+                  );
+                }
                 return RepaintBoundary(
+                  // 用解析后的绝对文件路径做 key：路径一变，图片元素强制
+                  // 重建，不依赖 Flutter 复用旧 State。
+                  key: ValueKey(state.imagePath),
                   child: Container(
                     width: width,
                     height: height,

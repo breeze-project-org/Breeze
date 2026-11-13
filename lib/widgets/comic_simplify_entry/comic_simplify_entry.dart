@@ -573,13 +573,10 @@ class _DetailedRowBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final primary = scheme.primary;
-    final titleStyle = Theme.of(
-      context,
-    ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, height: 1.3);
-    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-      height: 1.4,
-    );
+    final titleStyle = Theme.of(context).textTheme.titleSmall
+        ?.copyWith(fontWeight: FontWeight.w700, height: 1.3);
+    final subtitleStyle = Theme.of(context).textTheme.bodySmall
+        ?.copyWith(color: scheme.onSurfaceVariant, height: 1.4);
     // Venera 式简洁风：透明底、无边框；hover 只给一层极淡底色。
     final pills = info.metadata
         .map((e) => e.trim())
@@ -685,10 +682,8 @@ class _DetailPill extends StatelessWidget {
       ),
       child: Text(
         label.let(convertChineseForDisplay),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: scheme.onSecondaryContainer,
-          height: 1.4,
-        ),
+        style: Theme.of(context).textTheme.labelSmall
+            ?.copyWith(color: scheme.onSecondaryContainer, height: 1.4),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
