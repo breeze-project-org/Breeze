@@ -225,4 +225,55 @@ void main() {
       }
     }
   });
+
+  test('导入到空下载目录时会补建封面与章节目录', () async {
+    final exportRoot = await Directory.systemTemp.createTemp(
+      'breeze_clean_import_',
+    );
+    try {
+      final exportedDir = await exportComic(
+        'c1',
+        ExportType.folder,
+        'test',
+        path: exportRoot.path,
+      );
+
+      // 模拟从其他设备导入：本地下载目录里没有任何已有文件。
+      if (await downloadRoot.exists()) {
+        await downloadRoot.delete(recursive: true);
+      }
+      objectbox.unifiedDownloadBox.removeAll();
+
+      await importComicFromDirectory(exportedDir);
+
+      final record = objectbox.unifiedDownloadBox.getAll().single;
+      final cover = jsonDecode(record.cover) as Map;
+      final coverStore = DownloadAssetStore(
+        from: 'test',
+        path: cover['path'] as String,
+        cartoonId: 'c1',
+        chapterId: '',
+        storageChapterId: '',
+        pictureType: PictureType.cover,
+      );
+      final coverFile = File(await coverStore.canonicalDownloadPath());
+      expect(await coverFile.exists(), isTrue);
+      expect(await coverFile.length(), greaterThan(0));
+
+      final imageStore = DownloadAssetStore(
+        from: 'test',
+        path: 'p1',
+        cartoonId: 'c1',
+        chapterId: '',
+        storageChapterId: 's1',
+        pictureType: PictureType.page,
+      );
+      final imageFile = File(await imageStore.canonicalDownloadPath());
+      expect(await imageFile.exists(), isTrue);
+    } finally {
+      if (await exportRoot.exists()) {
+        await exportRoot.delete(recursive: true);
+      }
+    }
+  });
 }
