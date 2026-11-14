@@ -13,6 +13,7 @@ extension _ComicReadInitPart on _ComicReadPageState {
       context: context,
       readerCubit: context.read<ReaderCubit>(),
       pageController: _pageController,
+      scrollController: scrollController,
       transformationController: _transformationController,
       onToggleMenu: _toggleVisibility,
       onToggleDesktopFullscreen: _lifecycleController.toggleDesktopFullscreen,
@@ -36,7 +37,8 @@ extension _ComicReadInitPart on _ComicReadPageState {
       scrollController: scrollController,
       pageController: _pageController,
       onBeforeTurnPage: _inputController.restoreScaleBeforeTurnPage,
-      isUserScrolling: () => _isUserScrollActive,
+      isUserScrolling: () =>
+          _isUserScrollActive || _inputController.isUserInteracting,
     );
   }
 

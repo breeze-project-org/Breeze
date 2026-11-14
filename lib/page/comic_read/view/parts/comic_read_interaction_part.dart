@@ -62,6 +62,7 @@ extension _ComicReadInteractionPart on _ComicReadPageState {
           from: widget.from,
           parentPhysics: physics,
           disableScroll: _isScrollLockedByMultiTouch,
+          preserveScrollPhysics: _inputController.continuousScrollEnabled,
           volumeController: _volumeController,
           onUserScrollActiveChanged: (active) => _isUserScrollActive = active,
           onGlobalSlotChanged: seamlessEnabled

@@ -10,6 +10,7 @@ import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
 import 'package:zephyr/widgets/fluent_dropdown.dart';
+import 'package:zephyr/page/comic_read/widgets/settings/reader_scroll_experiment_switch.dart';
 
 part 'reader_settings_gesture_tab.dart';
 part 'reader_settings_info_tab.dart';

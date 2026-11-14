@@ -23,6 +23,7 @@ class ColumnModeWidget extends StatefulWidget {
   final String from;
   final ScrollPhysics? parentPhysics;
   final bool disableScroll;
+  final bool preserveScrollPhysics;
   final ReaderVolumeController volumeController;
   final ValueChanged<bool> onUserScrollActiveChanged;
   final ValueChanged<int> onGlobalSlotChanged;
@@ -39,6 +40,7 @@ class ColumnModeWidget extends StatefulWidget {
     required this.from,
     this.parentPhysics,
     this.disableScroll = false,
+    this.preserveScrollPhysics = false,
     required this.volumeController,
     required this.onUserScrollActiveChanged,
     required this.onGlobalSlotChanged,
@@ -58,7 +60,9 @@ class _ColumnModeWidgetState extends State<ColumnModeWidget> {
         ? widget.parentPhysics!.applyTo(const AlwaysScrollableScrollPhysics())
         : const AlwaysScrollableScrollPhysics();
     final physics = widget.disableScroll
-        ? const NeverScrollableScrollPhysics()
+        ? NeverScrollableScrollPhysics(
+            parent: widget.preserveScrollPhysics ? basePhysics : null,
+          )
         : basePhysics;
 
     return LayoutBuilder(
