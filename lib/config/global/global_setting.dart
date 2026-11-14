@@ -25,6 +25,15 @@ enum SyncServiceType { none, webdav, s3 }
 /// 代理协议类型。
 enum ProxyType { http, socks5 }
 
+/// DoH 默认端点，与 Rust 侧 `DEFAULT_DOH_PROVIDERS` 保持一致。
+///
+/// 腾讯 `doh.pub` 只有 JSON 路径干净且墙内最快；两家瑞士解析器走 RFC 8484。
+const List<String> defaultDohProviders = [
+  'https://doh.pub/dns-query',
+  'https://dns.digitale-gesellschaft.ch/dns-query',
+  'https://doh.applied-privacy.net/query',
+];
+
 extension SyncServiceTypeExtension on SyncServiceType {
   String get label {
     switch (this) {
@@ -154,6 +163,8 @@ abstract class GlobalSettingState with _$GlobalSettingState {
     @Default(false) bool clickCoverToStartReading,
     @Default([]) List<String> searchHistory,
     @Default(ProxySettingState()) ProxySettingState proxySetting,
+    // DoH：默认开启并使用内置推荐端点；用户可关闭或增删端点。
+    @Default(DohSettingState()) DohSettingState dohSetting,
     // 内网拦截：默认关闭（放行内网 / 保留地址段），与 Rust 侧初始值一致。
     @Default(false) bool blockPrivateNetwork,
     // 搜索书签邻页找回：向后最多探测页数（0=只找本页）；向前固定 1 页。
@@ -217,6 +228,17 @@ abstract class ProxySettingState with _$ProxySettingState {
 
   factory ProxySettingState.fromJson(Map<String, dynamic> json) =>
       _$ProxySettingStateFromJson(json);
+}
+
+@freezed
+abstract class DohSettingState with _$DohSettingState {
+  const factory DohSettingState({
+    @Default(true) bool enabled,
+    @Default(defaultDohProviders) List<String> providers,
+  }) = _DohSettingState;
+
+  factory DohSettingState.fromJson(Map<String, dynamic> json) =>
+      _$DohSettingStateFromJson(json);
 }
 
 @freezed

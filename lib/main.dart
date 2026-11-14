@@ -29,6 +29,7 @@ import 'package:zephyr/i18n/i18n_helper.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/i18n/system_locale_service.dart';
 import 'package:zephyr/network/http/wind_http.dart';
+import 'package:zephyr/util/doh_setting.dart';
 import 'package:zephyr/util/network_policy.dart';
 import 'package:zephyr/util/process_exit.dart';
 import 'package:zephyr/util/proxy_setting.dart';
@@ -353,6 +354,7 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
   }
 
   applyProxySetting(globalSettingCubit.state.proxySetting);
+  applyDohSetting(globalSettingCubit.state.dohSetting);
   applyPrivateNetworkPolicy(
     blockPrivateNetwork: globalSettingCubit.state.blockPrivateNetwork,
   );

@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
+import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/setting/common/setting_ui.dart';
 import 'package:zephyr/page/setting/global/widgets.dart';
@@ -41,6 +42,16 @@ class ContentNetworkSettingPage extends StatelessWidget {
             enabled: state.proxySetting.enabled,
             type: state.proxySetting.type,
             currentProxy: state.proxySetting.address,
+          ),
+          settingCategoryTile(
+            icon: Icons.dns_outlined,
+            title: t.settings.doh,
+            subtitle: state.dohSetting.enabled
+                ? t.settings.dohProviderCount(
+                    count: state.dohSetting.providers.length,
+                  )
+                : t.common.disabled,
+            onTap: () => context.pushRoute(const DohSettingRoute()),
           ),
           SwitchListTile(
             secondary: const Icon(Icons.lan_outlined),

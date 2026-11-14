@@ -557,6 +557,39 @@ class Translations$settings$zh_CN {
 	/// zh-CN: 'SOCKS5'
 	String get proxyTypeSocks5 => 'SOCKS5';
 
+	/// zh-CN: 'DNS over HTTPS'
+	String get doh => 'DNS over HTTPS';
+
+	/// zh-CN: '开启后使用 DoH 解析域名'
+	String get dohEnabledSubtitle => '开启后使用 DoH 解析域名';
+
+	/// zh-CN: 'DoH 端点'
+	String get dohProviders => 'DoH 端点';
+
+	/// zh-CN: '已启用 · $count 个端点'
+	String dohProviderCount({required Object count}) => '已启用 · ${count} 个端点';
+
+	/// zh-CN: '尚未配置 DoH 端点'
+	String get dohEmpty => '尚未配置 DoH 端点';
+
+	/// zh-CN: '添加 DoH 端点'
+	String get dohAdd => '添加 DoH 端点';
+
+	/// zh-CN: 'https://doh.pub/dns-query'
+	String get dohAddHint => 'https://doh.pub/dns-query';
+
+	/// zh-CN: '建议使用 IP 形式的地址以绕过 DNS 污染，例如 https://1.12.12.12/dns-query'
+	String get dohIpHint => '建议使用 IP 形式的地址以绕过 DNS 污染，例如 https://1.12.12.12/dns-query';
+
+	/// zh-CN: '请输入以 https:// 开头的完整地址'
+	String get dohInvalidUrl => '请输入以 https:// 开头的完整地址';
+
+	/// zh-CN: '恢复默认端点'
+	String get dohReset => '恢复默认端点';
+
+	/// zh-CN: 'DoH 用于防止 DNS 污染；可添加多个端点，自动使用最先返回的有效结果。'
+	String get dohNote => 'DoH 用于防止 DNS 污染；可添加多个端点，自动使用最先返回的有效结果。';
+
 	/// zh-CN: '内网拦截'
 	String get blockPrivateNetwork => '内网拦截';
 
@@ -4427,6 +4460,17 @@ extension on Translations {
 			'settings.proxyTypeSubtitle' => '选择代理协议',
 			'settings.proxyTypeHttp' => 'HTTP',
 			'settings.proxyTypeSocks5' => 'SOCKS5',
+			'settings.doh' => 'DNS over HTTPS',
+			'settings.dohEnabledSubtitle' => '开启后使用 DoH 解析域名',
+			'settings.dohProviders' => 'DoH 端点',
+			'settings.dohProviderCount' => ({required Object count}) => '已启用 · ${count} 个端点',
+			'settings.dohEmpty' => '尚未配置 DoH 端点',
+			'settings.dohAdd' => '添加 DoH 端点',
+			'settings.dohAddHint' => 'https://doh.pub/dns-query',
+			'settings.dohIpHint' => '建议使用 IP 形式的地址以绕过 DNS 污染，例如 https://1.12.12.12/dns-query',
+			'settings.dohInvalidUrl' => '请输入以 https:// 开头的完整地址',
+			'settings.dohReset' => '恢复默认端点',
+			'settings.dohNote' => 'DoH 用于防止 DNS 污染；可添加多个端点，自动使用最先返回的有效结果。',
 			'settings.blockPrivateNetwork' => '内网拦截',
 			'settings.blockPrivateNetworkSubtitle' => '拦截指向内网 / 保留地址段的请求（含域名前置的 IP 直连）；默认关闭',
 			'settings.updateAccelerate' => '更新下载加速',
@@ -4784,6 +4828,8 @@ extension on Translations {
 			'comicInfo.tags' => '标签',
 			'comicInfo.works' => '作品',
 			'comicInfo.views' => ({required Object count}) => '浏览：${count}',
+			_ => null,
+		} ?? switch (path) {
 			'comicInfo.updateTime' => ({required Object time}) => '更新时间：${time}',
 			'comicInfo.startRead' => '开始阅读',
 			'comicInfo.continueRead' => '继续阅读',
@@ -4795,8 +4841,6 @@ extension on Translations {
 			'comicInfo.expandFullText' => '展开全文',
 			'comicInfo.readHistory' => '阅读记录',
 			'comicInfo.copied' => ({required Object label}) => '已复制：${label}',
-			_ => null,
-		} ?? switch (path) {
 			'comicInfo.copiedToClipboard' => ({required Object name}) => '已将 ${name} 复制到剪贴板',
 			'comicInfo.liking' => '点赞中...',
 			'comicInfo.unliking' => '取消点赞中...',
@@ -5298,6 +5342,8 @@ extension on Translations {
 			'oldHome.recommend' => '推荐',
 			'oldHome.latest' => '最新',
 			'oldHome.cloudFavorite' => '云收藏',
+			_ => null,
+		} ?? switch (path) {
 			'oldHome.list' => '列表',
 			'oldHome.function' => '功能',
 			'oldHome.close' => '关闭',
@@ -5309,8 +5355,6 @@ extension on Translations {
 			'oldHome.noMore' => '没有更多了',
 			'more.common' => '常用',
 			'more.others' => '其他',
-			_ => null,
-		} ?? switch (path) {
 			'more.downloadTasks' => '下载任务',
 			'more.sync' => '同步',
 			'more.comicFollow' => '追更',

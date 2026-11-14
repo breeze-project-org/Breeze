@@ -265,6 +265,17 @@ class _Translations$settings$en_US extends Translations$settings$zh_CN {
 	@override String get proxyTypeSubtitle => 'Choose proxy protocol';
 	@override String get proxyTypeHttp => 'HTTP';
 	@override String get proxyTypeSocks5 => 'SOCKS5';
+	@override String get doh => 'DNS over HTTPS';
+	@override String get dohEnabledSubtitle => 'Resolve domains over DoH when enabled';
+	@override String get dohProviders => 'DoH endpoints';
+	@override String dohProviderCount({required Object count}) => 'Enabled · ${count} endpoints';
+	@override String get dohEmpty => 'No DoH endpoint configured';
+	@override String get dohAdd => 'Add DoH endpoint';
+	@override String get dohAddHint => 'https://doh.pub/dns-query';
+	@override String get dohIpHint => 'Prefer IP-based addresses to bypass DNS pollution, e.g. https://1.12.12.12/dns-query';
+	@override String get dohInvalidUrl => 'Enter a full address starting with https://';
+	@override String get dohReset => 'Restore default endpoints';
+	@override String get dohNote => 'DoH protects against DNS pollution. Add multiple endpoints; the first valid result is used.';
 	@override String get blockPrivateNetwork => 'Block private network';
 	@override String get blockPrivateNetworkSubtitle => 'Block requests to private / reserved addresses, including IP-direct fronting; off by default';
 	@override String get updateAccelerate => 'Update acceleration';
@@ -1849,6 +1860,17 @@ extension on TranslationsEnUs {
 			'settings.proxyTypeSubtitle' => 'Choose proxy protocol',
 			'settings.proxyTypeHttp' => 'HTTP',
 			'settings.proxyTypeSocks5' => 'SOCKS5',
+			'settings.doh' => 'DNS over HTTPS',
+			'settings.dohEnabledSubtitle' => 'Resolve domains over DoH when enabled',
+			'settings.dohProviders' => 'DoH endpoints',
+			'settings.dohProviderCount' => ({required Object count}) => 'Enabled · ${count} endpoints',
+			'settings.dohEmpty' => 'No DoH endpoint configured',
+			'settings.dohAdd' => 'Add DoH endpoint',
+			'settings.dohAddHint' => 'https://doh.pub/dns-query',
+			'settings.dohIpHint' => 'Prefer IP-based addresses to bypass DNS pollution, e.g. https://1.12.12.12/dns-query',
+			'settings.dohInvalidUrl' => 'Enter a full address starting with https://',
+			'settings.dohReset' => 'Restore default endpoints',
+			'settings.dohNote' => 'DoH protects against DNS pollution. Add multiple endpoints; the first valid result is used.',
 			'settings.blockPrivateNetwork' => 'Block private network',
 			'settings.blockPrivateNetworkSubtitle' => 'Block requests to private / reserved addresses, including IP-direct fronting; off by default',
 			'settings.updateAccelerate' => 'Update acceleration',
@@ -2206,6 +2228,8 @@ extension on TranslationsEnUs {
 			'comicInfo.tags' => 'Tags',
 			'comicInfo.works' => 'Works',
 			'comicInfo.views' => ({required Object count}) => 'Views: ${count}',
+			_ => null,
+		} ?? switch (path) {
 			'comicInfo.updateTime' => ({required Object time}) => 'Updated: ${time}',
 			'comicInfo.startRead' => 'Start reading',
 			'comicInfo.continueRead' => 'Continue reading',
@@ -2217,8 +2241,6 @@ extension on TranslationsEnUs {
 			'comicInfo.expandFullText' => 'Read more',
 			'comicInfo.readHistory' => 'Reading history',
 			'comicInfo.copied' => ({required Object label}) => 'Copied: ${label}',
-			_ => null,
-		} ?? switch (path) {
 			'comicInfo.copiedToClipboard' => ({required Object name}) => 'Copied ${name} to clipboard',
 			'comicInfo.liking' => 'Liking...',
 			'comicInfo.unliking' => 'Unliking...',
@@ -2720,6 +2742,8 @@ extension on TranslationsEnUs {
 			'oldHome.latest' => 'Latest',
 			'oldHome.cloudFavorite' => 'Cloud Favorites',
 			'oldHome.list' => 'List',
+			_ => null,
+		} ?? switch (path) {
 			'oldHome.function' => 'Function',
 			'oldHome.close' => 'Close',
 			'oldHome.loadFailedRetry' => 'Load failed, please retry.',
@@ -2731,8 +2755,6 @@ extension on TranslationsEnUs {
 			'more.common' => 'Common',
 			'more.others' => 'Others',
 			'more.downloadTasks' => 'Download Tasks',
-			_ => null,
-		} ?? switch (path) {
 			'more.sync' => 'Sync',
 			'more.comicFollow' => 'Updates',
 			'more.changelog' => 'Changelog',

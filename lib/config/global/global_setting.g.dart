@@ -62,6 +62,9 @@ _GlobalSettingState _$GlobalSettingStateFromJson(
       : ProxySettingState.fromJson(
           json['proxySetting'] as Map<String, dynamic>,
         ),
+  dohSetting: json['dohSetting'] == null
+      ? const DohSettingState()
+      : DohSettingState.fromJson(json['dohSetting'] as Map<String, dynamic>),
   blockPrivateNetwork: json['blockPrivateNetwork'] as bool? ?? false,
   searchBookmarkProbePages:
       (json['searchBookmarkProbePages'] as num?)?.toInt() ?? 3,
@@ -135,6 +138,7 @@ Map<String, dynamic> _$GlobalSettingStateToJson(
   'clickCoverToStartReading': instance.clickCoverToStartReading,
   'searchHistory': instance.searchHistory,
   'proxySetting': instance.proxySetting.toJson(),
+  'dohSetting': instance.dohSetting.toJson(),
   'blockPrivateNetwork': instance.blockPrivateNetwork,
   'searchBookmarkProbePages': instance.searchBookmarkProbePages,
   'windowWidth': instance.windowWidth,
@@ -207,6 +211,22 @@ Map<String, dynamic> _$ProxySettingStateToJson(_ProxySettingState instance) =>
     };
 
 const _$ProxyTypeEnumMap = {ProxyType.http: 'http', ProxyType.socks5: 'socks5'};
+
+_DohSettingState _$DohSettingStateFromJson(Map<String, dynamic> json) =>
+    _DohSettingState(
+      enabled: json['enabled'] as bool? ?? true,
+      providers:
+          (json['providers'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          defaultDohProviders,
+    );
+
+Map<String, dynamic> _$DohSettingStateToJson(_DohSettingState instance) =>
+    <String, dynamic>{
+      'enabled': instance.enabled,
+      'providers': instance.providers,
+    };
 
 _WebDavSettingState _$WebDavSettingStateFromJson(Map<String, dynamic> json) =>
     _WebDavSettingState(

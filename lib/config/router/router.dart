@@ -48,6 +48,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: GlobalSettingRoute.page),
     AutoRoute(page: AppearanceSettingRoute.page),
     AutoRoute(page: ContentNetworkSettingRoute.page),
+    AutoRoute(page: DohSettingRoute.page),
     AutoRoute(page: SyncSettingRoute.page),
     AutoRoute(page: AppBehaviorSettingRoute.page),
     AutoRoute(page: EInkSettingRoute.page),

@@ -10,17 +10,17 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
-import 'dart:async' as _i54;
+import 'dart:async' as _i55;
 
-import 'package:auto_route/auto_route.dart' as _i46;
-import 'package:collection/collection.dart' as _i49;
-import 'package:flutter/foundation.dart' as _i51;
-import 'package:flutter/rendering.dart' as _i57;
-import 'package:material_ui/material_ui.dart' as _i47;
-import 'package:zephyr/cubit/string_select.dart' as _i53;
+import 'package:auto_route/auto_route.dart' as _i47;
+import 'package:collection/collection.dart' as _i50;
+import 'package:flutter/foundation.dart' as _i52;
+import 'package:flutter/rendering.dart' as _i58;
+import 'package:material_ui/material_ui.dart' as _i48;
+import 'package:zephyr/cubit/string_select.dart' as _i54;
 import 'package:zephyr/debug/coreml_upscale_debug_page.dart' as _i16;
-import 'package:zephyr/debug/qjs_runtime_debug_page.dart' as _i34;
-import 'package:zephyr/debug/show_color.dart' as _i40;
+import 'package:zephyr/debug/qjs_runtime_debug_page.dart' as _i35;
+import 'package:zephyr/debug/show_color.dart' as _i41;
 import 'package:zephyr/page/about/view/about_page.dart' as _i1;
 import 'package:zephyr/page/app_bootstrap_page.dart' as _i3;
 import 'package:zephyr/page/bookshelf/view/bookshelf_page.dart' as _i5;
@@ -28,36 +28,36 @@ import 'package:zephyr/page/change_log_page.dart' as _i8;
 import 'package:zephyr/page/comic_edit/view/comic_edit_page.dart' as _i9;
 import 'package:zephyr/page/comic_follow/view/comic_follow_page.dart' as _i10;
 import 'package:zephyr/page/comic_info/view/comic_info.dart' as _i11;
-import 'package:zephyr/page/comic_list/models/comic_list_scene.dart' as _i50;
+import 'package:zephyr/page/comic_list/models/comic_list_scene.dart' as _i51;
 import 'package:zephyr/page/comic_list/view/comic_list_page.dart' as _i12;
-import 'package:zephyr/page/comic_read/type/chapter_extern.dart' as _i52;
+import 'package:zephyr/page/comic_read/type/chapter_extern.dart' as _i53;
 import 'package:zephyr/page/comic_read/view/comic_read.dart' as _i13;
 import 'package:zephyr/page/comments/view/comments.dart' as _i14;
 import 'package:zephyr/page/comments/view/plugin_comments_scaffold.dart'
-    as _i29;
-import 'package:zephyr/page/discover/view/discover_page.dart' as _i19;
-import 'package:zephyr/page/donwload_task/view/download_task.dart' as _i20;
-import 'package:zephyr/page/font_setting/view/font_setting_page.dart' as _i22;
-import 'package:zephyr/page/login_page.dart' as _i25;
-import 'package:zephyr/page/more/view/more.dart' as _i26;
-import 'package:zephyr/page/navigation_bar.dart' as _i27;
-import 'package:zephyr/page/plugin_function/view/plugin_function_page.dart'
-    as _i31;
-import 'package:zephyr/page/plugin_home/view/plugin_home_pages.dart' as _i28;
-import 'package:zephyr/page/plugin_settings/view/plugin_detail_page.dart'
     as _i30;
-import 'package:zephyr/page/plugin_settings/view/plugin_settings_page.dart'
+import 'package:zephyr/page/discover/view/discover_page.dart' as _i19;
+import 'package:zephyr/page/donwload_task/view/download_task.dart' as _i21;
+import 'package:zephyr/page/font_setting/view/font_setting_page.dart' as _i23;
+import 'package:zephyr/page/login_page.dart' as _i26;
+import 'package:zephyr/page/more/view/more.dart' as _i27;
+import 'package:zephyr/page/navigation_bar.dart' as _i28;
+import 'package:zephyr/page/plugin_function/view/plugin_function_page.dart'
     as _i32;
-import 'package:zephyr/page/plugin_store/view/plugin_store_page.dart' as _i33;
-import 'package:zephyr/page/search/cubit/search_cubit.dart' as _i56;
-import 'package:zephyr/page/search/view/search_page.dart' as _i38;
+import 'package:zephyr/page/plugin_home/view/plugin_home_pages.dart' as _i29;
+import 'package:zephyr/page/plugin_settings/view/plugin_detail_page.dart'
+    as _i31;
+import 'package:zephyr/page/plugin_settings/view/plugin_settings_page.dart'
+    as _i33;
+import 'package:zephyr/page/plugin_store/view/plugin_store_page.dart' as _i34;
+import 'package:zephyr/page/search/cubit/search_cubit.dart' as _i57;
+import 'package:zephyr/page/search/view/search_page.dart' as _i39;
 import 'package:zephyr/page/search_aggregate/view/search_aggregate_result_page.dart'
-    as _i36;
-import 'package:zephyr/page/search_bookmark/view/search_bookmark_page.dart'
     as _i37;
-import 'package:zephyr/page/search_result/bloc/search_bloc.dart' as _i55;
-import 'package:zephyr/page/search_result/search_result.dart' as _i58;
-import 'package:zephyr/page/search_result/view/search_result_page.dart' as _i39;
+import 'package:zephyr/page/search_bookmark/view/search_bookmark_page.dart'
+    as _i38;
+import 'package:zephyr/page/search_result/bloc/search_bloc.dart' as _i56;
+import 'package:zephyr/page/search_result/search_result.dart' as _i59;
+import 'package:zephyr/page/search_result/view/search_result_page.dart' as _i40;
 import 'package:zephyr/page/setting/bookshelf/bookshelf_setting_page.dart'
     as _i6;
 import 'package:zephyr/page/setting/cache/cache_setting_page.dart' as _i7;
@@ -68,26 +68,27 @@ import 'package:zephyr/page/setting/global/appearance_setting_page.dart' as _i4;
 import 'package:zephyr/page/setting/global/content_network_setting_page.dart'
     as _i15;
 import 'package:zephyr/page/setting/global/debug_setting_page.dart' as _i18;
-import 'package:zephyr/page/setting/global/eink_setting_page.dart' as _i21;
-import 'package:zephyr/page/setting/global/global_setting.dart' as _i24;
-import 'package:zephyr/page/setting/global/storage_setting_page.dart' as _i41;
-import 'package:zephyr/page/setting/global/sync_setting_page.dart' as _i42;
-import 'package:zephyr/page/setting/real_sr/real_sr_setting_page.dart' as _i35;
-import 'package:zephyr/page/theme_color/view/theme_color_page.dart' as _i43;
-import 'package:zephyr/page/webdav_sync/view/webdav_sync_page.dart' as _i44;
-import 'package:zephyr/page/webview_page.dart' as _i45;
-import 'package:zephyr/type/enum.dart' as _i48;
-import 'package:zephyr/widgets/full_screen_image_view.dart' as _i23;
+import 'package:zephyr/page/setting/global/doh_setting_page.dart' as _i20;
+import 'package:zephyr/page/setting/global/eink_setting_page.dart' as _i22;
+import 'package:zephyr/page/setting/global/global_setting.dart' as _i25;
+import 'package:zephyr/page/setting/global/storage_setting_page.dart' as _i42;
+import 'package:zephyr/page/setting/global/sync_setting_page.dart' as _i43;
+import 'package:zephyr/page/setting/real_sr/real_sr_setting_page.dart' as _i36;
+import 'package:zephyr/page/theme_color/view/theme_color_page.dart' as _i44;
+import 'package:zephyr/page/webdav_sync/view/webdav_sync_page.dart' as _i45;
+import 'package:zephyr/page/webview_page.dart' as _i46;
+import 'package:zephyr/type/enum.dart' as _i49;
+import 'package:zephyr/widgets/full_screen_image_view.dart' as _i24;
 
 /// generated route for
 /// [_i1.AboutPage]
-class AboutRoute extends _i46.PageRouteInfo<void> {
-  const AboutRoute({List<_i46.PageRouteInfo>? children})
+class AboutRoute extends _i47.PageRouteInfo<void> {
+  const AboutRoute({List<_i47.PageRouteInfo>? children})
     : super(AboutRoute.name, initialChildren: children);
 
   static const String name = 'AboutRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i1.AboutPage();
@@ -97,13 +98,13 @@ class AboutRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i2.AppBehaviorSettingPage]
-class AppBehaviorSettingRoute extends _i46.PageRouteInfo<void> {
-  const AppBehaviorSettingRoute({List<_i46.PageRouteInfo>? children})
+class AppBehaviorSettingRoute extends _i47.PageRouteInfo<void> {
+  const AppBehaviorSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(AppBehaviorSettingRoute.name, initialChildren: children);
 
   static const String name = 'AppBehaviorSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i2.AppBehaviorSettingPage();
@@ -113,13 +114,13 @@ class AppBehaviorSettingRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i3.AppBootstrapPage]
-class AppBootstrapRoute extends _i46.PageRouteInfo<void> {
-  const AppBootstrapRoute({List<_i46.PageRouteInfo>? children})
+class AppBootstrapRoute extends _i47.PageRouteInfo<void> {
+  const AppBootstrapRoute({List<_i47.PageRouteInfo>? children})
     : super(AppBootstrapRoute.name, initialChildren: children);
 
   static const String name = 'AppBootstrapRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i3.AppBootstrapPage();
@@ -129,13 +130,13 @@ class AppBootstrapRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i4.AppearanceSettingPage]
-class AppearanceSettingRoute extends _i46.PageRouteInfo<void> {
-  const AppearanceSettingRoute({List<_i46.PageRouteInfo>? children})
+class AppearanceSettingRoute extends _i47.PageRouteInfo<void> {
+  const AppearanceSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(AppearanceSettingRoute.name, initialChildren: children);
 
   static const String name = 'AppearanceSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i4.AppearanceSettingPage();
@@ -145,13 +146,13 @@ class AppearanceSettingRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i5.BookshelfPage]
-class BookshelfRoute extends _i46.PageRouteInfo<void> {
-  const BookshelfRoute({List<_i46.PageRouteInfo>? children})
+class BookshelfRoute extends _i47.PageRouteInfo<void> {
+  const BookshelfRoute({List<_i47.PageRouteInfo>? children})
     : super(BookshelfRoute.name, initialChildren: children);
 
   static const String name = 'BookshelfRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i5.BookshelfPage();
@@ -161,13 +162,13 @@ class BookshelfRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i6.BookshelfSettingPage]
-class BookshelfSettingRoute extends _i46.PageRouteInfo<void> {
-  const BookshelfSettingRoute({List<_i46.PageRouteInfo>? children})
+class BookshelfSettingRoute extends _i47.PageRouteInfo<void> {
+  const BookshelfSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(BookshelfSettingRoute.name, initialChildren: children);
 
   static const String name = 'BookshelfSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i6.BookshelfSettingPage();
@@ -177,13 +178,13 @@ class BookshelfSettingRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i7.CacheSettingPage]
-class CacheSettingRoute extends _i46.PageRouteInfo<void> {
-  const CacheSettingRoute({List<_i46.PageRouteInfo>? children})
+class CacheSettingRoute extends _i47.PageRouteInfo<void> {
+  const CacheSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(CacheSettingRoute.name, initialChildren: children);
 
   static const String name = 'CacheSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i7.CacheSettingPage();
@@ -193,13 +194,13 @@ class CacheSettingRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i8.ChangelogPage]
-class ChangelogRoute extends _i46.PageRouteInfo<void> {
-  const ChangelogRoute({List<_i46.PageRouteInfo>? children})
+class ChangelogRoute extends _i47.PageRouteInfo<void> {
+  const ChangelogRoute({List<_i47.PageRouteInfo>? children})
     : super(ChangelogRoute.name, initialChildren: children);
 
   static const String name = 'ChangelogRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i8.ChangelogPage();
@@ -209,12 +210,12 @@ class ChangelogRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i9.ComicEditPage]
-class ComicEditRoute extends _i46.PageRouteInfo<ComicEditRouteArgs> {
+class ComicEditRoute extends _i47.PageRouteInfo<ComicEditRouteArgs> {
   ComicEditRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     required String from,
     required String comicId,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          ComicEditRoute.name,
          args: ComicEditRouteArgs(key: key, from: from, comicId: comicId),
@@ -223,7 +224,7 @@ class ComicEditRoute extends _i46.PageRouteInfo<ComicEditRouteArgs> {
 
   static const String name = 'ComicEditRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<ComicEditRouteArgs>();
@@ -243,7 +244,7 @@ class ComicEditRouteArgs {
     required this.comicId,
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String from;
 
@@ -267,13 +268,13 @@ class ComicEditRouteArgs {
 
 /// generated route for
 /// [_i10.ComicFollowPage]
-class ComicFollowRoute extends _i46.PageRouteInfo<void> {
-  const ComicFollowRoute({List<_i46.PageRouteInfo>? children})
+class ComicFollowRoute extends _i47.PageRouteInfo<void> {
+  const ComicFollowRoute({List<_i47.PageRouteInfo>? children})
     : super(ComicFollowRoute.name, initialChildren: children);
 
   static const String name = 'ComicFollowRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i10.ComicFollowPage();
@@ -283,16 +284,16 @@ class ComicFollowRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i11.ComicInfoPage]
-class ComicInfoRoute extends _i46.PageRouteInfo<ComicInfoRouteArgs> {
+class ComicInfoRoute extends _i47.PageRouteInfo<ComicInfoRouteArgs> {
   ComicInfoRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     required String comicId,
     required String from,
-    required _i48.ComicEntryType type,
+    required _i49.ComicEntryType type,
     Map<String, dynamic>? extern,
     String? collectionTargetId,
     String? collectionTargetName,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          ComicInfoRoute.name,
          args: ComicInfoRouteArgs(
@@ -309,7 +310,7 @@ class ComicInfoRoute extends _i46.PageRouteInfo<ComicInfoRouteArgs> {
 
   static const String name = 'ComicInfoRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<ComicInfoRouteArgs>();
@@ -337,13 +338,13 @@ class ComicInfoRouteArgs {
     this.collectionTargetName,
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String comicId;
 
   final String from;
 
-  final _i48.ComicEntryType type;
+  final _i49.ComicEntryType type;
 
   final Map<String, dynamic>? extern;
 
@@ -364,7 +365,7 @@ class ComicInfoRouteArgs {
         comicId == other.comicId &&
         from == other.from &&
         type == other.type &&
-        const _i49.MapEquality<String, dynamic>().equals(
+        const _i50.MapEquality<String, dynamic>().equals(
           extern,
           other.extern,
         ) &&
@@ -378,22 +379,22 @@ class ComicInfoRouteArgs {
       comicId.hashCode ^
       from.hashCode ^
       type.hashCode ^
-      const _i49.MapEquality<String, dynamic>().hash(extern) ^
+      const _i50.MapEquality<String, dynamic>().hash(extern) ^
       collectionTargetId.hashCode ^
       collectionTargetName.hashCode;
 }
 
 /// generated route for
 /// [_i12.ComicListPage]
-class ComicListRoute extends _i46.PageRouteInfo<ComicListRouteArgs> {
+class ComicListRoute extends _i47.PageRouteInfo<ComicListRouteArgs> {
   ComicListRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     String? title,
-    _i50.ComicListScene? scene,
+    _i51.ComicListScene? scene,
     String? sceneSource,
     String? sceneBundleFnPath,
     String? sceneBundleFnPathFallback,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          ComicListRoute.name,
          args: ComicListRouteArgs(
@@ -409,7 +410,7 @@ class ComicListRoute extends _i46.PageRouteInfo<ComicListRouteArgs> {
 
   static const String name = 'ComicListRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<ComicListRouteArgs>(
@@ -437,11 +438,11 @@ class ComicListRouteArgs {
     this.sceneBundleFnPathFallback,
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String? title;
 
-  final _i50.ComicListScene? scene;
+  final _i51.ComicListScene? scene;
 
   final String? sceneSource;
 
@@ -478,22 +479,22 @@ class ComicListRouteArgs {
 
 /// generated route for
 /// [_i13.ComicReadPage]
-class ComicReadRoute extends _i46.PageRouteInfo<ComicReadRouteArgs> {
+class ComicReadRoute extends _i47.PageRouteInfo<ComicReadRouteArgs> {
   ComicReadRoute({
-    _i51.Key? key,
+    _i52.Key? key,
     required String comicId,
     required int order,
     String chapterId = '',
     String requestId = '',
     String storageChapterId = '',
     String logicalKey = '',
-    _i52.ChapterExtern chapterExtern = const {},
+    _i53.ChapterExtern chapterExtern = const {},
     required int epsNumber,
     required String from,
-    required _i53.StringSelectCubit stringSelectCubit,
-    required _i48.ComicEntryType type,
+    required _i54.StringSelectCubit stringSelectCubit,
+    required _i49.ComicEntryType type,
     required dynamic comicInfo,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          ComicReadRoute.name,
          args: ComicReadRouteArgs(
@@ -516,7 +517,7 @@ class ComicReadRoute extends _i46.PageRouteInfo<ComicReadRouteArgs> {
 
   static const String name = 'ComicReadRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<ComicReadRouteArgs>();
@@ -556,7 +557,7 @@ class ComicReadRouteArgs {
     required this.comicInfo,
   });
 
-  final _i51.Key? key;
+  final _i52.Key? key;
 
   final String comicId;
 
@@ -570,15 +571,15 @@ class ComicReadRouteArgs {
 
   final String logicalKey;
 
-  final _i52.ChapterExtern chapterExtern;
+  final _i53.ChapterExtern chapterExtern;
 
   final int epsNumber;
 
   final String from;
 
-  final _i53.StringSelectCubit stringSelectCubit;
+  final _i54.StringSelectCubit stringSelectCubit;
 
-  final _i48.ComicEntryType type;
+  final _i49.ComicEntryType type;
 
   final dynamic comicInfo;
 
@@ -625,12 +626,12 @@ class ComicReadRouteArgs {
 
 /// generated route for
 /// [_i14.CommentsPage]
-class CommentsRoute extends _i46.PageRouteInfo<CommentsRouteArgs> {
+class CommentsRoute extends _i47.PageRouteInfo<CommentsRouteArgs> {
   CommentsRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     required String comicId,
     required String comicTitle,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          CommentsRoute.name,
          args: CommentsRouteArgs(
@@ -643,7 +644,7 @@ class CommentsRoute extends _i46.PageRouteInfo<CommentsRouteArgs> {
 
   static const String name = 'CommentsRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<CommentsRouteArgs>();
@@ -663,7 +664,7 @@ class CommentsRouteArgs {
     required this.comicTitle,
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String comicId;
 
@@ -689,13 +690,13 @@ class CommentsRouteArgs {
 
 /// generated route for
 /// [_i15.ContentNetworkSettingPage]
-class ContentNetworkSettingRoute extends _i46.PageRouteInfo<void> {
-  const ContentNetworkSettingRoute({List<_i46.PageRouteInfo>? children})
+class ContentNetworkSettingRoute extends _i47.PageRouteInfo<void> {
+  const ContentNetworkSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(ContentNetworkSettingRoute.name, initialChildren: children);
 
   static const String name = 'ContentNetworkSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i15.ContentNetworkSettingPage();
@@ -705,13 +706,13 @@ class ContentNetworkSettingRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i16.CoreMLUpscaleDebugPage]
-class CoreMLUpscaleDebugRoute extends _i46.PageRouteInfo<void> {
-  const CoreMLUpscaleDebugRoute({List<_i46.PageRouteInfo>? children})
+class CoreMLUpscaleDebugRoute extends _i47.PageRouteInfo<void> {
+  const CoreMLUpscaleDebugRoute({List<_i47.PageRouteInfo>? children})
     : super(CoreMLUpscaleDebugRoute.name, initialChildren: children);
 
   static const String name = 'CoreMLUpscaleDebugRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i16.CoreMLUpscaleDebugPage();
@@ -721,13 +722,13 @@ class CoreMLUpscaleDebugRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i17.DataBackupPage]
-class DataBackupRoute extends _i46.PageRouteInfo<void> {
-  const DataBackupRoute({List<_i46.PageRouteInfo>? children})
+class DataBackupRoute extends _i47.PageRouteInfo<void> {
+  const DataBackupRoute({List<_i47.PageRouteInfo>? children})
     : super(DataBackupRoute.name, initialChildren: children);
 
   static const String name = 'DataBackupRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i17.DataBackupPage();
@@ -737,13 +738,13 @@ class DataBackupRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i18.DebugSettingPage]
-class DebugSettingRoute extends _i46.PageRouteInfo<void> {
-  const DebugSettingRoute({List<_i46.PageRouteInfo>? children})
+class DebugSettingRoute extends _i47.PageRouteInfo<void> {
+  const DebugSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(DebugSettingRoute.name, initialChildren: children);
 
   static const String name = 'DebugSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i18.DebugSettingPage();
@@ -753,13 +754,13 @@ class DebugSettingRoute extends _i46.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i19.DiscoverPage]
-class DiscoverRoute extends _i46.PageRouteInfo<void> {
-  const DiscoverRoute({List<_i46.PageRouteInfo>? children})
+class DiscoverRoute extends _i47.PageRouteInfo<void> {
+  const DiscoverRoute({List<_i47.PageRouteInfo>? children})
     : super(DiscoverRoute.name, initialChildren: children);
 
   static const String name = 'DiscoverRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       return const _i19.DiscoverPage();
@@ -768,60 +769,76 @@ class DiscoverRoute extends _i46.PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [_i20.DownloadTaskPage]
-class DownloadTaskRoute extends _i46.PageRouteInfo<void> {
-  const DownloadTaskRoute({List<_i46.PageRouteInfo>? children})
+/// [_i20.DohSettingPage]
+class DohSettingRoute extends _i47.PageRouteInfo<void> {
+  const DohSettingRoute({List<_i47.PageRouteInfo>? children})
+    : super(DohSettingRoute.name, initialChildren: children);
+
+  static const String name = 'DohSettingRoute';
+
+  static _i47.PageInfo page = _i47.PageInfo(
+    name,
+    builder: (data) {
+      return const _i20.DohSettingPage();
+    },
+  );
+}
+
+/// generated route for
+/// [_i21.DownloadTaskPage]
+class DownloadTaskRoute extends _i47.PageRouteInfo<void> {
+  const DownloadTaskRoute({List<_i47.PageRouteInfo>? children})
     : super(DownloadTaskRoute.name, initialChildren: children);
 
   static const String name = 'DownloadTaskRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i20.DownloadTaskPage();
+      return const _i21.DownloadTaskPage();
     },
   );
 }
 
 /// generated route for
-/// [_i21.EInkSettingPage]
-class EInkSettingRoute extends _i46.PageRouteInfo<void> {
-  const EInkSettingRoute({List<_i46.PageRouteInfo>? children})
+/// [_i22.EInkSettingPage]
+class EInkSettingRoute extends _i47.PageRouteInfo<void> {
+  const EInkSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(EInkSettingRoute.name, initialChildren: children);
 
   static const String name = 'EInkSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i21.EInkSettingPage();
+      return const _i22.EInkSettingPage();
     },
   );
 }
 
 /// generated route for
-/// [_i22.FontSettingPage]
-class FontSettingRoute extends _i46.PageRouteInfo<void> {
-  const FontSettingRoute({List<_i46.PageRouteInfo>? children})
+/// [_i23.FontSettingPage]
+class FontSettingRoute extends _i47.PageRouteInfo<void> {
+  const FontSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(FontSettingRoute.name, initialChildren: children);
 
   static const String name = 'FontSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i22.FontSettingPage();
+      return const _i23.FontSettingPage();
     },
   );
 }
 
 /// generated route for
-/// [_i23.FullScreenImagePage]
-class FullRouteImageRoute extends _i46.PageRouteInfo<FullRouteImageRouteArgs> {
+/// [_i24.FullScreenImagePage]
+class FullRouteImageRoute extends _i47.PageRouteInfo<FullRouteImageRouteArgs> {
   FullRouteImageRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     required String imagePath,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          FullRouteImageRoute.name,
          args: FullRouteImageRouteArgs(key: key, imagePath: imagePath),
@@ -830,11 +847,11 @@ class FullRouteImageRoute extends _i46.PageRouteInfo<FullRouteImageRouteArgs> {
 
   static const String name = 'FullRouteImageRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<FullRouteImageRouteArgs>();
-      return _i23.FullScreenImagePage(key: args.key, imagePath: args.imagePath);
+      return _i24.FullScreenImagePage(key: args.key, imagePath: args.imagePath);
     },
   );
 }
@@ -842,7 +859,7 @@ class FullRouteImageRoute extends _i46.PageRouteInfo<FullRouteImageRouteArgs> {
 class FullRouteImageRouteArgs {
   const FullRouteImageRouteArgs({this.key, required this.imagePath});
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String imagePath;
 
@@ -863,25 +880,25 @@ class FullRouteImageRouteArgs {
 }
 
 /// generated route for
-/// [_i24.GlobalSettingPage]
-class GlobalSettingRoute extends _i46.PageRouteInfo<void> {
-  const GlobalSettingRoute({List<_i46.PageRouteInfo>? children})
+/// [_i25.GlobalSettingPage]
+class GlobalSettingRoute extends _i47.PageRouteInfo<void> {
+  const GlobalSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(GlobalSettingRoute.name, initialChildren: children);
 
   static const String name = 'GlobalSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i24.GlobalSettingPage();
+      return const _i25.GlobalSettingPage();
     },
   );
 }
 
 /// generated route for
-/// [_i25.LoginPage]
-class LoginRoute extends _i46.PageRouteInfo<LoginRouteArgs> {
-  LoginRoute({_i47.Key? key, String? from, List<_i46.PageRouteInfo>? children})
+/// [_i26.LoginPage]
+class LoginRoute extends _i47.PageRouteInfo<LoginRouteArgs> {
+  LoginRoute({_i48.Key? key, String? from, List<_i47.PageRouteInfo>? children})
     : super(
         LoginRoute.name,
         args: LoginRouteArgs(key: key, from: from),
@@ -890,13 +907,13 @@ class LoginRoute extends _i46.PageRouteInfo<LoginRouteArgs> {
 
   static const String name = 'LoginRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<LoginRouteArgs>(
         orElse: () => const LoginRouteArgs(),
       );
-      return _i25.LoginPage(key: args.key, from: args.from);
+      return _i26.LoginPage(key: args.key, from: args.from);
     },
   );
 }
@@ -904,7 +921,7 @@ class LoginRoute extends _i46.PageRouteInfo<LoginRouteArgs> {
 class LoginRouteArgs {
   const LoginRouteArgs({this.key, this.from});
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String? from;
 
@@ -925,63 +942,63 @@ class LoginRouteArgs {
 }
 
 /// generated route for
-/// [_i26.MorePage]
-class MoreRoute extends _i46.PageRouteInfo<void> {
-  const MoreRoute({List<_i46.PageRouteInfo>? children})
+/// [_i27.MorePage]
+class MoreRoute extends _i47.PageRouteInfo<void> {
+  const MoreRoute({List<_i47.PageRouteInfo>? children})
     : super(MoreRoute.name, initialChildren: children);
 
   static const String name = 'MoreRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i26.MorePage();
+      return const _i27.MorePage();
     },
   );
 }
 
 /// generated route for
-/// [_i27.NavigationBar]
-class NavigationBar extends _i46.PageRouteInfo<void> {
-  const NavigationBar({List<_i46.PageRouteInfo>? children})
+/// [_i28.NavigationBar]
+class NavigationBar extends _i47.PageRouteInfo<void> {
+  const NavigationBar({List<_i47.PageRouteInfo>? children})
     : super(NavigationBar.name, initialChildren: children);
 
   static const String name = 'NavigationBar';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i27.NavigationBar();
+      return const _i28.NavigationBar();
     },
   );
 }
 
 /// generated route for
-/// [_i28.PluginCloudFavoritePage]
-class PluginCloudFavoriteRoute extends _i46.PageRouteInfo<void> {
-  const PluginCloudFavoriteRoute({List<_i46.PageRouteInfo>? children})
+/// [_i29.PluginCloudFavoritePage]
+class PluginCloudFavoriteRoute extends _i47.PageRouteInfo<void> {
+  const PluginCloudFavoriteRoute({List<_i47.PageRouteInfo>? children})
     : super(PluginCloudFavoriteRoute.name, initialChildren: children);
 
   static const String name = 'PluginCloudFavoriteRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i28.PluginCloudFavoritePage();
+      return const _i29.PluginCloudFavoritePage();
     },
   );
 }
 
 /// generated route for
-/// [_i29.PluginCommentsScaffold]
+/// [_i30.PluginCommentsScaffold]
 class PluginCommentsScaffoldRoute
-    extends _i46.PageRouteInfo<PluginCommentsScaffoldRouteArgs> {
+    extends _i47.PageRouteInfo<PluginCommentsScaffoldRouteArgs> {
   PluginCommentsScaffoldRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     required String from,
     required String comicId,
     required String comicTitle,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          PluginCommentsScaffoldRoute.name,
          args: PluginCommentsScaffoldRouteArgs(
@@ -995,11 +1012,11 @@ class PluginCommentsScaffoldRoute
 
   static const String name = 'PluginCommentsScaffoldRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<PluginCommentsScaffoldRouteArgs>();
-      return _i29.PluginCommentsScaffold(
+      return _i30.PluginCommentsScaffold(
         key: args.key,
         from: args.from,
         comicId: args.comicId,
@@ -1017,7 +1034,7 @@ class PluginCommentsScaffoldRouteArgs {
     required this.comicTitle,
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String from;
 
@@ -1046,14 +1063,14 @@ class PluginCommentsScaffoldRouteArgs {
 }
 
 /// generated route for
-/// [_i30.PluginDetailPage]
-class PluginDetailRoute extends _i46.PageRouteInfo<PluginDetailRouteArgs> {
+/// [_i31.PluginDetailPage]
+class PluginDetailRoute extends _i47.PageRouteInfo<PluginDetailRouteArgs> {
   PluginDetailRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     required String from,
     required String pluginUuid,
     required String pluginDisplayName,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          PluginDetailRoute.name,
          args: PluginDetailRouteArgs(
@@ -1067,11 +1084,11 @@ class PluginDetailRoute extends _i46.PageRouteInfo<PluginDetailRouteArgs> {
 
   static const String name = 'PluginDetailRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<PluginDetailRouteArgs>();
-      return _i30.PluginDetailPage(
+      return _i31.PluginDetailPage(
         key: args.key,
         from: args.from,
         pluginUuid: args.pluginUuid,
@@ -1089,7 +1106,7 @@ class PluginDetailRouteArgs {
     required this.pluginDisplayName,
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String from;
 
@@ -1121,15 +1138,15 @@ class PluginDetailRouteArgs {
 }
 
 /// generated route for
-/// [_i31.PluginFunctionPage]
-class PluginFunctionRoute extends _i46.PageRouteInfo<PluginFunctionRouteArgs> {
+/// [_i32.PluginFunctionPage]
+class PluginFunctionRoute extends _i47.PageRouteInfo<PluginFunctionRouteArgs> {
   PluginFunctionRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     required String from,
     required String functionId,
     required String title,
-    required _i54.Future<void> Function(Map<String, dynamic>) onAction,
-    List<_i46.PageRouteInfo>? children,
+    required _i55.Future<void> Function(Map<String, dynamic>) onAction,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          PluginFunctionRoute.name,
          args: PluginFunctionRouteArgs(
@@ -1144,11 +1161,11 @@ class PluginFunctionRoute extends _i46.PageRouteInfo<PluginFunctionRouteArgs> {
 
   static const String name = 'PluginFunctionRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<PluginFunctionRouteArgs>();
-      return _i31.PluginFunctionPage(
+      return _i32.PluginFunctionPage(
         key: args.key,
         from: args.from,
         functionId: args.functionId,
@@ -1168,7 +1185,7 @@ class PluginFunctionRouteArgs {
     required this.onAction,
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String from;
 
@@ -1176,7 +1193,7 @@ class PluginFunctionRouteArgs {
 
   final String title;
 
-  final _i54.Future<void> Function(Map<String, dynamic>) onAction;
+  final _i55.Future<void> Function(Map<String, dynamic>) onAction;
 
   @override
   String toString() {
@@ -1199,31 +1216,31 @@ class PluginFunctionRouteArgs {
 }
 
 /// generated route for
-/// [_i28.PluginHomePage]
-class PluginHomeRoute extends _i46.PageRouteInfo<void> {
-  const PluginHomeRoute({List<_i46.PageRouteInfo>? children})
+/// [_i29.PluginHomePage]
+class PluginHomeRoute extends _i47.PageRouteInfo<void> {
+  const PluginHomeRoute({List<_i47.PageRouteInfo>? children})
     : super(PluginHomeRoute.name, initialChildren: children);
 
   static const String name = 'PluginHomeRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i28.PluginHomePage();
+      return const _i29.PluginHomePage();
     },
   );
 }
 
 /// generated route for
-/// [_i32.PluginSettingsPage]
-class PluginSettingsRoute extends _i46.PageRouteInfo<PluginSettingsRouteArgs> {
+/// [_i33.PluginSettingsPage]
+class PluginSettingsRoute extends _i47.PageRouteInfo<PluginSettingsRouteArgs> {
   PluginSettingsRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     required String from,
     required String pluginUuid,
     required String pluginRuntimeName,
     required String pluginDisplayName,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          PluginSettingsRoute.name,
          args: PluginSettingsRouteArgs(
@@ -1238,11 +1255,11 @@ class PluginSettingsRoute extends _i46.PageRouteInfo<PluginSettingsRouteArgs> {
 
   static const String name = 'PluginSettingsRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<PluginSettingsRouteArgs>();
-      return _i32.PluginSettingsPage(
+      return _i33.PluginSettingsPage(
         key: args.key,
         from: args.from,
         pluginUuid: args.pluginUuid,
@@ -1262,7 +1279,7 @@ class PluginSettingsRouteArgs {
     required this.pluginDisplayName,
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final String from;
 
@@ -1298,63 +1315,63 @@ class PluginSettingsRouteArgs {
 }
 
 /// generated route for
-/// [_i33.PluginStorePage]
-class PluginStoreRoute extends _i46.PageRouteInfo<void> {
-  const PluginStoreRoute({List<_i46.PageRouteInfo>? children})
+/// [_i34.PluginStorePage]
+class PluginStoreRoute extends _i47.PageRouteInfo<void> {
+  const PluginStoreRoute({List<_i47.PageRouteInfo>? children})
     : super(PluginStoreRoute.name, initialChildren: children);
 
   static const String name = 'PluginStoreRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i33.PluginStorePage();
+      return const _i34.PluginStorePage();
     },
   );
 }
 
 /// generated route for
-/// [_i34.QjsRuntimeDebugPage]
-class QjsRuntimeDebugRoute extends _i46.PageRouteInfo<void> {
-  const QjsRuntimeDebugRoute({List<_i46.PageRouteInfo>? children})
+/// [_i35.QjsRuntimeDebugPage]
+class QjsRuntimeDebugRoute extends _i47.PageRouteInfo<void> {
+  const QjsRuntimeDebugRoute({List<_i47.PageRouteInfo>? children})
     : super(QjsRuntimeDebugRoute.name, initialChildren: children);
 
   static const String name = 'QjsRuntimeDebugRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i34.QjsRuntimeDebugPage();
+      return const _i35.QjsRuntimeDebugPage();
     },
   );
 }
 
 /// generated route for
-/// [_i35.RealSrSettingPage]
-class RealSrSettingRoute extends _i46.PageRouteInfo<void> {
-  const RealSrSettingRoute({List<_i46.PageRouteInfo>? children})
+/// [_i36.RealSrSettingPage]
+class RealSrSettingRoute extends _i47.PageRouteInfo<void> {
+  const RealSrSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(RealSrSettingRoute.name, initialChildren: children);
 
   static const String name = 'RealSrSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i35.RealSrSettingPage();
+      return const _i36.RealSrSettingPage();
     },
   );
 }
 
 /// generated route for
-/// [_i36.SearchAggregateResultPage]
+/// [_i37.SearchAggregateResultPage]
 class SearchAggregateResultRoute
-    extends _i46.PageRouteInfo<SearchAggregateResultRouteArgs> {
+    extends _i47.PageRouteInfo<SearchAggregateResultRouteArgs> {
   SearchAggregateResultRoute({
-    _i47.Key? key,
-    required _i55.SearchEvent searchEvent,
-    _i56.SearchCubit? searchCubit,
+    _i48.Key? key,
+    required _i56.SearchEvent searchEvent,
+    _i57.SearchCubit? searchCubit,
     Map<String, bool> selectedSources = const {},
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          SearchAggregateResultRoute.name,
          args: SearchAggregateResultRouteArgs(
@@ -1368,12 +1385,12 @@ class SearchAggregateResultRoute
 
   static const String name = 'SearchAggregateResultRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<SearchAggregateResultRouteArgs>();
-      return _i46.WrappedRoute(
-        child: _i36.SearchAggregateResultPage(
+      return _i47.WrappedRoute(
+        child: _i37.SearchAggregateResultPage(
           key: args.key,
           searchEvent: args.searchEvent,
           searchCubit: args.searchCubit,
@@ -1392,11 +1409,11 @@ class SearchAggregateResultRouteArgs {
     this.selectedSources = const {},
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
-  final _i55.SearchEvent searchEvent;
+  final _i56.SearchEvent searchEvent;
 
-  final _i56.SearchCubit? searchCubit;
+  final _i57.SearchCubit? searchCubit;
 
   final Map<String, bool> selectedSources;
 
@@ -1412,7 +1429,7 @@ class SearchAggregateResultRouteArgs {
     return key == other.key &&
         searchEvent == other.searchEvent &&
         searchCubit == other.searchCubit &&
-        const _i49.MapEquality<String, bool>().equals(
+        const _i50.MapEquality<String, bool>().equals(
           selectedSources,
           other.selectedSources,
         );
@@ -1423,33 +1440,33 @@ class SearchAggregateResultRouteArgs {
       key.hashCode ^
       searchEvent.hashCode ^
       searchCubit.hashCode ^
-      const _i49.MapEquality<String, bool>().hash(selectedSources);
+      const _i50.MapEquality<String, bool>().hash(selectedSources);
 }
 
 /// generated route for
-/// [_i37.SearchBookmarkPage]
-class SearchBookmarkRoute extends _i46.PageRouteInfo<void> {
-  const SearchBookmarkRoute({List<_i46.PageRouteInfo>? children})
+/// [_i38.SearchBookmarkPage]
+class SearchBookmarkRoute extends _i47.PageRouteInfo<void> {
+  const SearchBookmarkRoute({List<_i47.PageRouteInfo>? children})
     : super(SearchBookmarkRoute.name, initialChildren: children);
 
   static const String name = 'SearchBookmarkRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i37.SearchBookmarkPage();
+      return const _i38.SearchBookmarkPage();
     },
   );
 }
 
 /// generated route for
-/// [_i38.SearchPage]
-class SearchRoute extends _i46.PageRouteInfo<SearchRouteArgs> {
+/// [_i39.SearchPage]
+class SearchRoute extends _i47.PageRouteInfo<SearchRouteArgs> {
   SearchRoute({
-    _i47.Key? key,
-    required _i56.SearchStates searchState,
+    _i48.Key? key,
+    required _i57.SearchStates searchState,
     bool aggregateMode = true,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          SearchRoute.name,
          args: SearchRouteArgs(
@@ -1462,11 +1479,11 @@ class SearchRoute extends _i46.PageRouteInfo<SearchRouteArgs> {
 
   static const String name = 'SearchRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<SearchRouteArgs>();
-      return _i38.SearchPage(
+      return _i39.SearchPage(
         key: args.key,
         searchState: args.searchState,
         aggregateMode: args.aggregateMode,
@@ -1482,9 +1499,9 @@ class SearchRouteArgs {
     this.aggregateMode = true,
   });
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
-  final _i56.SearchStates searchState;
+  final _i57.SearchStates searchState;
 
   final bool aggregateMode;
 
@@ -1508,13 +1525,13 @@ class SearchRouteArgs {
 }
 
 /// generated route for
-/// [_i39.SearchResultPage]
-class SearchResultRoute extends _i46.PageRouteInfo<SearchResultRouteArgs> {
+/// [_i40.SearchResultPage]
+class SearchResultRoute extends _i47.PageRouteInfo<SearchResultRouteArgs> {
   SearchResultRoute({
-    _i57.Key? key,
-    required _i58.SearchEvent searchEvent,
-    _i56.SearchCubit? searchCubit,
-    List<_i46.PageRouteInfo>? children,
+    _i58.Key? key,
+    required _i59.SearchEvent searchEvent,
+    _i57.SearchCubit? searchCubit,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          SearchResultRoute.name,
          args: SearchResultRouteArgs(
@@ -1527,12 +1544,12 @@ class SearchResultRoute extends _i46.PageRouteInfo<SearchResultRouteArgs> {
 
   static const String name = 'SearchResultRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<SearchResultRouteArgs>();
-      return _i46.WrappedRoute(
-        child: _i39.SearchResultPage(
+      return _i47.WrappedRoute(
+        child: _i40.SearchResultPage(
           key: args.key,
           searchEvent: args.searchEvent,
           searchCubit: args.searchCubit,
@@ -1549,11 +1566,11 @@ class SearchResultRouteArgs {
     this.searchCubit,
   });
 
-  final _i57.Key? key;
+  final _i58.Key? key;
 
-  final _i58.SearchEvent searchEvent;
+  final _i59.SearchEvent searchEvent;
 
-  final _i56.SearchCubit? searchCubit;
+  final _i57.SearchCubit? searchCubit;
 
   @override
   String toString() {
@@ -1575,92 +1592,92 @@ class SearchResultRouteArgs {
 }
 
 /// generated route for
-/// [_i40.ShowColorPage]
-class ShowColorRoute extends _i46.PageRouteInfo<void> {
-  const ShowColorRoute({List<_i46.PageRouteInfo>? children})
+/// [_i41.ShowColorPage]
+class ShowColorRoute extends _i47.PageRouteInfo<void> {
+  const ShowColorRoute({List<_i47.PageRouteInfo>? children})
     : super(ShowColorRoute.name, initialChildren: children);
 
   static const String name = 'ShowColorRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i40.ShowColorPage();
+      return const _i41.ShowColorPage();
     },
   );
 }
 
 /// generated route for
-/// [_i41.StorageSettingPage]
-class StorageSettingRoute extends _i46.PageRouteInfo<void> {
-  const StorageSettingRoute({List<_i46.PageRouteInfo>? children})
+/// [_i42.StorageSettingPage]
+class StorageSettingRoute extends _i47.PageRouteInfo<void> {
+  const StorageSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(StorageSettingRoute.name, initialChildren: children);
 
   static const String name = 'StorageSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i41.StorageSettingPage();
+      return const _i42.StorageSettingPage();
     },
   );
 }
 
 /// generated route for
-/// [_i42.SyncSettingPage]
-class SyncSettingRoute extends _i46.PageRouteInfo<void> {
-  const SyncSettingRoute({List<_i46.PageRouteInfo>? children})
+/// [_i43.SyncSettingPage]
+class SyncSettingRoute extends _i47.PageRouteInfo<void> {
+  const SyncSettingRoute({List<_i47.PageRouteInfo>? children})
     : super(SyncSettingRoute.name, initialChildren: children);
 
   static const String name = 'SyncSettingRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i42.SyncSettingPage();
+      return const _i43.SyncSettingPage();
     },
   );
 }
 
 /// generated route for
-/// [_i43.ThemeColorPage]
-class ThemeColorRoute extends _i46.PageRouteInfo<void> {
-  const ThemeColorRoute({List<_i46.PageRouteInfo>? children})
+/// [_i44.ThemeColorPage]
+class ThemeColorRoute extends _i47.PageRouteInfo<void> {
+  const ThemeColorRoute({List<_i47.PageRouteInfo>? children})
     : super(ThemeColorRoute.name, initialChildren: children);
 
   static const String name = 'ThemeColorRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i43.ThemeColorPage();
+      return const _i44.ThemeColorPage();
     },
   );
 }
 
 /// generated route for
-/// [_i44.WebDavSyncPage]
-class WebDavSyncRoute extends _i46.PageRouteInfo<void> {
-  const WebDavSyncRoute({List<_i46.PageRouteInfo>? children})
+/// [_i45.WebDavSyncPage]
+class WebDavSyncRoute extends _i47.PageRouteInfo<void> {
+  const WebDavSyncRoute({List<_i47.PageRouteInfo>? children})
     : super(WebDavSyncRoute.name, initialChildren: children);
 
   static const String name = 'WebDavSyncRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
-      return const _i44.WebDavSyncPage();
+      return const _i45.WebDavSyncPage();
     },
   );
 }
 
 /// generated route for
-/// [_i45.WebViewPage]
-class WebViewRoute extends _i46.PageRouteInfo<WebViewRouteArgs> {
+/// [_i46.WebViewPage]
+class WebViewRoute extends _i47.PageRouteInfo<WebViewRouteArgs> {
   WebViewRoute({
-    _i47.Key? key,
+    _i48.Key? key,
     required List<String> info,
-    List<_i46.PageRouteInfo>? children,
+    List<_i47.PageRouteInfo>? children,
   }) : super(
          WebViewRoute.name,
          args: WebViewRouteArgs(key: key, info: info),
@@ -1669,11 +1686,11 @@ class WebViewRoute extends _i46.PageRouteInfo<WebViewRouteArgs> {
 
   static const String name = 'WebViewRoute';
 
-  static _i46.PageInfo page = _i46.PageInfo(
+  static _i47.PageInfo page = _i47.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<WebViewRouteArgs>();
-      return _i45.WebViewPage(key: args.key, info: args.info);
+      return _i46.WebViewPage(key: args.key, info: args.info);
     },
   );
 }
@@ -1681,7 +1698,7 @@ class WebViewRoute extends _i46.PageRouteInfo<WebViewRouteArgs> {
 class WebViewRouteArgs {
   const WebViewRouteArgs({this.key, required this.info});
 
-  final _i47.Key? key;
+  final _i48.Key? key;
 
   final List<String> info;
 
@@ -1695,10 +1712,10 @@ class WebViewRouteArgs {
     if (identical(this, other)) return true;
     if (other is! WebViewRouteArgs) return false;
     return key == other.key &&
-        const _i49.ListEquality<String>().equals(info, other.info);
+        const _i50.ListEquality<String>().equals(info, other.info);
   }
 
   @override
   int get hashCode =>
-      key.hashCode ^ const _i49.ListEquality<String>().hash(info);
+      key.hashCode ^ const _i50.ListEquality<String>().hash(info);
 }
