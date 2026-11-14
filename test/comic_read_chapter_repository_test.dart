@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zephyr/main.dart';
+import 'package:zephyr/object_box/model.dart';
 import 'package:zephyr/page/comic_info/json/normal/normal_comic_all_info.dart';
 import 'package:zephyr/page/comic_read/model/normal_comic_ep_info.dart';
 import 'package:zephyr/service/reader/comic_read_chapter_repository.dart';
@@ -103,5 +104,49 @@ void main() {
       ),
       {'ch9'},
     );
+  });
+
+  test('周期保存通过 runAsync 写入历史', () async {
+    final service = ReaderHistoryService.instance;
+    await service.loadHistory(
+      source: 'src',
+      comicId: 'c10',
+      comicInfo: const NormalComicAllInfo(
+        comicInfo: ComicInfo(
+          id: 'c10',
+          title: '后台写入测试',
+          titleMeta: [],
+          description: '',
+          cover: ComicImage(id: 'cover', url: 'url', name: 'cover'),
+          metadata: [],
+        ),
+        eps: [],
+        recommend: [],
+      ),
+    );
+    service.startPeriodicSave(
+      () => HistorySnapshot(
+        pageIndex: 4,
+        chapterOrder: 2,
+        epInfo: NormalComicEpInfo(epId: 'ch10', epName: '第 10 话'),
+      ),
+    );
+    service.markLoaded();
+
+    try {
+      UnifiedComicHistory? history;
+      for (var i = 0; i < 40 && history == null; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        final matches = objectbox.unifiedHistoryBox
+            .getAll()
+            .where((item) => item.uniqueKey == 'src:c10')
+            .toList();
+        if (matches.isNotEmpty) history = matches.first;
+      }
+      expect(history, isNotNull);
+      expect(history?.pageIndex, 4);
+    } finally {
+      service.stop();
+    }
   });
 }
