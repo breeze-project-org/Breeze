@@ -3481,6 +3481,7 @@ dependencies = [
  "sha2",
  "srcmap-sourcemap",
  "subtle",
+ "system-configuration",
  "tokio",
  "tracing",
  "unic-langid",

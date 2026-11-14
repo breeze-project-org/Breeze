@@ -426,13 +426,13 @@ pub(crate) fn worker_http_config() -> HttpClientConfig {
 /// 下一次请求立刻重建；环境变量等其它变化最多 60s 后生效。
 const HTTP_CLIENT_TTL: Duration = Duration::from_secs(60);
 
-/// 当前系统代理的签名（Windows 注册表里的 `ProxyEnable` + `ProxyServer`）。
+/// 当前系统代理的签名（Windows 注册表 / macOS SystemConfiguration）。
 ///
 /// reqwest 只在**建 client 时**读一次系统代理，之后不会变。把签名放进缓存键，
 /// 用户切换 Clash 的「系统代理」后下一次请求就会重建 client，不用等 TTL。
-/// 非 Windows 平台返回空串（reqwest 自己处理 env / 系统配置）。
+/// 其它平台返回空串（reqwest 自己处理 env / 系统配置）。
 ///
-/// 注册表读取最多每秒一次：请求路径上只多一次 mutex 读，切换开关 1s 内生效。
+/// 系统配置读取最多每秒一次：请求路径上只多一次 mutex 读，切换开关 1s 内生效。
 pub(crate) fn system_proxy_signature() -> String {
     static CACHE: LazyLock<Mutex<Option<(Instant, String)>>> = LazyLock::new(|| Mutex::new(None));
     const TTL: Duration = Duration::from_secs(1);
@@ -463,7 +463,80 @@ fn read_system_proxy_signature() -> String {
         let server = settings.get_string("ProxyServer").unwrap_or_default();
         format!("{enabled}|{server}")
     }
-    #[cfg(not(windows))]
+
+    #[cfg(target_os = "macos")]
+    {
+        use system_configuration::core_foundation::base::CFType;
+        use system_configuration::core_foundation::dictionary::CFDictionary;
+        use system_configuration::core_foundation::number::CFNumber;
+        use system_configuration::core_foundation::string::{CFString, CFStringRef};
+        use system_configuration::dynamic_store::SCDynamicStoreBuilder;
+        use system_configuration::sys::schema_definitions::{
+            kSCPropNetProxiesHTTPEnable, kSCPropNetProxiesHTTPPort, kSCPropNetProxiesHTTPProxy,
+            kSCPropNetProxiesHTTPSEnable, kSCPropNetProxiesHTTPSPort, kSCPropNetProxiesHTTPSProxy,
+            kSCPropNetProxiesSOCKSEnable, kSCPropNetProxiesSOCKSPort, kSCPropNetProxiesSOCKSProxy,
+        };
+
+        fn read(
+            proxies: &CFDictionary<CFString, CFType>,
+            enabled_key: CFStringRef,
+            host_key: CFStringRef,
+            port_key: CFStringRef,
+        ) -> String {
+            let enabled = proxies
+                .find(enabled_key)
+                .and_then(|value| value.downcast::<CFNumber>())
+                .and_then(|value| value.to_i32())
+                .unwrap_or(0)
+                == 1;
+            if !enabled {
+                return String::new();
+            }
+            let host = proxies
+                .find(host_key)
+                .and_then(|value| value.downcast::<CFString>())
+                .map(|value| value.to_string())
+                .unwrap_or_default();
+            match proxies
+                .find(port_key)
+                .and_then(|value| value.downcast::<CFNumber>())
+                .and_then(|value| value.to_i32())
+            {
+                Some(port) => format!("{host}:{port}"),
+                None => host,
+            }
+        }
+
+        let Some(store) = SCDynamicStoreBuilder::new("breeze-system-proxy").build() else {
+            return String::new();
+        };
+        let Some(proxies) = store.get_proxies() else {
+            return String::new();
+        };
+        format!(
+            "http={}|https={}|socks={}",
+            read(
+                &proxies,
+                unsafe { kSCPropNetProxiesHTTPEnable },
+                unsafe { kSCPropNetProxiesHTTPProxy },
+                unsafe { kSCPropNetProxiesHTTPPort },
+            ),
+            read(
+                &proxies,
+                unsafe { kSCPropNetProxiesHTTPSEnable },
+                unsafe { kSCPropNetProxiesHTTPSProxy },
+                unsafe { kSCPropNetProxiesHTTPSPort },
+            ),
+            read(
+                &proxies,
+                unsafe { kSCPropNetProxiesSOCKSEnable },
+                unsafe { kSCPropNetProxiesSOCKSProxy },
+                unsafe { kSCPropNetProxiesSOCKSPort },
+            ),
+        )
+    }
+
+    #[cfg(not(any(windows, target_os = "macos")))]
     {
         String::new()
     }

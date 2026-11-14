@@ -87,6 +87,10 @@ writeable = "0.6"
 [target.'cfg(windows)'.dependencies]
 windows-registry = "0.6"
 
+# macOS 的系统代理在 SystemConfiguration 里，同样用于缓存失效。
+[target.'cfg(target_os = "macos")'.dependencies]
+system-configuration = "0.7"
+
 [dev-dependencies]
 tiny_http = "0.12.0"
 regex = "1.12.4"
