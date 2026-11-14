@@ -422,12 +422,56 @@ pub(crate) fn worker_http_config() -> HttpClientConfig {
 /// 缓存 client 的最长存活时间。
 ///
 /// 应用内改代理会 bump 代际，立刻重建；系统代理（Clash 的「系统代理」开关）
-/// 只改注册表、没有代际信号，靠这个 TTL 兜底——最多这么久之后自动生效。
-/// 不用监听线程：三套平台代码换来的只是「提前最多 60 秒」。
+/// 只改注册表、没有代际信号，靠 [`system_proxy_signature`] 兜底——开关一变，
+/// 下一次请求立刻重建；环境变量等其它变化最多 60s 后生效。
 const HTTP_CLIENT_TTL: Duration = Duration::from_secs(60);
+
+/// 当前系统代理的签名（Windows 注册表里的 `ProxyEnable` + `ProxyServer`）。
+///
+/// reqwest 只在**建 client 时**读一次系统代理，之后不会变。把签名放进缓存键，
+/// 用户切换 Clash 的「系统代理」后下一次请求就会重建 client，不用等 TTL。
+/// 非 Windows 平台返回空串（reqwest 自己处理 env / 系统配置）。
+///
+/// 注册表读取最多每秒一次：请求路径上只多一次 mutex 读，切换开关 1s 内生效。
+pub(crate) fn system_proxy_signature() -> String {
+    static CACHE: LazyLock<Mutex<Option<(Instant, String)>>> = LazyLock::new(|| Mutex::new(None));
+    const TTL: Duration = Duration::from_secs(1);
+
+    let mut cache = CACHE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    if let Some((at, signature)) = cache.as_ref()
+        && at.elapsed() < TTL
+    {
+        return signature.clone();
+    }
+    let signature = read_system_proxy_signature();
+    *cache = Some((Instant::now(), signature.clone()));
+    signature
+}
+
+fn read_system_proxy_signature() -> String {
+    #[cfg(windows)]
+    {
+        use windows_registry::CURRENT_USER;
+        let Ok(settings) =
+            CURRENT_USER.open(r"Software\Microsoft\Windows\CurrentVersion\Internet Settings")
+        else {
+            return String::new();
+        };
+        let enabled = settings.get_u32("ProxyEnable").unwrap_or(0);
+        let server = settings.get_string("ProxyServer").unwrap_or_default();
+        format!("{enabled}|{server}")
+    }
+    #[cfg(not(windows))]
+    {
+        String::new()
+    }
+}
 
 struct CachedHttpClient {
     generation: u64,
+    system_proxy: String,
     built_at: Instant,
     client: ClientWithMiddleware,
 }
@@ -438,19 +482,21 @@ static HTTP_CLIENT_CACHE: LazyLock<Mutex<Option<CachedHttpClient>>> =
 /// 取（必要时重建）普通请求用的 client。
 ///
 /// 以前是每个请求都 `build()` 一次，好处是永远拿到最新配置，代价是每个请求
-/// 都要重新建连（TCP + TLS 握手）。现在按「配置代际 + 60s TTL」缓存：
+/// 都要重新建连（TCP + TLS 握手）。现在按「配置代际 + 系统代理签名 + 60s TTL」缓存：
 /// - 应用内任何代理 / TLS / 内网策略变更 → 代际 +1 → 下一次请求重建；
-/// - 系统代理变化 → 最多 60s 后自动生效；
+/// - 系统代理开关变化 → 签名变化 → 下一次请求重建；
 /// - 旧 client 被替换时 drop，连接池随之关闭，不会粘在旧代理上。
 fn http_client() -> AnyResult<ClientWithMiddleware> {
     let config = current_http_client_config();
     let generation = http_config_generation();
+    let system_proxy = system_proxy_signature();
 
     let mut cache = HTTP_CLIENT_CACHE
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     if let Some(cached) = cache.as_ref()
         && cached.generation == generation
+        && cached.system_proxy == system_proxy
         && cached.built_at.elapsed() < HTTP_CLIENT_TTL
     {
         return Ok(cached.client.clone());
@@ -459,6 +505,7 @@ fn http_client() -> AnyResult<ClientWithMiddleware> {
     let client = build_http_client(&config)?;
     *cache = Some(CachedHttpClient {
         generation,
+        system_proxy,
         built_at: Instant::now(),
         client: client.clone(),
     });

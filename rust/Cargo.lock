@@ -3487,6 +3487,7 @@ dependencies = [
  "url",
  "uuid",
  "webpki-roots",
+ "windows-registry",
  "writeable",
 ]
 

@@ -314,11 +314,13 @@ static DOH_CLIENT_CACHE: LazyLock<Mutex<HashMap<String, Client>>> =
 
 fn doh_client(config: &HttpClientConfig) -> Option<Client> {
     let key = format!(
-        "{}|{}|{}|{}",
+        "{}|{}|{}|{}|{}",
         config.use_http_proxy,
         config.http_proxy.as_deref().unwrap_or(""),
         config.use_socks5_proxy,
-        config.socks5_proxy.as_deref().unwrap_or("")
+        config.socks5_proxy.as_deref().unwrap_or(""),
+        // 系统代理开关一变就换键，避免 DoH 查询一直粘在旧的直连/代理状态上。
+        super::http::system_proxy_signature()
     );
     if let Ok(cache) = DOH_CLIENT_CACHE.lock()
         && let Some(client) = cache.get(&key)

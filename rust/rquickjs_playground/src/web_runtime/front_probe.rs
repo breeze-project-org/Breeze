@@ -331,11 +331,12 @@ fn normalize_probe_host(raw: &str) -> Option<String> {
 
 fn probe_client_cache_key(config: &HttpClientConfig) -> String {
     format!(
-        "{}|{}|{}|{}",
+        "{}|{}|{}|{}|{}",
         config.use_http_proxy,
         config.use_socks5_proxy,
         config.http_proxy.as_deref().unwrap_or(""),
-        config.socks5_proxy.as_deref().unwrap_or("")
+        config.socks5_proxy.as_deref().unwrap_or(""),
+        super::http::system_proxy_signature()
     )
 }
 

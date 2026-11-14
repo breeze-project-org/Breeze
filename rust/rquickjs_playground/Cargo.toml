@@ -82,6 +82,11 @@ jiff-icu = "0.2.2"
 icu = "2.2.0"
 writeable = "0.6"
 
+# 读取 Windows 系统代理（Clash 的「系统代理」开关写在这里），用于缓存失效：
+# reqwest 只在建 client 时读一次系统代理，用户切换开关后必须重建 client。
+[target.'cfg(windows)'.dependencies]
+windows-registry = "0.6"
+
 [dev-dependencies]
 tiny_http = "0.12.0"
 regex = "1.12.4"

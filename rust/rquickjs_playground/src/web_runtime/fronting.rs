@@ -539,11 +539,12 @@ const FRONT_CLIENT_TTL: Duration = Duration::from_secs(60);
 /// 系统代理（Clash）变化没有代际信号，靠 [`FRONT_CLIENT_TTL`] 兜底。
 pub(crate) fn cached_front_client(config: &HttpClientConfig) -> AnyResult<ClientWithMiddleware> {
     let key = format!(
-        "{}|{}|{}|{}",
+        "{}|{}|{}|{}|{}",
         config.use_http_proxy,
         config.use_socks5_proxy,
         config.http_proxy.as_deref().unwrap_or(""),
-        config.socks5_proxy.as_deref().unwrap_or("")
+        config.socks5_proxy.as_deref().unwrap_or(""),
+        super::http::system_proxy_signature()
     );
     static FRONT_CLIENT_CACHE: LazyLock<Mutex<HashMap<String, (Instant, ClientWithMiddleware)>>> =
         LazyLock::new(|| Mutex::new(HashMap::new()));
