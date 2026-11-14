@@ -12,9 +12,10 @@ import 'package:zephyr/service/update/check_update.dart';
 import 'package:zephyr/service/update/json/github_release_json.dart';
 import 'package:zephyr/util/error_filter.dart';
 
-const _proxyReleasesApiUrl = '$breezeGithubApi/repos/deretame/Breeze/releases';
+const _proxyReleasesApiUrl =
+    '$breezeGithubApi/repos/breeze-project-org/Breeze/releases';
 const _githubReleasesApiUrl =
-    'https://api.github.com/repos/deretame/Breeze/releases';
+    'https://api.github.com/repos/breeze-project-org/Breeze/releases';
 
 @RoutePage()
 class ChangelogPage extends StatefulWidget {

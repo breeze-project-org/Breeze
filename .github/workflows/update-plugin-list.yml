@@ -17,7 +17,7 @@ jobs:
 
       - name: Fetch plugin names and update README
         run: |
-          NAMES=$(curl -sL https://raw.githubusercontent.com/deretame/Breeze-plugin-list/main/plugins_data.json | jq -r '[.[].manifest.name] | join(" ")')
+          NAMES=$(curl -sL https://raw.githubusercontent.com/breeze-project-org/Breeze-plugin-list/main/plugins_data.json | jq -r '[.[].manifest.name] | join(" ")')
           if [ -z "$NAMES" ]; then
             echo "Failed to fetch plugin names"
             exit 1

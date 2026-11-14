@@ -26,7 +26,7 @@
 
 插件开发相关文档请参阅：<https://breeze-project-org.github.io/plugin-dev-docs/>
 
-插件列表：<https://github.com/deretame/Breeze-plugin-list>
+插件列表：<https://github.com/breeze-project-org/Breeze-plugin-list>
 
 <details>
 <summary>当前已收录插件（点击展开）</summary>
@@ -76,7 +76,7 @@
 
 ### 📱 Android/鸿蒙
 
-- 前往 [Releases 页面](https://github.com/deretame/Breeze/releases) 下载 `app-arm64-v8a-release.apk`。
+- 前往 [Releases 页面](https://github.com/breeze-project-org/Breeze/releases) 下载 `app-arm64-v8a-release.apk`。
 
   > **注意**：中国大陆内因未经审核应用可能无法安装，可以使用[GBox](https://gboxlab.com/i18n/zh-Hant/)、[出境易](https://www.chujingapp.com/)或[GSpace](https://gspaceteam.com/)（鸿蒙系统可通过应用商店下载）的方式绕过系统安装器，以安装应用。
 
@@ -90,7 +90,7 @@ Linux 版本同时提供 Flatpak 和 DEB 两种安装包。请根据你的发行
 
 #### 方式 1：安装 DEB（推荐 Debian/Ubuntu 及其衍生版）
 
-当前 Release 提供 `amd64` 架构的 DEB 安装包。前往 [Releases 页面](https://github.com/deretame/Breeze/releases) 下载带有 `.deb` 后缀的文件，然后在终端执行：
+当前 Release 提供 `amd64` 架构的 DEB 安装包。前往 [Releases 页面](https://github.com/breeze-project-org/Breeze/releases) 下载带有 `.deb` 后缀的文件，然后在终端执行：
 
 > **注意**：DEB 包不保证在所有 Debian/Ubuntu 衍生发行版上的兼容性和可用性。如果安装或运行异常，请改用 Flatpak 版本。
 
@@ -193,7 +193,7 @@ brew uninstall --zap breeze
 
 #### 方法 2: 手动下载 DMG 安装
 
-1. 前往 [Releases 页面](https://github.com/deretame/Breeze/releases) 下载最新的 `Breeze-macOS.dmg`。
+1. 前往 [Releases 页面](https://github.com/breeze-project-org/Breeze/releases) 下载最新的 `Breeze-macOS.dmg`。
 2. 双击打开 `.dmg` 文件，将 `Breeze.app` 拖入 `Applications`（应用程序）文件夹。
 
 > ⚠️ **首次启动注意事项 (macOS Gatekeeper)**
@@ -207,7 +207,7 @@ brew uninstall --zap breeze
 
 ### 📱 iOS / iPadOS
 
-由于 iOS 系统的封闭性，未上架 App Store 的应用需要通过“侧载 (Sideloading)”并自行签名才能安装。请前往 [Releases 页面](https://github.com/deretame/Breeze/releases) 下载无签名的 `Breeze-iOS.ipa` 文件，并使用以下工具之一进行安装：
+由于 iOS 系统的封闭性，未上架 App Store 的应用需要通过“侧载 (Sideloading)”并自行签名才能安装。请前往 [Releases 页面](https://github.com/breeze-project-org/Breeze/releases) 下载无签名的 `Breeze-iOS.ipa` 文件，并使用以下工具之一进行安装：
 
 #### 🌟 推荐方案：AltStore
 
@@ -263,13 +263,13 @@ AltStore 是目前最稳定且对新手友好的 iOS 侧载工具，支持通过
 **开发者信息**
 
 - 开发者：**[windy](https://github.com/deretame)**
-- 项目仓库：**[Breeze](https://github.com/deretame/Breeze)**
+- 项目仓库：**[Breeze](https://github.com/breeze-project-org/Breeze)**
 - 联系方式：**[telegram(电报)](https://t.me/breeze_zh_cn)**
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=deretame/Breeze&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=deretame/Breeze&type=Date" />
-    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=deretame/Breeze&type=Date" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=breeze-project-org/Breeze&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=breeze-project-org/Breeze&type=Date" />
+    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=breeze-project-org/Breeze&type=Date" />
   </picture>
 </p>

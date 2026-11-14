@@ -102,7 +102,7 @@ Future<String> getAppVersion() async {
 
 Future<GithubReleaseJson> getCloudVersion() async {
   const releasesApi =
-      "https://api.github.com/repos/deretame/Breeze/releases/latest";
+      "https://api.github.com/repos/breeze-project-org/Breeze/releases/latest";
 
   try {
     logger.d('尝试使用自建 API: $breezeLatestReleaseApi');
@@ -138,7 +138,7 @@ Future<GithubReleaseJson> getCloudVersion() async {
 
     for (final mirror in ghCdnMirrors) {
       final url =
-          '${mirror}gh/deretame/Breeze@$version/update-tag-version/latest-release.json';
+          '${mirror}gh/breeze-project-org/Breeze@$version/update-tag-version/latest-release.json';
       logger.d('尝试使用 GitHub CDN 镜像: $url');
       try {
         final response = await fetch(
@@ -257,7 +257,8 @@ Future<void> checkUpdate(BuildContext context) async {
   final cloudVersion = temp.tagName;
   final releaseInfo = temp.body;
   final String localVersion = await getAppVersion();
-  final url = 'https://github.com/deretame/Breeze/releases/tag/$cloudVersion';
+  final url =
+      'https://github.com/breeze-project-org/Breeze/releases/tag/$cloudVersion';
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   String arch = t.update.unknownArch;
   try {

@@ -1220,7 +1220,7 @@ class _Translations$about$en_US extends Translations$about$zh_CN {
 	@override String get networkError => 'Network error';
 	@override String get projectAddress => 'Project';
 	@override String get projectAddressDesc => 'Like this project? Give it a star on GitHub!';
-	@override String get projectLink => 'Go to GitHub repo (deretame/Breeze) ⭐';
+	@override String get projectLink => 'Go to GitHub repo (breeze-project-org/Breeze) ⭐';
 	@override String get contact => 'Contact';
 	@override String get contactDesc => 'Have ideas or questions? Feel free to reach out~';
 	@override String get feedback => 'Feedback';
@@ -2700,7 +2700,7 @@ extension on TranslationsEnUs {
 			'about.networkError' => 'Network error',
 			'about.projectAddress' => 'Project',
 			'about.projectAddressDesc' => 'Like this project? Give it a star on GitHub!',
-			'about.projectLink' => 'Go to GitHub repo (deretame/Breeze) ⭐',
+			'about.projectLink' => 'Go to GitHub repo (breeze-project-org/Breeze) ⭐',
 			'about.contact' => 'Contact',
 			'about.contactDesc' => 'Have ideas or questions? Feel free to reach out~',
 			'about.feedback' => 'Feedback',
