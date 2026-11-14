@@ -88,6 +88,12 @@ void setHttpProxy({required String proxy}) =>
 void setSocks5Proxy({required String proxy}) =>
     RustLib.instance.api.crateApiQjsSetSocks5Proxy(proxy: proxy);
 
+void setDohConfig({required bool enabled, required List<String> providers}) =>
+    RustLib.instance.api.crateApiQjsSetDohConfig(
+      enabled: enabled,
+      providers: providers,
+    );
+
 void setTlsVerifyEnabled({required bool enabled}) =>
     RustLib.instance.api.crateApiQjsSetTlsVerifyEnabled(enabled: enabled);
 

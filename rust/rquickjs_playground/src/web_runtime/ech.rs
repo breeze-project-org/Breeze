@@ -384,17 +384,11 @@ pub(crate) async fn ech_client_for(runtime: &str, url: &str) -> Option<ClientWit
     // 缺 ECHConfig / 缺 IP / 缓存过期时用 DoH 补。`doh::lookup_https_rr` 自带正负缓存，
     // 命中缓存时只是一次 mutex 读；查不到会立刻返回，不会把请求卡在这里。
     // 插件显式给过 ECHConfig 时不覆盖它，只补 IP。
+    // DoH 走自己的 reqwest 客户端并复用当前代理配置，所以开了代理也照常查询。
     let need_ech = !ech_from_plugin;
     let need_ips = ips.is_empty();
-    // 走代理时不做 DoH：hickory 的 DoH 不走代理，查 CF/Google 必然超时，
-    // 查国内 DoH 又可能拿到被投毒的答案。缺的数据只能由插件显式给；
-    // 给不全就走普通链路（域名交给代理，照样能用）。
-    if (need_ech || need_ips) && super::http::proxy_is_active(&config) {
-        tracing::debug!("ech: proxy active and {host} still needs DoH, fall back to plain path");
-        return None;
-    }
     if need_ech || need_ips {
-        if let Some((doh_ech, doh_ips)) = super::doh::lookup_https_rr(&host).await {
+        if let Some((doh_ech, doh_ips)) = super::doh::lookup_https_rr(&host, &config).await {
             if need_ech {
                 ech = Some(doh_ech);
             }
@@ -762,17 +756,19 @@ mod tests {
         with_serialized_state(|| clear_ech_hosts(TEST_RUNTIME));
     }
 
-    /// 走代理时不做 DoH：缺 ECHConfig 就直接回落普通链路，不能卡在 DoH 上。
+    /// 走代理也照样查 DoH；查不到就回落普通链路，不能卡住请求。
     #[test]
-    fn proxy_active_skips_doh_and_falls_back() {
+    fn proxy_active_still_queries_doh_then_falls_back() {
         with_serialized_state(|| {
             clear_ech_hosts(TEST_RUNTIME);
+            super::super::doh::reset_caches();
             set_ech_hosts(
                 TEST_RUNTIME,
                 json!({ "picaapi.part26.art": {} }).to_string(),
             );
             crate::web_runtime::set_worker_http_config(HttpClientConfig {
                 use_http_proxy: true,
+                // 不可达代理：DoH 查询会立刻连接失败，不会真的出网。
                 http_proxy: Some("http://127.0.0.1:1".to_string()),
                 ..Default::default()
             });
@@ -787,8 +783,8 @@ mod tests {
 
             assert!(client.is_none(), "缺 ECHConfig 时应回落普通链路");
             assert!(
-                elapsed < Duration::from_millis(200),
-                "走代理时不应该去查 DoH，实际耗时 {elapsed:?}"
+                elapsed < Duration::from_secs(3),
+                "DoH 查询失败后应快速回落，实际耗时 {elapsed:?}"
             );
         });
     }
@@ -917,8 +913,10 @@ mod tests {
     #[ignore]
     async fn ech_per_ip_smoke() {
         let host = "picaapi.part26.art";
-        let (ech, ips) = super::super::doh::lookup_https_rr(host).await.expect("doh");
         let config = HttpClientConfig::default();
+        let (ech, ips) = super::super::doh::lookup_https_rr(host, &config)
+            .await
+            .expect("doh");
         for ip in &ips {
             for round in 0..3 {
                 let client = build_ech_client(host, std::slice::from_ref(ip), &ech, &config)
@@ -939,11 +937,11 @@ mod tests {
     #[ignore]
     async fn ech_live_smoke() {
         let host = "picaapi.part26.art";
-        let (ech, ips) = super::super::doh::lookup_https_rr(host)
+        let config = HttpClientConfig::default();
+        let (ech, ips) = super::super::doh::lookup_https_rr(host, &config)
             .await
             .expect("doh should return ech");
         println!("ech_len={} ips={ips:?}", ech.len());
-        let config = HttpClientConfig::default();
         let client = build_ech_client(host, &ips, &ech, &config).expect("build ech client");
         let response = client
             .get(format!("https://{host}/"))

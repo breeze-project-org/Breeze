@@ -47,15 +47,9 @@ reqwest-middleware = { version = "0.5.2", features = [
     "multipart",
     "query",
 ] }
-# DoH（DNS over HTTPS）：给 reqwest 提供自定义解析器，默认走阿里云 AliDNS。
-# `https-aws-lc-rs` 与项目已有的 rustls aws-lc-rs provider 对齐，避免混 ring。
-hickory-resolver = { version = "0.26", default-features = false, features = [
-    "tokio",
-    "https-aws-lc-rs",
-    # 必须显式开：不开的话 hickory 的根证书库是空的，DoH 会报
-    # `InvalidCertificate(UnknownIssuer)`（而且被 `most_specific` 掩盖成 NoConnections）。
-    "webpki-roots",
-] }
+# DoH（DNS over HTTPS）：只用 hickory 的 DNS 报文编解码（JSON 端点没有 wireformat
+# 时自己发 RFC 8484 请求），不再用它的解析器，所以不需要 TLS / resolver 特性。
+hickory-proto = { version = "0.26", default-features = false, features = ["std"] }
 # 层内并发用 `FuturesUnordered`（已在依赖树里，不引入新编译单元）。
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 http = "1.0"

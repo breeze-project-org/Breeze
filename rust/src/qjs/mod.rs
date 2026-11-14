@@ -1601,6 +1601,21 @@ pub fn set_socks5_proxy(proxy: String) -> Result<()> {
     configure_http_client(config).map_err(|err| anyhow!("设置 socks5 代理失败: {err}"))
 }
 
+/// 设置 DoH（DNS over HTTPS）。
+///
+/// `providers` 是完整端点 URL 列表（例如 `https://doh.pub/dns-query`）。
+/// 开启且有端点时，普通 HTTP 请求与 ECH 引导都会用 DoH 解析，与是否配置代理无关。
+pub fn set_doh_config(enabled: bool, providers: Vec<String>) -> Result<()> {
+    let mut config = current_http_client_config();
+    config.doh_enabled = enabled;
+    config.doh_providers = providers
+        .into_iter()
+        .map(|url| url.trim().to_string())
+        .filter(|url| !url.is_empty())
+        .collect();
+    configure_http_client(config).map_err(|err| anyhow!("设置 DoH 失败: {err}"))
+}
+
 pub fn set_tls_verify_enabled(enabled: bool) -> Result<()> {
     let mut config = current_http_client_config();
     config.disable_tls_verify = !enabled;
@@ -2002,6 +2017,8 @@ mod tests {
             socks5_proxy: None,
             disable_tls_verify: previous_config.disable_tls_verify,
             allow_private_network: true,
+            doh_enabled: false,
+            doh_providers: Vec::new(),
         };
         configure_http_client(test_config.clone()).expect("configure local HTTP test client");
 

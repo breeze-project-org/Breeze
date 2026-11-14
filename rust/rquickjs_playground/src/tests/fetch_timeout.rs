@@ -230,6 +230,8 @@ fn direct_config() -> HttpClientConfig {
         socks5_proxy: None,
         disable_tls_verify: false,
         allow_private_network: true,
+        doh_enabled: false,
+        doh_providers: Vec::new(),
     }
 }
 

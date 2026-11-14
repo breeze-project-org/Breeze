@@ -103,6 +103,11 @@ pub fn set_socks5_proxy(proxy: String) -> Result<()> {
 }
 
 #[frb(sync)]
+pub fn set_doh_config(enabled: bool, providers: Vec<String>) -> Result<()> {
+    crate::qjs::set_doh_config(enabled, providers)
+}
+
+#[frb(sync)]
 pub fn set_tls_verify_enabled(enabled: bool) -> Result<()> {
     crate::qjs::set_tls_verify_enabled(enabled)
 }
