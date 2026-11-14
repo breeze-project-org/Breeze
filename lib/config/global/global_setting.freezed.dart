@@ -1605,7 +1605,7 @@ return $default(_that.enabled,_that.providers);case _:
 @JsonSerializable()
 
 class _DohSettingState implements DohSettingState {
-  const _DohSettingState({this.enabled = true,  List<String> providers = defaultDohProviders}): _providers = providers;
+  const _DohSettingState({this.enabled = false,  List<String> providers = defaultDohProviders}): _providers = providers;
   factory _DohSettingState.fromJson(Map<String, dynamic> json) => _$DohSettingStateFromJson(json);
 
 @override@JsonKey() final  bool enabled;

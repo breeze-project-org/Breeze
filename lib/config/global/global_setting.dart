@@ -1,8 +1,8 @@
 // 全局设置
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/global/color_theme_types.dart';
 import 'package:zephyr/i18n/i18n_helper.dart';
 import 'package:zephyr/i18n/strings.g.dart';
@@ -233,7 +233,7 @@ abstract class ProxySettingState with _$ProxySettingState {
 @freezed
 abstract class DohSettingState with _$DohSettingState {
   const factory DohSettingState({
-    @Default(true) bool enabled,
+    @Default(false) bool enabled,
     @Default(defaultDohProviders) List<String> providers,
   }) = _DohSettingState;
 

@@ -214,7 +214,7 @@ const _$ProxyTypeEnumMap = {ProxyType.http: 'http', ProxyType.socks5: 'socks5'};
 
 _DohSettingState _$DohSettingStateFromJson(Map<String, dynamic> json) =>
     _DohSettingState(
-      enabled: json['enabled'] as bool? ?? true,
+      enabled: json['enabled'] as bool? ?? false,
       providers:
           (json['providers'] as List<dynamic>?)
               ?.map((e) => e as String)
