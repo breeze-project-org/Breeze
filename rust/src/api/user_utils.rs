@@ -89,7 +89,7 @@ pub(crate) fn setup_log_to_console(enabled: bool) {
             init_subscriber(
                 tracing_subscriber::registry().with(filter).with(
                     fmt::layer()
-                        .with_writer(ChunkedStdoutMakeWriter)
+                        .with_writer(ChunkedStdoutMakeWriter {})
                         .event_format(BoxedFormatter { with_ansi: true }),
                 ),
                 "Desktop",
@@ -109,7 +109,11 @@ where
 
     use crate::api::logger::LogHttpMakeWriter;
 
-    let subscriber = subscriber.with(fmt::layer().with_writer(LogHttpMakeWriter).with_ansi(false));
+    let subscriber = subscriber.with(
+        fmt::layer()
+            .with_writer(LogHttpMakeWriter {})
+            .with_ansi(false),
+    );
 
     tracing::dispatcher::set_global_default(subscriber.into())
         .unwrap_or_else(|_| panic!("Failed to initialize tracing subscriber ({platform})"));

@@ -23,7 +23,7 @@ pub static FLUTTER_KDEBUGMOD: AtomicBool = AtomicBool::new(false);
 /// 按 4KB 分块写 stdout：输出字节与原来完全一致（格式、内容一字不落），
 /// 只是拆成多次小系统调用，每块都能同步完成，不触发 abort；单线程天然保序，
 /// 多线程盒子不交错。
-pub struct ChunkedStdoutMakeWriter;
+pub struct ChunkedStdoutMakeWriter {}
 
 pub struct ChunkedStdoutWriter {
     buffer: Vec<u8>,
@@ -259,7 +259,7 @@ where
 /// 未配置地址、client 不可用或发送失败都静默忽略，不打印任何日志。
 #[frb(opaque)]
 #[derive(Debug, Clone, Default)]
-pub struct LogHttpMakeWriter;
+pub struct LogHttpMakeWriter {}
 
 impl<'a> MakeWriter<'a> for LogHttpMakeWriter {
     type Writer = LogHttpWriter;
