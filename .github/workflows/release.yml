@@ -816,3 +816,31 @@ jobs:
           gh api repos/breeze-project-org/Breeze-flathub/actions/workflows/sync.yml/dispatches \
             -f ref=main \
             -f "inputs[version]=$VERSION"
+
+  # ══════════════════════════════════════════
+  # 10. 提交 winget 更新 (microsoft/winget-pkgs)
+  # ══════════════════════════════════════════
+  update-winget:
+    needs: [ publish ]
+    runs-on: windows-latest
+    steps:
+      - name: 提交 winget 清单更新
+        # 需要个人 classic PAT（public_repo）存为 WINGET_TOKEN；
+        # GITHUB_TOKEN 无法向 microsoft/winget-pkgs 提 PR。
+        # 首次包未合并前 update 会失败，因此不阻塞发布。
+        continue-on-error: true
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          DOTNET_ROLL_FORWARD: LatestMajor
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINGET_TOKEN)) {
+            Write-Host "未配置 WINGET_TOKEN，跳过 winget 提交。"
+            exit 0
+          }
+          Invoke-WebRequest https://github.com/microsoft/winget-create/releases/latest/download/wingetcreate.exe -OutFile wingetcreate.exe
+          $ver = "${{ github.event.inputs.version }}".TrimStart('v')
+          .\wingetcreate.exe update deretame.Breeze `
+            --urls "https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.version }}/windows-installer-${{ github.event.inputs.version }}.exe|x64" `
+            --version $ver `
+            --submit --no-open --token $env:WINGET_TOKEN
