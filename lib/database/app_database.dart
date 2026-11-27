@@ -2,7 +2,7 @@ import 'package:zephyr/database/db.dart';
 import 'package:zephyr/database/migration/objectbox_import.dart';
 import 'package:zephyr/database/schema.dart';
 
-const int currentSchemaVersion = 2;
+const int currentSchemaVersion = 3;
 
 class DatabaseIncompatibleException implements Exception {
   const DatabaseIncompatibleException(this.message);
@@ -57,6 +57,16 @@ UPDATE "PluginScript" SET "scriptUpdatedAt" = COALESCE(
   0
 ) WHERE "scriptUpdatedAt" = 0;
 PRAGMA user_version = 2;
+''');
+  }
+  if (version < 3) {
+    final columns = await db.query('PRAGMA table_info("ComicFolder")');
+    final hasCoverColumn = columns.any(
+      (row) => row['name'] == 'coverComicUniqueKey',
+    );
+    await db.executeScript('''
+${hasCoverColumn ? '' : 'ALTER TABLE "ComicFolder" ADD COLUMN "coverComicUniqueKey" TEXT;'}
+PRAGMA user_version = 3;
 ''');
   }
 }

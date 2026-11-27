@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$FolderShelfState {
 
- ShelfPageMode get mode; String get currentPath; List<ComicFolder> get folders; Map<String, int> get folderComicCounts; List<ComicSimplifyEntryInfo> get comics; Map<String, String> get comicSearchTexts; SearchStatusState? get search; bool get isLoading; bool get isLoadingMore;/// 下一页的原始行偏移（链接/历史）。
+ ShelfPageMode get mode; String get currentPath; List<ComicFolder> get folders; Map<String, int> get folderComicCounts; Map<String, ComicSimplifyEntryInfo> get folderCovers; List<ComicSimplifyEntryInfo> get comics; Map<String, String> get comicSearchTexts; SearchStatusState? get search; bool get isLoading; bool get isLoadingMore;/// 下一页的原始行偏移（链接/历史）。
  int get nextOffset;/// 是否还有更多页。
  bool get hasMore; String? get error; bool get sortAscending; bool get selectionMode; Set<String> get selectedFolderPaths; Set<String> get selectedComicKeys;
 /// Create a copy of FolderShelfState
@@ -29,20 +29,20 @@ $FolderShelfStateCopyWith<FolderShelfState> get copyWith => _$FolderShelfStateCo
 @override
 bool operator ==(Object other) {
   final _this = this as FolderShelfState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FolderShelfState&&(identical(other.mode, _this.mode) || other.mode == _this.mode)&&(identical(other.currentPath, _this.currentPath) || other.currentPath == _this.currentPath)&&const DeepCollectionEquality().equals(other.folders, _this.folders)&&const DeepCollectionEquality().equals(other.folderComicCounts, _this.folderComicCounts)&&const DeepCollectionEquality().equals(other.comics, _this.comics)&&const DeepCollectionEquality().equals(other.comicSearchTexts, _this.comicSearchTexts)&&(identical(other.search, _this.search) || other.search == _this.search)&&(identical(other.isLoading, _this.isLoading) || other.isLoading == _this.isLoading)&&(identical(other.isLoadingMore, _this.isLoadingMore) || other.isLoadingMore == _this.isLoadingMore)&&(identical(other.nextOffset, _this.nextOffset) || other.nextOffset == _this.nextOffset)&&(identical(other.hasMore, _this.hasMore) || other.hasMore == _this.hasMore)&&(identical(other.error, _this.error) || other.error == _this.error)&&(identical(other.sortAscending, _this.sortAscending) || other.sortAscending == _this.sortAscending)&&(identical(other.selectionMode, _this.selectionMode) || other.selectionMode == _this.selectionMode)&&const DeepCollectionEquality().equals(other.selectedFolderPaths, _this.selectedFolderPaths)&&const DeepCollectionEquality().equals(other.selectedComicKeys, _this.selectedComicKeys));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FolderShelfState&&(identical(other.mode, _this.mode) || other.mode == _this.mode)&&(identical(other.currentPath, _this.currentPath) || other.currentPath == _this.currentPath)&&const DeepCollectionEquality().equals(other.folders, _this.folders)&&const DeepCollectionEquality().equals(other.folderComicCounts, _this.folderComicCounts)&&const DeepCollectionEquality().equals(other.folderCovers, _this.folderCovers)&&const DeepCollectionEquality().equals(other.comics, _this.comics)&&const DeepCollectionEquality().equals(other.comicSearchTexts, _this.comicSearchTexts)&&(identical(other.search, _this.search) || other.search == _this.search)&&(identical(other.isLoading, _this.isLoading) || other.isLoading == _this.isLoading)&&(identical(other.isLoadingMore, _this.isLoadingMore) || other.isLoadingMore == _this.isLoadingMore)&&(identical(other.nextOffset, _this.nextOffset) || other.nextOffset == _this.nextOffset)&&(identical(other.hasMore, _this.hasMore) || other.hasMore == _this.hasMore)&&(identical(other.error, _this.error) || other.error == _this.error)&&(identical(other.sortAscending, _this.sortAscending) || other.sortAscending == _this.sortAscending)&&(identical(other.selectionMode, _this.selectionMode) || other.selectionMode == _this.selectionMode)&&const DeepCollectionEquality().equals(other.selectedFolderPaths, _this.selectedFolderPaths)&&const DeepCollectionEquality().equals(other.selectedComicKeys, _this.selectedComicKeys));
 }
 
 
 @override
 int get hashCode {
   final _this = this as FolderShelfState;
-  return Object.hash(runtimeType,_this.mode,_this.currentPath,const DeepCollectionEquality().hash(_this.folders),const DeepCollectionEquality().hash(_this.folderComicCounts),const DeepCollectionEquality().hash(_this.comics),const DeepCollectionEquality().hash(_this.comicSearchTexts),_this.search,_this.isLoading,_this.isLoadingMore,_this.nextOffset,_this.hasMore,_this.error,_this.sortAscending,_this.selectionMode,const DeepCollectionEquality().hash(_this.selectedFolderPaths),const DeepCollectionEquality().hash(_this.selectedComicKeys));
+  return Object.hash(runtimeType,_this.mode,_this.currentPath,const DeepCollectionEquality().hash(_this.folders),const DeepCollectionEquality().hash(_this.folderComicCounts),const DeepCollectionEquality().hash(_this.folderCovers),const DeepCollectionEquality().hash(_this.comics),const DeepCollectionEquality().hash(_this.comicSearchTexts),_this.search,_this.isLoading,_this.isLoadingMore,_this.nextOffset,_this.hasMore,_this.error,_this.sortAscending,_this.selectionMode,const DeepCollectionEquality().hash(_this.selectedFolderPaths),const DeepCollectionEquality().hash(_this.selectedComicKeys));
 }
 
 @override
 String toString() {
   final _this = this as FolderShelfState;
-  return 'FolderShelfState(mode: ${_this.mode}, currentPath: ${_this.currentPath}, folders: ${_this.folders}, folderComicCounts: ${_this.folderComicCounts}, comics: ${_this.comics}, comicSearchTexts: ${_this.comicSearchTexts}, search: ${_this.search}, isLoading: ${_this.isLoading}, isLoadingMore: ${_this.isLoadingMore}, nextOffset: ${_this.nextOffset}, hasMore: ${_this.hasMore}, error: ${_this.error}, sortAscending: ${_this.sortAscending}, selectionMode: ${_this.selectionMode}, selectedFolderPaths: ${_this.selectedFolderPaths}, selectedComicKeys: ${_this.selectedComicKeys})';
+  return 'FolderShelfState(mode: ${_this.mode}, currentPath: ${_this.currentPath}, folders: ${_this.folders}, folderComicCounts: ${_this.folderComicCounts}, folderCovers: ${_this.folderCovers}, comics: ${_this.comics}, comicSearchTexts: ${_this.comicSearchTexts}, search: ${_this.search}, isLoading: ${_this.isLoading}, isLoadingMore: ${_this.isLoadingMore}, nextOffset: ${_this.nextOffset}, hasMore: ${_this.hasMore}, error: ${_this.error}, sortAscending: ${_this.sortAscending}, selectionMode: ${_this.selectionMode}, selectedFolderPaths: ${_this.selectedFolderPaths}, selectedComicKeys: ${_this.selectedComicKeys})';
 }
 
 
@@ -53,7 +53,7 @@ abstract mixin class $FolderShelfStateCopyWith<$Res>  {
   factory $FolderShelfStateCopyWith(FolderShelfState value, $Res Function(FolderShelfState) _then) = _$FolderShelfStateCopyWithImpl;
 @useResult
 $Res call({
- ShelfPageMode mode, String currentPath, List<ComicFolder> folders, Map<String, int> folderComicCounts, List<ComicSimplifyEntryInfo> comics, Map<String, String> comicSearchTexts, SearchStatusState? search, bool isLoading, bool isLoadingMore, int nextOffset, bool hasMore, String? error, bool sortAscending, bool selectionMode, Set<String> selectedFolderPaths, Set<String> selectedComicKeys
+ ShelfPageMode mode, String currentPath, List<ComicFolder> folders, Map<String, int> folderComicCounts, Map<String, ComicSimplifyEntryInfo> folderCovers, List<ComicSimplifyEntryInfo> comics, Map<String, String> comicSearchTexts, SearchStatusState? search, bool isLoading, bool isLoadingMore, int nextOffset, bool hasMore, String? error, bool sortAscending, bool selectionMode, Set<String> selectedFolderPaths, Set<String> selectedComicKeys
 });
 
 
@@ -70,13 +70,14 @@ class _$FolderShelfStateCopyWithImpl<$Res>
 
 /// Create a copy of FolderShelfState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mode = null,Object? currentPath = null,Object? folders = null,Object? folderComicCounts = null,Object? comics = null,Object? comicSearchTexts = null,Object? search = freezed,Object? isLoading = null,Object? isLoadingMore = null,Object? nextOffset = null,Object? hasMore = null,Object? error = freezed,Object? sortAscending = null,Object? selectionMode = null,Object? selectedFolderPaths = null,Object? selectedComicKeys = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mode = null,Object? currentPath = null,Object? folders = null,Object? folderComicCounts = null,Object? folderCovers = null,Object? comics = null,Object? comicSearchTexts = null,Object? search = freezed,Object? isLoading = null,Object? isLoadingMore = null,Object? nextOffset = null,Object? hasMore = null,Object? error = freezed,Object? sortAscending = null,Object? selectionMode = null,Object? selectedFolderPaths = null,Object? selectedComicKeys = null,}) {
   return _then(FolderShelfState(
 mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as ShelfPageMode,currentPath: null == currentPath ? _self.currentPath : currentPath // ignore: cast_nullable_to_non_nullable
 as String,folders: null == folders ? _self.folders : folders // ignore: cast_nullable_to_non_nullable
 as List<ComicFolder>,folderComicCounts: null == folderComicCounts ? _self.folderComicCounts : folderComicCounts // ignore: cast_nullable_to_non_nullable
-as Map<String, int>,comics: null == comics ? _self.comics : comics // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,folderCovers: null == folderCovers ? _self.folderCovers : folderCovers // ignore: cast_nullable_to_non_nullable
+as Map<String, ComicSimplifyEntryInfo>,comics: null == comics ? _self.comics : comics // ignore: cast_nullable_to_non_nullable
 as List<ComicSimplifyEntryInfo>,comicSearchTexts: null == comicSearchTexts ? _self.comicSearchTexts : comicSearchTexts // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,search: freezed == search ? _self.search : search // ignore: cast_nullable_to_non_nullable
 as SearchStatusState?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
@@ -185,10 +186,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ShelfPageMode mode,  String currentPath,  List<ComicFolder> folders,  Map<String, int> folderComicCounts,  List<ComicSimplifyEntryInfo> comics,  Map<String, String> comicSearchTexts,  SearchStatusState? search,  bool isLoading,  bool isLoadingMore,  int nextOffset,  bool hasMore,  String? error,  bool sortAscending,  bool selectionMode,  Set<String> selectedFolderPaths,  Set<String> selectedComicKeys)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ShelfPageMode mode,  String currentPath,  List<ComicFolder> folders,  Map<String, int> folderComicCounts,  Map<String, ComicSimplifyEntryInfo> folderCovers,  List<ComicSimplifyEntryInfo> comics,  Map<String, String> comicSearchTexts,  SearchStatusState? search,  bool isLoading,  bool isLoadingMore,  int nextOffset,  bool hasMore,  String? error,  bool sortAscending,  bool selectionMode,  Set<String> selectedFolderPaths,  Set<String> selectedComicKeys)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FolderShelfState() when $default != null:
-return $default(_that.mode,_that.currentPath,_that.folders,_that.folderComicCounts,_that.comics,_that.comicSearchTexts,_that.search,_that.isLoading,_that.isLoadingMore,_that.nextOffset,_that.hasMore,_that.error,_that.sortAscending,_that.selectionMode,_that.selectedFolderPaths,_that.selectedComicKeys);case _:
+return $default(_that.mode,_that.currentPath,_that.folders,_that.folderComicCounts,_that.folderCovers,_that.comics,_that.comicSearchTexts,_that.search,_that.isLoading,_that.isLoadingMore,_that.nextOffset,_that.hasMore,_that.error,_that.sortAscending,_that.selectionMode,_that.selectedFolderPaths,_that.selectedComicKeys);case _:
   return orElse();
 
 }
@@ -206,10 +207,10 @@ return $default(_that.mode,_that.currentPath,_that.folders,_that.folderComicCoun
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ShelfPageMode mode,  String currentPath,  List<ComicFolder> folders,  Map<String, int> folderComicCounts,  List<ComicSimplifyEntryInfo> comics,  Map<String, String> comicSearchTexts,  SearchStatusState? search,  bool isLoading,  bool isLoadingMore,  int nextOffset,  bool hasMore,  String? error,  bool sortAscending,  bool selectionMode,  Set<String> selectedFolderPaths,  Set<String> selectedComicKeys)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ShelfPageMode mode,  String currentPath,  List<ComicFolder> folders,  Map<String, int> folderComicCounts,  Map<String, ComicSimplifyEntryInfo> folderCovers,  List<ComicSimplifyEntryInfo> comics,  Map<String, String> comicSearchTexts,  SearchStatusState? search,  bool isLoading,  bool isLoadingMore,  int nextOffset,  bool hasMore,  String? error,  bool sortAscending,  bool selectionMode,  Set<String> selectedFolderPaths,  Set<String> selectedComicKeys)  $default,) {final _that = this;
 switch (_that) {
 case _FolderShelfState():
-return $default(_that.mode,_that.currentPath,_that.folders,_that.folderComicCounts,_that.comics,_that.comicSearchTexts,_that.search,_that.isLoading,_that.isLoadingMore,_that.nextOffset,_that.hasMore,_that.error,_that.sortAscending,_that.selectionMode,_that.selectedFolderPaths,_that.selectedComicKeys);case _:
+return $default(_that.mode,_that.currentPath,_that.folders,_that.folderComicCounts,_that.folderCovers,_that.comics,_that.comicSearchTexts,_that.search,_that.isLoading,_that.isLoadingMore,_that.nextOffset,_that.hasMore,_that.error,_that.sortAscending,_that.selectionMode,_that.selectedFolderPaths,_that.selectedComicKeys);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -226,10 +227,10 @@ return $default(_that.mode,_that.currentPath,_that.folders,_that.folderComicCoun
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ShelfPageMode mode,  String currentPath,  List<ComicFolder> folders,  Map<String, int> folderComicCounts,  List<ComicSimplifyEntryInfo> comics,  Map<String, String> comicSearchTexts,  SearchStatusState? search,  bool isLoading,  bool isLoadingMore,  int nextOffset,  bool hasMore,  String? error,  bool sortAscending,  bool selectionMode,  Set<String> selectedFolderPaths,  Set<String> selectedComicKeys)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ShelfPageMode mode,  String currentPath,  List<ComicFolder> folders,  Map<String, int> folderComicCounts,  Map<String, ComicSimplifyEntryInfo> folderCovers,  List<ComicSimplifyEntryInfo> comics,  Map<String, String> comicSearchTexts,  SearchStatusState? search,  bool isLoading,  bool isLoadingMore,  int nextOffset,  bool hasMore,  String? error,  bool sortAscending,  bool selectionMode,  Set<String> selectedFolderPaths,  Set<String> selectedComicKeys)?  $default,) {final _that = this;
 switch (_that) {
 case _FolderShelfState() when $default != null:
-return $default(_that.mode,_that.currentPath,_that.folders,_that.folderComicCounts,_that.comics,_that.comicSearchTexts,_that.search,_that.isLoading,_that.isLoadingMore,_that.nextOffset,_that.hasMore,_that.error,_that.sortAscending,_that.selectionMode,_that.selectedFolderPaths,_that.selectedComicKeys);case _:
+return $default(_that.mode,_that.currentPath,_that.folders,_that.folderComicCounts,_that.folderCovers,_that.comics,_that.comicSearchTexts,_that.search,_that.isLoading,_that.isLoadingMore,_that.nextOffset,_that.hasMore,_that.error,_that.sortAscending,_that.selectionMode,_that.selectedFolderPaths,_that.selectedComicKeys);case _:
   return null;
 
 }
@@ -241,7 +242,7 @@ return $default(_that.mode,_that.currentPath,_that.folders,_that.folderComicCoun
 
 
 class _FolderShelfState extends FolderShelfState {
-  const _FolderShelfState({required this.mode, this.currentPath = kFolderShelfRootPath,  List<ComicFolder> folders = const <ComicFolder>[],  Map<String, int> folderComicCounts = const <String, int>{},  List<ComicSimplifyEntryInfo> comics = const <ComicSimplifyEntryInfo>[],  Map<String, String> comicSearchTexts = const <String, String>{}, this.search, this.isLoading = false, this.isLoadingMore = false, this.nextOffset = 0, this.hasMore = false, this.error, this.sortAscending = false, this.selectionMode = false,  Set<String> selectedFolderPaths = const <String>{},  Set<String> selectedComicKeys = const <String>{}}): _folders = folders,_folderComicCounts = folderComicCounts,_comics = comics,_comicSearchTexts = comicSearchTexts,_selectedFolderPaths = selectedFolderPaths,_selectedComicKeys = selectedComicKeys,super._();
+  const _FolderShelfState({required this.mode, this.currentPath = kFolderShelfRootPath,  List<ComicFolder> folders = const <ComicFolder>[],  Map<String, int> folderComicCounts = const <String, int>{},  Map<String, ComicSimplifyEntryInfo> folderCovers = const <String, ComicSimplifyEntryInfo>{},  List<ComicSimplifyEntryInfo> comics = const <ComicSimplifyEntryInfo>[],  Map<String, String> comicSearchTexts = const <String, String>{}, this.search, this.isLoading = false, this.isLoadingMore = false, this.nextOffset = 0, this.hasMore = false, this.error, this.sortAscending = false, this.selectionMode = false,  Set<String> selectedFolderPaths = const <String>{},  Set<String> selectedComicKeys = const <String>{}}): _folders = folders,_folderComicCounts = folderComicCounts,_folderCovers = folderCovers,_comics = comics,_comicSearchTexts = comicSearchTexts,_selectedFolderPaths = selectedFolderPaths,_selectedComicKeys = selectedComicKeys,super._();
   
 
 @override final  ShelfPageMode mode;
@@ -258,6 +259,13 @@ class _FolderShelfState extends FolderShelfState {
   if (_folderComicCounts is EqualUnmodifiableMapView) return _folderComicCounts;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableMapView(_folderComicCounts);
+}
+
+ final  Map<String, ComicSimplifyEntryInfo> _folderCovers;
+@override@JsonKey() Map<String, ComicSimplifyEntryInfo> get folderCovers {
+  if (_folderCovers is EqualUnmodifiableMapView) return _folderCovers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_folderCovers);
 }
 
  final  List<ComicSimplifyEntryInfo> _comics;
@@ -309,18 +317,18 @@ _$FolderShelfStateCopyWith<_FolderShelfState> get copyWith => __$FolderShelfStat
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FolderShelfState&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentPath, currentPath) || other.currentPath == currentPath)&&const DeepCollectionEquality().equals(other.folders, _folders)&&const DeepCollectionEquality().equals(other.folderComicCounts, _folderComicCounts)&&const DeepCollectionEquality().equals(other.comics, _comics)&&const DeepCollectionEquality().equals(other.comicSearchTexts, _comicSearchTexts)&&(identical(other.search, search) || other.search == search)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.nextOffset, nextOffset) || other.nextOffset == nextOffset)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.error, error) || other.error == error)&&(identical(other.sortAscending, sortAscending) || other.sortAscending == sortAscending)&&(identical(other.selectionMode, selectionMode) || other.selectionMode == selectionMode)&&const DeepCollectionEquality().equals(other.selectedFolderPaths, _selectedFolderPaths)&&const DeepCollectionEquality().equals(other.selectedComicKeys, _selectedComicKeys));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FolderShelfState&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentPath, currentPath) || other.currentPath == currentPath)&&const DeepCollectionEquality().equals(other.folders, _folders)&&const DeepCollectionEquality().equals(other.folderComicCounts, _folderComicCounts)&&const DeepCollectionEquality().equals(other.folderCovers, _folderCovers)&&const DeepCollectionEquality().equals(other.comics, _comics)&&const DeepCollectionEquality().equals(other.comicSearchTexts, _comicSearchTexts)&&(identical(other.search, search) || other.search == search)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.nextOffset, nextOffset) || other.nextOffset == nextOffset)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.error, error) || other.error == error)&&(identical(other.sortAscending, sortAscending) || other.sortAscending == sortAscending)&&(identical(other.selectionMode, selectionMode) || other.selectionMode == selectionMode)&&const DeepCollectionEquality().equals(other.selectedFolderPaths, _selectedFolderPaths)&&const DeepCollectionEquality().equals(other.selectedComicKeys, _selectedComicKeys));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,mode,currentPath,const DeepCollectionEquality().hash(_folders),const DeepCollectionEquality().hash(_folderComicCounts),const DeepCollectionEquality().hash(_comics),const DeepCollectionEquality().hash(_comicSearchTexts),search,isLoading,isLoadingMore,nextOffset,hasMore,error,sortAscending,selectionMode,const DeepCollectionEquality().hash(_selectedFolderPaths),const DeepCollectionEquality().hash(_selectedComicKeys));
+    return Object.hash(runtimeType,mode,currentPath,const DeepCollectionEquality().hash(_folders),const DeepCollectionEquality().hash(_folderComicCounts),const DeepCollectionEquality().hash(_folderCovers),const DeepCollectionEquality().hash(_comics),const DeepCollectionEquality().hash(_comicSearchTexts),search,isLoading,isLoadingMore,nextOffset,hasMore,error,sortAscending,selectionMode,const DeepCollectionEquality().hash(_selectedFolderPaths),const DeepCollectionEquality().hash(_selectedComicKeys));
 }
 
 @override
 String toString() {
-    return 'FolderShelfState(mode: $mode, currentPath: $currentPath, folders: $folders, folderComicCounts: $folderComicCounts, comics: $comics, comicSearchTexts: $comicSearchTexts, search: $search, isLoading: $isLoading, isLoadingMore: $isLoadingMore, nextOffset: $nextOffset, hasMore: $hasMore, error: $error, sortAscending: $sortAscending, selectionMode: $selectionMode, selectedFolderPaths: $selectedFolderPaths, selectedComicKeys: $selectedComicKeys)';
+    return 'FolderShelfState(mode: $mode, currentPath: $currentPath, folders: $folders, folderComicCounts: $folderComicCounts, folderCovers: $folderCovers, comics: $comics, comicSearchTexts: $comicSearchTexts, search: $search, isLoading: $isLoading, isLoadingMore: $isLoadingMore, nextOffset: $nextOffset, hasMore: $hasMore, error: $error, sortAscending: $sortAscending, selectionMode: $selectionMode, selectedFolderPaths: $selectedFolderPaths, selectedComicKeys: $selectedComicKeys)';
 }
 
 
@@ -331,7 +339,7 @@ abstract mixin class _$FolderShelfStateCopyWith<$Res> implements $FolderShelfSta
   factory _$FolderShelfStateCopyWith(_FolderShelfState value, $Res Function(_FolderShelfState) _then) = __$FolderShelfStateCopyWithImpl;
 @override @useResult
 $Res call({
- ShelfPageMode mode, String currentPath, List<ComicFolder> folders, Map<String, int> folderComicCounts, List<ComicSimplifyEntryInfo> comics, Map<String, String> comicSearchTexts, SearchStatusState? search, bool isLoading, bool isLoadingMore, int nextOffset, bool hasMore, String? error, bool sortAscending, bool selectionMode, Set<String> selectedFolderPaths, Set<String> selectedComicKeys
+ ShelfPageMode mode, String currentPath, List<ComicFolder> folders, Map<String, int> folderComicCounts, Map<String, ComicSimplifyEntryInfo> folderCovers, List<ComicSimplifyEntryInfo> comics, Map<String, String> comicSearchTexts, SearchStatusState? search, bool isLoading, bool isLoadingMore, int nextOffset, bool hasMore, String? error, bool sortAscending, bool selectionMode, Set<String> selectedFolderPaths, Set<String> selectedComicKeys
 });
 
 
@@ -348,13 +356,14 @@ class __$FolderShelfStateCopyWithImpl<$Res>
 
 /// Create a copy of FolderShelfState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mode = null,Object? currentPath = null,Object? folders = null,Object? folderComicCounts = null,Object? comics = null,Object? comicSearchTexts = null,Object? search = freezed,Object? isLoading = null,Object? isLoadingMore = null,Object? nextOffset = null,Object? hasMore = null,Object? error = freezed,Object? sortAscending = null,Object? selectionMode = null,Object? selectedFolderPaths = null,Object? selectedComicKeys = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mode = null,Object? currentPath = null,Object? folders = null,Object? folderComicCounts = null,Object? folderCovers = null,Object? comics = null,Object? comicSearchTexts = null,Object? search = freezed,Object? isLoading = null,Object? isLoadingMore = null,Object? nextOffset = null,Object? hasMore = null,Object? error = freezed,Object? sortAscending = null,Object? selectionMode = null,Object? selectedFolderPaths = null,Object? selectedComicKeys = null,}) {
   return _then(_FolderShelfState(
 mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as ShelfPageMode,currentPath: null == currentPath ? _self.currentPath : currentPath // ignore: cast_nullable_to_non_nullable
 as String,folders: null == folders ? _self._folders : folders // ignore: cast_nullable_to_non_nullable
 as List<ComicFolder>,folderComicCounts: null == folderComicCounts ? _self._folderComicCounts : folderComicCounts // ignore: cast_nullable_to_non_nullable
-as Map<String, int>,comics: null == comics ? _self._comics : comics // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,folderCovers: null == folderCovers ? _self._folderCovers : folderCovers // ignore: cast_nullable_to_non_nullable
+as Map<String, ComicSimplifyEntryInfo>,comics: null == comics ? _self._comics : comics // ignore: cast_nullable_to_non_nullable
 as List<ComicSimplifyEntryInfo>,comicSearchTexts: null == comicSearchTexts ? _self._comicSearchTexts : comicSearchTexts // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,search: freezed == search ? _self.search : search // ignore: cast_nullable_to_non_nullable
 as SearchStatusState?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable

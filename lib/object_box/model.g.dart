@@ -681,6 +681,7 @@ ComicFolder _$ComicFolderFromJson(Map<String, dynamic> json) => ComicFolder(
   deletedAt: (json['deletedAt'] as num?)?.toInt(),
   createdAt: (json['createdAt'] as num).toInt(),
   updatedAt: (json['updatedAt'] as num).toInt(),
+  coverComicUniqueKey: json['coverComicUniqueKey'] as String?,
 );
 
 Map<String, dynamic> _$ComicFolderToJson(ComicFolder instance) =>
@@ -695,6 +696,7 @@ Map<String, dynamic> _$ComicFolderToJson(ComicFolder instance) =>
       'deletedAt': instance.deletedAt,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
+      'coverComicUniqueKey': instance.coverComicUniqueKey,
     };
 
 ComicLink _$ComicLinkFromJson(Map<String, dynamic> json) => ComicLink(

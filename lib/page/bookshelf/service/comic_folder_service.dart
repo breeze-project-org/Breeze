@@ -159,6 +159,7 @@ class ComicFolderService {
         existed
           ..name = safeName
           ..deletedAt = null
+          ..coverComicUniqueKey = null
           ..createdAt = now
           ..updatedAt = now
           ..versionVector = _bumpVersionVector(existed.versionVector);
@@ -219,6 +220,24 @@ class ComicFolderService {
     if (changed.isNotEmpty) {
       await database.folders.putMany(changed);
     }
+  }
+
+  /// 设置文件夹封面漫画；null / 空表示恢复自动封面。
+  static Future<void> setFolderCover(
+    ComicFolder folder,
+    String? comicUniqueKey,
+  ) async {
+    if (folder.deletedAt != null) return;
+    final normalized = comicUniqueKey?.trim();
+    final next = normalized == null || normalized.isEmpty ? null : normalized;
+    if ((folder.coverComicUniqueKey ?? '') == (next ?? '')) return;
+
+    final now = _now();
+    folder
+      ..coverComicUniqueKey = next
+      ..updatedAt = now
+      ..versionVector = _bumpVersionVector(folder.versionVector);
+    await database.folders.put(folder);
   }
 
   /// 重命名文件夹
@@ -395,6 +414,7 @@ class ComicFolderService {
       versionVector: {_deviceId: 1},
       createdAt: now,
       updatedAt: now,
+      coverComicUniqueKey: sourceFolder.coverComicUniqueKey,
     );
     await database.folders.put(targetFolder);
 

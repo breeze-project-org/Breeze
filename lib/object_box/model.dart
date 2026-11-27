@@ -1134,6 +1134,11 @@ class ComicFolder {
   /// 最后修改时间戳（毫秒）
   int updatedAt;
 
+  /// 用户指定封面漫画的 uniqueKey（`source:comicId`）。
+  ///
+  /// null / 空表示自动取文件夹里最新加入的漫画封面。
+  String? coverComicUniqueKey;
+
   ComicFolder({
     this.id = 0,
     required this.syncId,
@@ -1145,6 +1150,7 @@ class ComicFolder {
     this.deletedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.coverComicUniqueKey,
   });
 
   Map<String, dynamic> toJson() => _$ComicFolderToJson(this);

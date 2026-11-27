@@ -106,6 +106,60 @@ void main() {
     }
   });
 
+  test('v2 ComicFolder rows migrate to coverComicUniqueKey', () async {
+    final temp = await Directory.systemTemp.createTemp('breeze_migrate_');
+    final path = p.join(temp.path, 'breeze.sqlite3');
+    final legacyDir = p.join(temp.path, 'missing_objectbox');
+    var db = await openAppDatabase(path: path, legacyObjectBoxDir: legacyDir);
+    try {
+      // 造一个 v2 库：去掉新列，写入没有封面的旧文件夹。
+      await db.executeScript('''
+ALTER TABLE "ComicFolder" DROP COLUMN "coverComicUniqueKey";
+PRAGMA user_version = 2;
+''');
+      await db.execute(
+        'INSERT INTO "ComicFolder" '
+        '("uniqueKey","name","typeData","versionVectorJson","deletedAt",'
+        '"createdAt","updatedAt","syncId","parentSyncId") '
+        'VALUES (?,?,?,?,?,?,?,?,?)',
+        <Object?>[
+          '|migrate|favorite',
+          'migrate',
+          'favorite',
+          '{"test":1}',
+          null,
+          1000,
+          1000,
+          'migrate-sync',
+          '',
+        ],
+      );
+    } finally {
+      await db.close();
+    }
+
+    db = await openAppDatabase(path: path, legacyObjectBoxDir: legacyDir);
+    try {
+      final version = await db.query('PRAGMA user_version');
+      expect(version.single['user_version'], currentSchemaVersion);
+      final columns = await db.query('PRAGMA table_info("ComicFolder")');
+      expect(
+        columns.map((row) => row['name']),
+        contains('coverComicUniqueKey'),
+      );
+      final rows = await db.query(
+        'SELECT "name", "coverComicUniqueKey" FROM "ComicFolder" '
+        'WHERE "syncId" = ?',
+        <Object?>['migrate-sync'],
+      );
+      expect(rows.single['name'], 'migrate');
+      expect(rows.single['coverComicUniqueKey'], isNull);
+    } finally {
+      await db.close();
+      await temp.delete(recursive: true);
+    }
+  });
+
   test('archives and verifies legacy ObjectBox data.mdb', () async {
     final temp = await Directory.systemTemp.createTemp('breeze_archive_');
     final dataFile = File(p.join(temp.path, 'data.mdb'));

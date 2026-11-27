@@ -16,6 +16,8 @@ abstract class FolderShelfState with _$FolderShelfState {
     @Default(kFolderShelfRootPath) String currentPath,
     @Default(<ComicFolder>[]) List<ComicFolder> folders,
     @Default(<String, int>{}) Map<String, int> folderComicCounts,
+    @Default(<String, ComicSimplifyEntryInfo>{})
+    Map<String, ComicSimplifyEntryInfo> folderCovers,
     @Default(<ComicSimplifyEntryInfo>[]) List<ComicSimplifyEntryInfo> comics,
     @Default(<String, String>{}) Map<String, String> comicSearchTexts,
     SearchStatusState? search,

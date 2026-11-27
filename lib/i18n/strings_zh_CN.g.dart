@@ -1271,11 +1271,26 @@ class Translations$bookshelf$zh_CN {
 	/// zh-CN: '筛选'
 	String get filter => '筛选';
 
+	/// zh-CN: '显示'
+	String get display => '显示';
+
+	/// zh-CN: '不显示文件夹'
+	String get hideFolders => '不显示文件夹';
+
 	/// zh-CN: '搜索列表'
 	String get searchList => '搜索列表';
 
 	/// zh-CN: '新建文件夹'
 	String get newFolder => '新建文件夹';
+
+	/// zh-CN: '更换封面'
+	String get changeFolderCover => '更换封面';
+
+	/// zh-CN: '自动（使用最新加入的漫画）'
+	String get folderCoverAuto => '自动（使用最新加入的漫画）';
+
+	/// zh-CN: '该文件夹里还没有漫画'
+	String get folderCoverEmpty => '该文件夹里还没有漫画';
 
 	/// zh-CN: '管理'
 	String get manage => '管理';
@@ -4872,8 +4887,13 @@ extension on Translations {
 			'bookshelf.history' => '历史',
 			'bookshelf.download' => '下载',
 			'bookshelf.filter' => '筛选',
+			'bookshelf.display' => '显示',
+			'bookshelf.hideFolders' => '不显示文件夹',
 			'bookshelf.searchList' => '搜索列表',
 			'bookshelf.newFolder' => '新建文件夹',
+			'bookshelf.changeFolderCover' => '更换封面',
+			'bookshelf.folderCoverAuto' => '自动（使用最新加入的漫画）',
+			'bookshelf.folderCoverEmpty' => '该文件夹里还没有漫画',
 			'bookshelf.manage' => '管理',
 			'bookshelf.importComic' => '导入漫画',
 			'bookshelf.importExternalComic' => '导入外部漫画',
@@ -5000,13 +5020,13 @@ extension on Translations {
 			'comicEdit.chapterAdded' => '章节已新增',
 			'comicEdit.chapterRenamed' => '章节已重命名',
 			'comicEdit.importChapters' => '导入章节',
+			_ => null,
+		} ?? switch (path) {
 			'comicEdit.importImages' => '导入图片',
 			'comicEdit.chaptersImported' => '章节已导入',
 			'comicEdit.imagesImported' => ({required Object count}) => '已导入 ${count} 张图片',
 			'comicEdit.editVolume' => '编辑分卷',
 			'comicEdit.volumeHint' => '输入分卷名称，留空表示不分组',
-			_ => null,
-		} ?? switch (path) {
 			'comicEdit.volumeLabel' => ({required Object name}) => '分卷：${name}',
 			'comicEdit.volumeUpdated' => '分卷已更新',
 			'comicEdit.imageMissing' => '图片文件缺失',
@@ -5514,13 +5534,13 @@ extension on Translations {
 			'realSr.noise3' => '降噪 3',
 			'realSr.variantWaifu2xAnime' => 'waifu2x upconv 动漫',
 			'realSr.variantRealCuganDenoise' => ({required Object noise}) => 'Real-CUGAN 降噪 ${noise}',
+			_ => null,
+		} ?? switch (path) {
 			'realSr.coremlSpeed' => '速度优先 (waifu2x)',
 			'realSr.coremlQuality' => '质量优先 (Real-CUGAN)',
 			'realSr.coremlNoise0' => '降噪 0',
 			'realSr.coremlNoDenoise' => '无降噪',
 			'realSr.coremlInputHint' => '输入图片绝对路径或 asset 路径',
-			_ => null,
-		} ?? switch (path) {
 			'realSr.coremlStartUpscale' => '开始超分',
 			'realSr.coremlStatusFillInput' => '请填写输入图片路径',
 			'realSr.coremlStatusNoModelFile' => '当前模型族没有可用的模型文件',

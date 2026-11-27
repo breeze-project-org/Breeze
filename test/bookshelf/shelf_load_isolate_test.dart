@@ -252,4 +252,96 @@ void main() {
     final filtered = await _load('favorite', sources: ['src-a']);
     expect(filtered.folderComicCounts['/A'], 1);
   });
+
+  test('文件夹封面自动取最新、指定优先、失效回退自动', () async {
+    final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+    final folder = ComicFolder(
+      syncId: 'sync-cover',
+      parentSyncId: '',
+      uniqueKey: '|Cover|favorite',
+      name: 'Cover',
+      typeData: ComicFolderType.favorite.name,
+      versionVector: {},
+      createdAt: now,
+      updatedAt: now,
+    );
+    await database.folders.put(folder);
+    final older = createTestFavorite('test:cover-old');
+    final newer = createTestFavorite('test:cover-new');
+    await database.favorites.putMany([older, newer]);
+    await database.links.putMany([
+      ComicLink(
+        uniqueKey: '${older.uniqueKey}|sync-cover|favorite',
+        comicUniqueKey: older.uniqueKey,
+        folderSyncId: folder.syncId,
+        typeData: ComicFolderType.favorite.name,
+        versionVector: {},
+        createdAt: 1000,
+        updatedAt: 1000,
+      ),
+      ComicLink(
+        uniqueKey: '${newer.uniqueKey}|sync-cover|favorite',
+        comicUniqueKey: newer.uniqueKey,
+        folderSyncId: folder.syncId,
+        typeData: ComicFolderType.favorite.name,
+        versionVector: {},
+        createdAt: 2000,
+        updatedAt: 2000,
+      ),
+    ]);
+
+    final auto = await _load('favorite');
+    expect(auto.folderCovers['/Cover']?.id, newer.comicId);
+
+    folder.coverComicUniqueKey = older.uniqueKey;
+    await database.folders.put(folder);
+    final explicit = await _load('favorite');
+    expect(explicit.folderCovers['/Cover']?.id, older.comicId);
+
+    older.deleted = true;
+    await database.favorites.put(older);
+    final fallback = await _load('favorite');
+    expect(fallback.folderCovers['/Cover']?.id, newer.comicId);
+  });
+
+  test('文件夹自动封面跟随来源筛选', () async {
+    final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+    final folder = ComicFolder(
+      syncId: 'sync-source',
+      parentSyncId: '',
+      uniqueKey: '|Source|favorite',
+      name: 'Source',
+      typeData: ComicFolderType.favorite.name,
+      versionVector: {},
+      createdAt: now,
+      updatedAt: now,
+    );
+    await database.folders.put(folder);
+    final sourceA = createTestFavorite('src-a:cover', source: 'src-a');
+    final sourceB = createTestFavorite('src-b:cover', source: 'src-b');
+    await database.favorites.putMany([sourceA, sourceB]);
+    await database.links.putMany([
+      ComicLink(
+        uniqueKey: '${sourceA.uniqueKey}|sync-source|favorite',
+        comicUniqueKey: sourceA.uniqueKey,
+        folderSyncId: folder.syncId,
+        typeData: ComicFolderType.favorite.name,
+        versionVector: {},
+        createdAt: 1000,
+        updatedAt: 1000,
+      ),
+      ComicLink(
+        uniqueKey: '${sourceB.uniqueKey}|sync-source|favorite',
+        comicUniqueKey: sourceB.uniqueKey,
+        folderSyncId: folder.syncId,
+        typeData: ComicFolderType.favorite.name,
+        versionVector: {},
+        createdAt: 2000,
+        updatedAt: 2000,
+      ),
+    ]);
+
+    final filtered = await _load('favorite', sources: ['src-a']);
+    expect(filtered.folderCovers['/Source']?.id, sourceA.comicId);
+  });
 }

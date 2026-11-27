@@ -72,6 +72,7 @@ class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
         state.copyWith(
           folders: result.folders,
           folderComicCounts: result.folderComicCounts,
+          folderCovers: result.folderCovers,
           comics: result.comics,
           comicSearchTexts: result.searchTexts,
           search: search,

@@ -3471,7 +3471,7 @@ as bool,
 /// @nodoc
 mixin _$BookshelfSettingState implements DiagnosticableTreeMixin {
 
- int get homePageIndex; bool get rememberFavoriteSort; String get favoriteSort; bool get rememberHistorySort; String get historySort; bool get rememberDownloadSort; String get downloadSort; bool get detailLayout; bool get reverseChapters;
+ int get homePageIndex; bool get rememberFavoriteSort; String get favoriteSort; bool get rememberHistorySort; String get historySort; bool get rememberDownloadSort; String get downloadSort; bool get hideFavoriteFolders; bool get hideDownloadFolders; bool get detailLayout; bool get reverseChapters;
 /// Create a copy of BookshelfSettingState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3486,26 +3486,26 @@ void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   final _this = this as BookshelfSettingState;
   properties
     ..add(DiagnosticsProperty('type', 'BookshelfSettingState'))
-    ..add(DiagnosticsProperty('homePageIndex', _this.homePageIndex))..add(DiagnosticsProperty('rememberFavoriteSort', _this.rememberFavoriteSort))..add(DiagnosticsProperty('favoriteSort', _this.favoriteSort))..add(DiagnosticsProperty('rememberHistorySort', _this.rememberHistorySort))..add(DiagnosticsProperty('historySort', _this.historySort))..add(DiagnosticsProperty('rememberDownloadSort', _this.rememberDownloadSort))..add(DiagnosticsProperty('downloadSort', _this.downloadSort))..add(DiagnosticsProperty('detailLayout', _this.detailLayout))..add(DiagnosticsProperty('reverseChapters', _this.reverseChapters));
+    ..add(DiagnosticsProperty('homePageIndex', _this.homePageIndex))..add(DiagnosticsProperty('rememberFavoriteSort', _this.rememberFavoriteSort))..add(DiagnosticsProperty('favoriteSort', _this.favoriteSort))..add(DiagnosticsProperty('rememberHistorySort', _this.rememberHistorySort))..add(DiagnosticsProperty('historySort', _this.historySort))..add(DiagnosticsProperty('rememberDownloadSort', _this.rememberDownloadSort))..add(DiagnosticsProperty('downloadSort', _this.downloadSort))..add(DiagnosticsProperty('hideFavoriteFolders', _this.hideFavoriteFolders))..add(DiagnosticsProperty('hideDownloadFolders', _this.hideDownloadFolders))..add(DiagnosticsProperty('detailLayout', _this.detailLayout))..add(DiagnosticsProperty('reverseChapters', _this.reverseChapters));
 }
 
 @override
 bool operator ==(Object other) {
   final _this = this as BookshelfSettingState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookshelfSettingState&&(identical(other.homePageIndex, _this.homePageIndex) || other.homePageIndex == _this.homePageIndex)&&(identical(other.rememberFavoriteSort, _this.rememberFavoriteSort) || other.rememberFavoriteSort == _this.rememberFavoriteSort)&&(identical(other.favoriteSort, _this.favoriteSort) || other.favoriteSort == _this.favoriteSort)&&(identical(other.rememberHistorySort, _this.rememberHistorySort) || other.rememberHistorySort == _this.rememberHistorySort)&&(identical(other.historySort, _this.historySort) || other.historySort == _this.historySort)&&(identical(other.rememberDownloadSort, _this.rememberDownloadSort) || other.rememberDownloadSort == _this.rememberDownloadSort)&&(identical(other.downloadSort, _this.downloadSort) || other.downloadSort == _this.downloadSort)&&(identical(other.detailLayout, _this.detailLayout) || other.detailLayout == _this.detailLayout)&&(identical(other.reverseChapters, _this.reverseChapters) || other.reverseChapters == _this.reverseChapters));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookshelfSettingState&&(identical(other.homePageIndex, _this.homePageIndex) || other.homePageIndex == _this.homePageIndex)&&(identical(other.rememberFavoriteSort, _this.rememberFavoriteSort) || other.rememberFavoriteSort == _this.rememberFavoriteSort)&&(identical(other.favoriteSort, _this.favoriteSort) || other.favoriteSort == _this.favoriteSort)&&(identical(other.rememberHistorySort, _this.rememberHistorySort) || other.rememberHistorySort == _this.rememberHistorySort)&&(identical(other.historySort, _this.historySort) || other.historySort == _this.historySort)&&(identical(other.rememberDownloadSort, _this.rememberDownloadSort) || other.rememberDownloadSort == _this.rememberDownloadSort)&&(identical(other.downloadSort, _this.downloadSort) || other.downloadSort == _this.downloadSort)&&(identical(other.hideFavoriteFolders, _this.hideFavoriteFolders) || other.hideFavoriteFolders == _this.hideFavoriteFolders)&&(identical(other.hideDownloadFolders, _this.hideDownloadFolders) || other.hideDownloadFolders == _this.hideDownloadFolders)&&(identical(other.detailLayout, _this.detailLayout) || other.detailLayout == _this.detailLayout)&&(identical(other.reverseChapters, _this.reverseChapters) || other.reverseChapters == _this.reverseChapters));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as BookshelfSettingState;
-  return Object.hash(runtimeType,_this.homePageIndex,_this.rememberFavoriteSort,_this.favoriteSort,_this.rememberHistorySort,_this.historySort,_this.rememberDownloadSort,_this.downloadSort,_this.detailLayout,_this.reverseChapters);
+  return Object.hash(runtimeType,_this.homePageIndex,_this.rememberFavoriteSort,_this.favoriteSort,_this.rememberHistorySort,_this.historySort,_this.rememberDownloadSort,_this.downloadSort,_this.hideFavoriteFolders,_this.hideDownloadFolders,_this.detailLayout,_this.reverseChapters);
 }
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   final _this = this as BookshelfSettingState;
-  return 'BookshelfSettingState(homePageIndex: ${_this.homePageIndex}, rememberFavoriteSort: ${_this.rememberFavoriteSort}, favoriteSort: ${_this.favoriteSort}, rememberHistorySort: ${_this.rememberHistorySort}, historySort: ${_this.historySort}, rememberDownloadSort: ${_this.rememberDownloadSort}, downloadSort: ${_this.downloadSort}, detailLayout: ${_this.detailLayout}, reverseChapters: ${_this.reverseChapters})';
+  return 'BookshelfSettingState(homePageIndex: ${_this.homePageIndex}, rememberFavoriteSort: ${_this.rememberFavoriteSort}, favoriteSort: ${_this.favoriteSort}, rememberHistorySort: ${_this.rememberHistorySort}, historySort: ${_this.historySort}, rememberDownloadSort: ${_this.rememberDownloadSort}, downloadSort: ${_this.downloadSort}, hideFavoriteFolders: ${_this.hideFavoriteFolders}, hideDownloadFolders: ${_this.hideDownloadFolders}, detailLayout: ${_this.detailLayout}, reverseChapters: ${_this.reverseChapters})';
 }
 
 
@@ -3516,7 +3516,7 @@ abstract mixin class $BookshelfSettingStateCopyWith<$Res>  {
   factory $BookshelfSettingStateCopyWith(BookshelfSettingState value, $Res Function(BookshelfSettingState) _then) = _$BookshelfSettingStateCopyWithImpl;
 @useResult
 $Res call({
- int homePageIndex, bool rememberFavoriteSort, String favoriteSort, bool rememberHistorySort, String historySort, bool rememberDownloadSort, String downloadSort, bool detailLayout, bool reverseChapters
+ int homePageIndex, bool rememberFavoriteSort, String favoriteSort, bool rememberHistorySort, String historySort, bool rememberDownloadSort, String downloadSort, bool hideFavoriteFolders, bool hideDownloadFolders, bool detailLayout, bool reverseChapters
 });
 
 
@@ -3533,7 +3533,7 @@ class _$BookshelfSettingStateCopyWithImpl<$Res>
 
 /// Create a copy of BookshelfSettingState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? homePageIndex = null,Object? rememberFavoriteSort = null,Object? favoriteSort = null,Object? rememberHistorySort = null,Object? historySort = null,Object? rememberDownloadSort = null,Object? downloadSort = null,Object? detailLayout = null,Object? reverseChapters = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? homePageIndex = null,Object? rememberFavoriteSort = null,Object? favoriteSort = null,Object? rememberHistorySort = null,Object? historySort = null,Object? rememberDownloadSort = null,Object? downloadSort = null,Object? hideFavoriteFolders = null,Object? hideDownloadFolders = null,Object? detailLayout = null,Object? reverseChapters = null,}) {
   return _then(BookshelfSettingState(
 homePageIndex: null == homePageIndex ? _self.homePageIndex : homePageIndex // ignore: cast_nullable_to_non_nullable
 as int,rememberFavoriteSort: null == rememberFavoriteSort ? _self.rememberFavoriteSort : rememberFavoriteSort // ignore: cast_nullable_to_non_nullable
@@ -3542,7 +3542,9 @@ as String,rememberHistorySort: null == rememberHistorySort ? _self.rememberHisto
 as bool,historySort: null == historySort ? _self.historySort : historySort // ignore: cast_nullable_to_non_nullable
 as String,rememberDownloadSort: null == rememberDownloadSort ? _self.rememberDownloadSort : rememberDownloadSort // ignore: cast_nullable_to_non_nullable
 as bool,downloadSort: null == downloadSort ? _self.downloadSort : downloadSort // ignore: cast_nullable_to_non_nullable
-as String,detailLayout: null == detailLayout ? _self.detailLayout : detailLayout // ignore: cast_nullable_to_non_nullable
+as String,hideFavoriteFolders: null == hideFavoriteFolders ? _self.hideFavoriteFolders : hideFavoriteFolders // ignore: cast_nullable_to_non_nullable
+as bool,hideDownloadFolders: null == hideDownloadFolders ? _self.hideDownloadFolders : hideDownloadFolders // ignore: cast_nullable_to_non_nullable
+as bool,detailLayout: null == detailLayout ? _self.detailLayout : detailLayout // ignore: cast_nullable_to_non_nullable
 as bool,reverseChapters: null == reverseChapters ? _self.reverseChapters : reverseChapters // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -3629,10 +3631,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int homePageIndex,  bool rememberFavoriteSort,  String favoriteSort,  bool rememberHistorySort,  String historySort,  bool rememberDownloadSort,  String downloadSort,  bool detailLayout,  bool reverseChapters)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int homePageIndex,  bool rememberFavoriteSort,  String favoriteSort,  bool rememberHistorySort,  String historySort,  bool rememberDownloadSort,  String downloadSort,  bool hideFavoriteFolders,  bool hideDownloadFolders,  bool detailLayout,  bool reverseChapters)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _BookshelfSettingState() when $default != null:
-return $default(_that.homePageIndex,_that.rememberFavoriteSort,_that.favoriteSort,_that.rememberHistorySort,_that.historySort,_that.rememberDownloadSort,_that.downloadSort,_that.detailLayout,_that.reverseChapters);case _:
+return $default(_that.homePageIndex,_that.rememberFavoriteSort,_that.favoriteSort,_that.rememberHistorySort,_that.historySort,_that.rememberDownloadSort,_that.downloadSort,_that.hideFavoriteFolders,_that.hideDownloadFolders,_that.detailLayout,_that.reverseChapters);case _:
   return orElse();
 
 }
@@ -3650,10 +3652,10 @@ return $default(_that.homePageIndex,_that.rememberFavoriteSort,_that.favoriteSor
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int homePageIndex,  bool rememberFavoriteSort,  String favoriteSort,  bool rememberHistorySort,  String historySort,  bool rememberDownloadSort,  String downloadSort,  bool detailLayout,  bool reverseChapters)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int homePageIndex,  bool rememberFavoriteSort,  String favoriteSort,  bool rememberHistorySort,  String historySort,  bool rememberDownloadSort,  String downloadSort,  bool hideFavoriteFolders,  bool hideDownloadFolders,  bool detailLayout,  bool reverseChapters)  $default,) {final _that = this;
 switch (_that) {
 case _BookshelfSettingState():
-return $default(_that.homePageIndex,_that.rememberFavoriteSort,_that.favoriteSort,_that.rememberHistorySort,_that.historySort,_that.rememberDownloadSort,_that.downloadSort,_that.detailLayout,_that.reverseChapters);case _:
+return $default(_that.homePageIndex,_that.rememberFavoriteSort,_that.favoriteSort,_that.rememberHistorySort,_that.historySort,_that.rememberDownloadSort,_that.downloadSort,_that.hideFavoriteFolders,_that.hideDownloadFolders,_that.detailLayout,_that.reverseChapters);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3670,10 +3672,10 @@ return $default(_that.homePageIndex,_that.rememberFavoriteSort,_that.favoriteSor
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int homePageIndex,  bool rememberFavoriteSort,  String favoriteSort,  bool rememberHistorySort,  String historySort,  bool rememberDownloadSort,  String downloadSort,  bool detailLayout,  bool reverseChapters)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int homePageIndex,  bool rememberFavoriteSort,  String favoriteSort,  bool rememberHistorySort,  String historySort,  bool rememberDownloadSort,  String downloadSort,  bool hideFavoriteFolders,  bool hideDownloadFolders,  bool detailLayout,  bool reverseChapters)?  $default,) {final _that = this;
 switch (_that) {
 case _BookshelfSettingState() when $default != null:
-return $default(_that.homePageIndex,_that.rememberFavoriteSort,_that.favoriteSort,_that.rememberHistorySort,_that.historySort,_that.rememberDownloadSort,_that.downloadSort,_that.detailLayout,_that.reverseChapters);case _:
+return $default(_that.homePageIndex,_that.rememberFavoriteSort,_that.favoriteSort,_that.rememberHistorySort,_that.historySort,_that.rememberDownloadSort,_that.downloadSort,_that.hideFavoriteFolders,_that.hideDownloadFolders,_that.detailLayout,_that.reverseChapters);case _:
   return null;
 
 }
@@ -3685,7 +3687,7 @@ return $default(_that.homePageIndex,_that.rememberFavoriteSort,_that.favoriteSor
 @JsonSerializable()
 
 class _BookshelfSettingState with DiagnosticableTreeMixin implements BookshelfSettingState {
-  const _BookshelfSettingState({this.homePageIndex = 0, this.rememberFavoriteSort = false, this.favoriteSort = 'dd', this.rememberHistorySort = false, this.historySort = 'dd', this.rememberDownloadSort = false, this.downloadSort = 'dd', this.detailLayout = false, this.reverseChapters = false});
+  const _BookshelfSettingState({this.homePageIndex = 0, this.rememberFavoriteSort = false, this.favoriteSort = 'dd', this.rememberHistorySort = false, this.historySort = 'dd', this.rememberDownloadSort = false, this.downloadSort = 'dd', this.hideFavoriteFolders = false, this.hideDownloadFolders = false, this.detailLayout = false, this.reverseChapters = false});
   factory _BookshelfSettingState.fromJson(Map<String, dynamic> json) => _$BookshelfSettingStateFromJson(json);
 
 @override@JsonKey() final  int homePageIndex;
@@ -3695,6 +3697,8 @@ class _BookshelfSettingState with DiagnosticableTreeMixin implements BookshelfSe
 @override@JsonKey() final  String historySort;
 @override@JsonKey() final  bool rememberDownloadSort;
 @override@JsonKey() final  String downloadSort;
+@override@JsonKey() final  bool hideFavoriteFolders;
+@override@JsonKey() final  bool hideDownloadFolders;
 @override@JsonKey() final  bool detailLayout;
 @override@JsonKey() final  bool reverseChapters;
 
@@ -3712,23 +3716,23 @@ Map<String, dynamic> toJson() {
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     properties
     ..add(DiagnosticsProperty('type', 'BookshelfSettingState'))
-    ..add(DiagnosticsProperty('homePageIndex', homePageIndex))..add(DiagnosticsProperty('rememberFavoriteSort', rememberFavoriteSort))..add(DiagnosticsProperty('favoriteSort', favoriteSort))..add(DiagnosticsProperty('rememberHistorySort', rememberHistorySort))..add(DiagnosticsProperty('historySort', historySort))..add(DiagnosticsProperty('rememberDownloadSort', rememberDownloadSort))..add(DiagnosticsProperty('downloadSort', downloadSort))..add(DiagnosticsProperty('detailLayout', detailLayout))..add(DiagnosticsProperty('reverseChapters', reverseChapters));
+    ..add(DiagnosticsProperty('homePageIndex', homePageIndex))..add(DiagnosticsProperty('rememberFavoriteSort', rememberFavoriteSort))..add(DiagnosticsProperty('favoriteSort', favoriteSort))..add(DiagnosticsProperty('rememberHistorySort', rememberHistorySort))..add(DiagnosticsProperty('historySort', historySort))..add(DiagnosticsProperty('rememberDownloadSort', rememberDownloadSort))..add(DiagnosticsProperty('downloadSort', downloadSort))..add(DiagnosticsProperty('hideFavoriteFolders', hideFavoriteFolders))..add(DiagnosticsProperty('hideDownloadFolders', hideDownloadFolders))..add(DiagnosticsProperty('detailLayout', detailLayout))..add(DiagnosticsProperty('reverseChapters', reverseChapters));
 }
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookshelfSettingState&&(identical(other.homePageIndex, homePageIndex) || other.homePageIndex == homePageIndex)&&(identical(other.rememberFavoriteSort, rememberFavoriteSort) || other.rememberFavoriteSort == rememberFavoriteSort)&&(identical(other.favoriteSort, favoriteSort) || other.favoriteSort == favoriteSort)&&(identical(other.rememberHistorySort, rememberHistorySort) || other.rememberHistorySort == rememberHistorySort)&&(identical(other.historySort, historySort) || other.historySort == historySort)&&(identical(other.rememberDownloadSort, rememberDownloadSort) || other.rememberDownloadSort == rememberDownloadSort)&&(identical(other.downloadSort, downloadSort) || other.downloadSort == downloadSort)&&(identical(other.detailLayout, detailLayout) || other.detailLayout == detailLayout)&&(identical(other.reverseChapters, reverseChapters) || other.reverseChapters == reverseChapters));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookshelfSettingState&&(identical(other.homePageIndex, homePageIndex) || other.homePageIndex == homePageIndex)&&(identical(other.rememberFavoriteSort, rememberFavoriteSort) || other.rememberFavoriteSort == rememberFavoriteSort)&&(identical(other.favoriteSort, favoriteSort) || other.favoriteSort == favoriteSort)&&(identical(other.rememberHistorySort, rememberHistorySort) || other.rememberHistorySort == rememberHistorySort)&&(identical(other.historySort, historySort) || other.historySort == historySort)&&(identical(other.rememberDownloadSort, rememberDownloadSort) || other.rememberDownloadSort == rememberDownloadSort)&&(identical(other.downloadSort, downloadSort) || other.downloadSort == downloadSort)&&(identical(other.hideFavoriteFolders, hideFavoriteFolders) || other.hideFavoriteFolders == hideFavoriteFolders)&&(identical(other.hideDownloadFolders, hideDownloadFolders) || other.hideDownloadFolders == hideDownloadFolders)&&(identical(other.detailLayout, detailLayout) || other.detailLayout == detailLayout)&&(identical(other.reverseChapters, reverseChapters) || other.reverseChapters == reverseChapters));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,homePageIndex,rememberFavoriteSort,favoriteSort,rememberHistorySort,historySort,rememberDownloadSort,downloadSort,detailLayout,reverseChapters);
+    return Object.hash(runtimeType,homePageIndex,rememberFavoriteSort,favoriteSort,rememberHistorySort,historySort,rememberDownloadSort,downloadSort,hideFavoriteFolders,hideDownloadFolders,detailLayout,reverseChapters);
 }
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-    return 'BookshelfSettingState(homePageIndex: $homePageIndex, rememberFavoriteSort: $rememberFavoriteSort, favoriteSort: $favoriteSort, rememberHistorySort: $rememberHistorySort, historySort: $historySort, rememberDownloadSort: $rememberDownloadSort, downloadSort: $downloadSort, detailLayout: $detailLayout, reverseChapters: $reverseChapters)';
+    return 'BookshelfSettingState(homePageIndex: $homePageIndex, rememberFavoriteSort: $rememberFavoriteSort, favoriteSort: $favoriteSort, rememberHistorySort: $rememberHistorySort, historySort: $historySort, rememberDownloadSort: $rememberDownloadSort, downloadSort: $downloadSort, hideFavoriteFolders: $hideFavoriteFolders, hideDownloadFolders: $hideDownloadFolders, detailLayout: $detailLayout, reverseChapters: $reverseChapters)';
 }
 
 
@@ -3739,7 +3743,7 @@ abstract mixin class _$BookshelfSettingStateCopyWith<$Res> implements $Bookshelf
   factory _$BookshelfSettingStateCopyWith(_BookshelfSettingState value, $Res Function(_BookshelfSettingState) _then) = __$BookshelfSettingStateCopyWithImpl;
 @override @useResult
 $Res call({
- int homePageIndex, bool rememberFavoriteSort, String favoriteSort, bool rememberHistorySort, String historySort, bool rememberDownloadSort, String downloadSort, bool detailLayout, bool reverseChapters
+ int homePageIndex, bool rememberFavoriteSort, String favoriteSort, bool rememberHistorySort, String historySort, bool rememberDownloadSort, String downloadSort, bool hideFavoriteFolders, bool hideDownloadFolders, bool detailLayout, bool reverseChapters
 });
 
 
@@ -3756,7 +3760,7 @@ class __$BookshelfSettingStateCopyWithImpl<$Res>
 
 /// Create a copy of BookshelfSettingState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? homePageIndex = null,Object? rememberFavoriteSort = null,Object? favoriteSort = null,Object? rememberHistorySort = null,Object? historySort = null,Object? rememberDownloadSort = null,Object? downloadSort = null,Object? detailLayout = null,Object? reverseChapters = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? homePageIndex = null,Object? rememberFavoriteSort = null,Object? favoriteSort = null,Object? rememberHistorySort = null,Object? historySort = null,Object? rememberDownloadSort = null,Object? downloadSort = null,Object? hideFavoriteFolders = null,Object? hideDownloadFolders = null,Object? detailLayout = null,Object? reverseChapters = null,}) {
   return _then(_BookshelfSettingState(
 homePageIndex: null == homePageIndex ? _self.homePageIndex : homePageIndex // ignore: cast_nullable_to_non_nullable
 as int,rememberFavoriteSort: null == rememberFavoriteSort ? _self.rememberFavoriteSort : rememberFavoriteSort // ignore: cast_nullable_to_non_nullable
@@ -3765,7 +3769,9 @@ as String,rememberHistorySort: null == rememberHistorySort ? _self.rememberHisto
 as bool,historySort: null == historySort ? _self.historySort : historySort // ignore: cast_nullable_to_non_nullable
 as String,rememberDownloadSort: null == rememberDownloadSort ? _self.rememberDownloadSort : rememberDownloadSort // ignore: cast_nullable_to_non_nullable
 as bool,downloadSort: null == downloadSort ? _self.downloadSort : downloadSort // ignore: cast_nullable_to_non_nullable
-as String,detailLayout: null == detailLayout ? _self.detailLayout : detailLayout // ignore: cast_nullable_to_non_nullable
+as String,hideFavoriteFolders: null == hideFavoriteFolders ? _self.hideFavoriteFolders : hideFavoriteFolders // ignore: cast_nullable_to_non_nullable
+as bool,hideDownloadFolders: null == hideDownloadFolders ? _self.hideDownloadFolders : hideDownloadFolders // ignore: cast_nullable_to_non_nullable
+as bool,detailLayout: null == detailLayout ? _self.detailLayout : detailLayout // ignore: cast_nullable_to_non_nullable
 as bool,reverseChapters: null == reverseChapters ? _self.reverseChapters : reverseChapters // ignore: cast_nullable_to_non_nullable
 as bool,
   ));

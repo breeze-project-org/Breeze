@@ -510,8 +510,13 @@ class _Translations$bookshelf$en_US extends Translations$bookshelf$zh_CN {
 	@override String get history => 'History';
 	@override String get download => 'Downloads';
 	@override String get filter => 'Filter';
+	@override String get display => 'Display';
+	@override String get hideFolders => 'Hide folders';
 	@override String get searchList => 'Search list';
 	@override String get newFolder => 'New folder';
+	@override String get changeFolderCover => 'Change cover';
+	@override String get folderCoverAuto => 'Auto (newest comic)';
+	@override String get folderCoverEmpty => 'No comics in this folder yet';
 	@override String get manage => 'Manage';
 	@override String get importComic => 'Import comic';
 	@override String get importExternalComic => 'Import external comic';
@@ -2155,8 +2160,13 @@ extension on TranslationsEnUs {
 			'bookshelf.history' => 'History',
 			'bookshelf.download' => 'Downloads',
 			'bookshelf.filter' => 'Filter',
+			'bookshelf.display' => 'Display',
+			'bookshelf.hideFolders' => 'Hide folders',
 			'bookshelf.searchList' => 'Search list',
 			'bookshelf.newFolder' => 'New folder',
+			'bookshelf.changeFolderCover' => 'Change cover',
+			'bookshelf.folderCoverAuto' => 'Auto (newest comic)',
+			'bookshelf.folderCoverEmpty' => 'No comics in this folder yet',
 			'bookshelf.manage' => 'Manage',
 			'bookshelf.importComic' => 'Import comic',
 			'bookshelf.importExternalComic' => 'Import external comic',
@@ -2282,13 +2292,13 @@ extension on TranslationsEnUs {
 			'comicEdit.chapterAdded' => 'Chapter added',
 			'comicEdit.chapterRenamed' => 'Chapter renamed',
 			'comicEdit.importChapters' => 'Import chapters',
+			_ => null,
+		} ?? switch (path) {
 			'comicEdit.importImages' => 'Import pages',
 			'comicEdit.chaptersImported' => 'Chapters imported',
 			'comicEdit.imagesImported' => ({required Object count}) => 'Imported ${count} pages',
 			'comicEdit.editVolume' => 'Edit volume',
 			'comicEdit.volumeHint' => 'Enter a volume name; leave empty for no grouping',
-			_ => null,
-		} ?? switch (path) {
 			'comicEdit.volumeLabel' => ({required Object name}) => 'Volume: ${name}',
 			'comicEdit.volumeUpdated' => 'Volume updated',
 			'comicEdit.imageMissing' => 'Image file missing',
@@ -2796,13 +2806,13 @@ extension on TranslationsEnUs {
 			'realSr.variantWaifu2xAnime' => 'waifu2x upconv anime',
 			'realSr.variantRealCuganDenoise' => ({required Object noise}) => 'Real-CUGAN denoise ${noise}',
 			'realSr.coremlSpeed' => 'Speed priority (waifu2x)',
+			_ => null,
+		} ?? switch (path) {
 			'realSr.coremlQuality' => 'Quality priority (Real-CUGAN)',
 			'realSr.coremlNoise0' => 'Denoise 0',
 			'realSr.coremlNoDenoise' => 'No denoise',
 			'realSr.coremlInputHint' => 'Enter input image absolute path or asset path',
 			'realSr.coremlStartUpscale' => 'Start upscale',
-			_ => null,
-		} ?? switch (path) {
 			'realSr.coremlStatusFillInput' => 'Please fill in the input image path',
 			'realSr.coremlStatusNoModelFile' => 'No model files available for current family',
 			'realSr.coremlStatusPreparing' => 'Preparing resources...',

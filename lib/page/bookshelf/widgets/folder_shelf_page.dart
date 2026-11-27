@@ -23,6 +23,7 @@ import 'package:zephyr/page/bookshelf/method/local_comic_picker.dart';
 import 'package:zephyr/page/bookshelf/models/models.dart';
 import 'package:zephyr/page/bookshelf/service/comic_folder_service.dart';
 import 'package:zephyr/page/bookshelf/service/comic_link_service.dart';
+import 'package:zephyr/page/bookshelf/widgets/folder_cover_picker.dart';
 import 'package:zephyr/page/bookshelf/widgets/folder_target_picker.dart';
 import 'package:zephyr/page/bookshelf/widgets/bookshelf_empty_view.dart';
 import 'package:zephyr/page/bookshelf/widgets/bookshelf_grid_shimmer.dart';
@@ -500,6 +501,7 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
               prev.comics != curr.comics ||
               prev.comicSearchTexts != curr.comicSearchTexts ||
               prev.folderComicCounts != curr.folderComicCounts ||
+              prev.folderCovers != curr.folderCovers ||
               prev.search != curr.search ||
               prev.isLoading != curr.isLoading ||
               prev.isLoadingMore != curr.isLoadingMore ||
@@ -508,16 +510,21 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
               prev.sortAscending != curr.sortAscending ||
               prev.selectionMode != curr.selectionMode,
           builder: (context, state) {
-            final detailed = context
+            final bookshelfSetting = context
                 .watch<GlobalSettingCubit>()
                 .state
-                .bookshelfSetting
-                .detailLayout;
+                .bookshelfSetting;
+            final detailed = bookshelfSetting.detailLayout;
+            final hideFolders = switch (state.mode) {
+              ShelfPageMode.favorite => bookshelfSetting.hideFavoriteFolders,
+              ShelfPageMode.download => bookshelfSetting.hideDownloadFolders,
+              ShelfPageMode.history => false,
+            };
             final keyword = _normalizeSearchText(
               searchState.stateOf(state.mode).keyword,
             );
-            // 搜索时只展示漫画，不展示文件夹。
-            final filteredFolders = keyword.isEmpty
+            // 搜索时只展示漫画；筛选里开了“不显示文件夹”也一起隐藏。
+            final filteredFolders = keyword.isEmpty && !hideFolders
                 ? state.folders
                 : <ComicFolder>[];
             final filteredComics = keyword.isEmpty
@@ -570,6 +577,7 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
                   folderPath: folderPath,
                   detailed: detailed,
                   comicCount: state.folderComicCounts[folderPath],
+                  coverInfo: state.folderCovers[folderPath],
                   onFolderAction: (position) =>
                       _showFolderActions(context, folder, folderPath, position),
                 );
@@ -851,6 +859,11 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
           title: Text(t.bookshelf.moveTo),
         ),
         FluentPopupMenuItem(
+          value: 'cover',
+          leading: const Icon(Icons.image_outlined),
+          title: Text(t.bookshelf.changeFolderCover),
+        ),
+        FluentPopupMenuItem(
           value: 'delete',
           leading: const Icon(Icons.delete_outline),
           title: Text(t.common.delete),
@@ -875,11 +888,34 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
                 },
               ),
             );
+          case 'cover':
+            unawaited(_chooseFolderCover(context, folder));
           case 'delete':
             _confirmDeleteSingleFolder(context, folderPath);
         }
       },
     );
+  }
+
+  /// 选择文件夹封面：从文件夹内漫画里挑一本，或恢复自动封面。
+  Future<void> _chooseFolderCover(
+    BuildContext context,
+    ComicFolder folder,
+  ) async {
+    final choice = await showFolderCoverPicker(context, folder: folder);
+    if (choice == null || !context.mounted) return;
+    try {
+      await ComicFolderService.setFolderCover(folder, choice.comicUniqueKey);
+    } catch (e) {
+      logger.e(e);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    context.read<FolderShelfBloc>().add(const FolderShelfLoadRequested());
   }
 
   Future<void> _confirmDeleteSingleFolder(
@@ -1313,6 +1349,7 @@ class _ShelfFolderEntry extends StatelessWidget {
     required this.folderPath,
     required this.detailed,
     this.comicCount,
+    this.coverInfo,
     required this.onFolderAction,
   });
 
@@ -1320,6 +1357,7 @@ class _ShelfFolderEntry extends StatelessWidget {
   final String folderPath;
   final bool detailed;
   final int? comicCount;
+  final ComicSimplifyEntryInfo? coverInfo;
   final void Function(Offset position) onFolderAction;
 
   @override
@@ -1337,6 +1375,7 @@ class _ShelfFolderEntry extends StatelessWidget {
       isSelected: isSelected,
       detailed: detailed,
       comicCount: comicCount,
+      coverInfo: coverInfo,
       onTap: selectionMode
           ? () => context.read<FolderShelfBloc>().add(
               FolderShelfToggleFolderSelection(folderPath),

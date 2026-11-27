@@ -312,7 +312,8 @@ CREATE TABLE IF NOT EXISTS "ComicFolder" (
   "createdAt" INTEGER NOT NULL DEFAULT 0,
   "updatedAt" INTEGER NOT NULL DEFAULT 0,
   "syncId" TEXT NOT NULL DEFAULT '',
-  "parentSyncId" TEXT
+  "parentSyncId" TEXT,
+  "coverComicUniqueKey" TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "ux_ComicFolder_uniqueKey" ON "ComicFolder" ("uniqueKey");
 CREATE INDEX IF NOT EXISTS "ix_ComicFolder_syncId" ON "ComicFolder" ("syncId");
@@ -399,5 +400,5 @@ CREATE INDEX IF NOT EXISTS "ix_ComicReadChapter_source" ON "ComicReadChapter" ("
 CREATE INDEX IF NOT EXISTS "ix_ComicReadChapter_comicId" ON "ComicReadChapter" ("comicId");
 
 -- 所有表/索引创建成功后才标记版本，失败时下次启动会重试。
-PRAGMA user_version = 2;
+PRAGMA user_version = 3;
 ''';

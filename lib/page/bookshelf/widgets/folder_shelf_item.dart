@@ -6,6 +6,7 @@ import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry.dart'
     show kComicCardBorderRadius;
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_info.dart';
+import 'package:zephyr/widgets/comic_simplify_entry/cover.dart';
 
 class FolderShelfItem extends StatelessWidget {
   const FolderShelfItem({
@@ -18,6 +19,7 @@ class FolderShelfItem extends StatelessWidget {
     this.isSelected = false,
     this.detailed = false,
     this.comicCount,
+    this.coverInfo,
   });
 
   final ComicFolder folder;
@@ -32,6 +34,9 @@ class FolderShelfItem extends StatelessWidget {
 
   /// 文件夹直属漫画数；null 时不显示数量行。
   final int? comicCount;
+
+  /// 文件夹封面用的漫画；null 时回退到文件夹图标。
+  final ComicSimplifyEntryInfo? coverInfo;
 
   @override
   Widget build(BuildContext context) {
@@ -91,14 +96,51 @@ class FolderShelfItem extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // 文件夹图标
-              Center(
-                child: Icon(
-                  Icons.folder_rounded,
-                  size: width * 0.42,
-                  color: colorScheme.primary.withValues(alpha: 0.72),
+              // 有封面就用封面，否则回退文件夹图标
+              if (coverInfo != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(kComicCardBorderRadius),
+                  child: CoverWidget(
+                    key: ValueKey(
+                      'folder-cover-${folder.syncId}-'
+                      '${coverInfo!.from}:${coverInfo!.id}:${coverInfo!.path}',
+                    ),
+                    fileServer: coverInfo!.fileServer,
+                    path: coverInfo!.path,
+                    id: coverInfo!.id,
+                    pictureType: coverInfo!.pictureType,
+                    from: coverInfo!.from,
+                    roundedCorner: false,
+                    width: width,
+                    height: height,
+                  ),
+                )
+              else
+                Center(
+                  child: Icon(
+                    Icons.folder_rounded,
+                    size: width * 0.42,
+                    color: colorScheme.primary.withValues(alpha: 0.72),
+                  ),
                 ),
-              ),
+              // 封面模式下左上角保留小文件夹标记，避免和漫画卡片混淆。
+              if (coverInfo != null)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.folder_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               // 底部标题渐变遮罩
               Positioned(
                 left: 0,
@@ -240,15 +282,26 @@ class FolderShelfItem extends StatelessWidget {
                     Container(
                       width: 48,
                       height: 64,
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: scheme.primaryContainer.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Icon(
-                        Icons.folder_rounded,
-                        size: 28,
-                        color: scheme.primary,
-                      ),
+                      child: coverInfo == null
+                          ? Icon(
+                              Icons.folder_rounded,
+                              size: 28,
+                              color: scheme.primary,
+                            )
+                          : CoverWidget(
+                              fileServer: coverInfo!.fileServer,
+                              path: coverInfo!.path,
+                              id: coverInfo!.id,
+                              pictureType: coverInfo!.pictureType,
+                              from: coverInfo!.from,
+                              width: 48,
+                              height: 64,
+                            ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(

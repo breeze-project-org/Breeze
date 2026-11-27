@@ -7,21 +7,22 @@ import 'package:zephyr/object_box/model_json_codec.dart';
 const _folderInsert =
     'INSERT INTO "ComicFolder" '
     '("uniqueKey","name","typeData","versionVectorJson","deletedAt",'
-    '"createdAt","updatedAt","syncId","parentSyncId") '
-    'VALUES (?,?,?,?,?,?,?,?,?)';
+    '"createdAt","updatedAt","syncId","parentSyncId","coverComicUniqueKey") '
+    'VALUES (?,?,?,?,?,?,?,?,?,?)';
 
 const _folderUpsert =
     'INSERT INTO "ComicFolder" '
     '("id","uniqueKey","name","typeData","versionVectorJson","deletedAt",'
-    '"createdAt","updatedAt","syncId","parentSyncId") '
-    'VALUES (?,?,?,?,?,?,?,?,?,?) '
+    '"createdAt","updatedAt","syncId","parentSyncId","coverComicUniqueKey") '
+    'VALUES (?,?,?,?,?,?,?,?,?,?,?) '
     'ON CONFLICT("id") DO UPDATE SET '
     '"uniqueKey"=excluded."uniqueKey","name"=excluded."name",'
     '"typeData"=excluded."typeData",'
     '"versionVectorJson"=excluded."versionVectorJson",'
     '"deletedAt"=excluded."deletedAt","createdAt"=excluded."createdAt",'
     '"updatedAt"=excluded."updatedAt","syncId"=excluded."syncId",'
-    '"parentSyncId"=excluded."parentSyncId"';
+    '"parentSyncId"=excluded."parentSyncId",'
+    '"coverComicUniqueKey"=excluded."coverComicUniqueKey"';
 
 class ComicFolderRepository {
   final BreezeDatabase db;
@@ -224,6 +225,7 @@ class ComicFolderRepository {
       v.updatedAt,
       v.syncId,
       v.parentSyncId,
+      v.coverComicUniqueKey,
     ];
   }
 
@@ -474,6 +476,65 @@ class ComicLinkRepository {
     for (final row in rows)
       (row['folderSyncId'] as String? ?? ''): (row['c'] as num).toInt(),
   };
+
+  /// 每个文件夹下最新加入的未删除漫画链接，用于文件夹自动封面。
+  ///
+  /// 返回 `folderSyncId -> comicUniqueKey`。排序与书架默认排序一致：
+  /// `createdAt DESC, id DESC`，保证同时间写入时结果稳定。
+  Future<Map<String, String>> latestComicKeyByFolder(
+    String typeData, {
+    List<String> sources = const <String>[],
+  }) {
+    final comicTable = typeData == ComicFolderType.favorite.name
+        ? '"UnifiedComicFavorite"'
+        : typeData == ComicFolderType.download.name
+        ? '"UnifiedComicDownload"'
+        : null;
+    if (comicTable == null) {
+      return Future<Map<String, String>>.value(const <String, String>{});
+    }
+    final cleanedSources = <String>[
+      for (final source in sources)
+        if (source.trim().isNotEmpty) source.trim(),
+    ];
+    final sourceClause = cleanedSources.isEmpty
+        ? ''
+        : ' AND TRIM(m."source") IN (${List.filled(cleanedSources.length, '?').join(',')})';
+    return runDbRead(
+      db,
+      sql:
+          'SELECT "folderSyncId", "comicUniqueKey" FROM ('
+          'SELECT l."folderSyncId" AS "folderSyncId", '
+          'l."comicUniqueKey" AS "comicUniqueKey", '
+          'ROW_NUMBER() OVER ('
+          'PARTITION BY l."folderSyncId" '
+          'ORDER BY l."createdAt" DESC, l."id" DESC'
+          ') AS "rn" '
+          'FROM "ComicLink" AS l '
+          'JOIN $comicTable AS m ON m."uniqueKey" = l."comicUniqueKey" '
+          'AND m."deleted" = 0 '
+          'WHERE l."typeData" = ? AND l."deletedAt" IS NULL '
+          'AND l."folderSyncId" IS NOT NULL AND l."folderSyncId" != \'\''
+          '$sourceClause'
+          ') WHERE "rn" = 1',
+      params: <Object?>[typeData, ...cleanedSources],
+      decode: _decodeLatestComicKeys,
+    );
+  }
+
+  static Map<String, String> _decodeLatestComicKeys(
+    List<Map<String, dynamic>> rows,
+  ) {
+    final result = <String, String>{};
+    for (final row in rows) {
+      final folderSyncId = row['folderSyncId'] as String? ?? '';
+      final comicUniqueKey = row['comicUniqueKey'] as String? ?? '';
+      if (folderSyncId.isNotEmpty && comicUniqueKey.isNotEmpty) {
+        result[folderSyncId] = comicUniqueKey;
+      }
+    }
+    return result;
+  }
 
   /// 漫画在某类型下未软删除的全部链接（含根目录）。
   Future<List<ComicLink>> listActiveByComic(

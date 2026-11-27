@@ -1,6 +1,7 @@
 import 'package:zephyr/database/database.dart';
 import 'package:zephyr/object_box/model.dart';
 import 'package:zephyr/page/bookshelf/method/comic_search_text.dart';
+import 'package:zephyr/page/bookshelf/method/comic_shelf_resolver.dart';
 import 'package:zephyr/page/bookshelf/models/shelf_page_mode.dart';
 import 'package:zephyr/page/bookshelf/service/comic_folder_service.dart';
 import 'package:zephyr/util/rust/rust_loader.dart';
@@ -46,6 +47,7 @@ class ShelfLoadResult {
   const ShelfLoadResult({
     required this.folders,
     required this.folderComicCounts,
+    required this.folderCovers,
     required this.comics,
     required this.searchTexts,
     required this.nextOffset,
@@ -54,6 +56,9 @@ class ShelfLoadResult {
 
   final List<ComicFolder> folders;
   final Map<String, int> folderComicCounts;
+
+  /// 当前路径下每个文件夹卡片要显示的封面，键为文件夹完整路径。
+  final Map<String, ComicSimplifyEntryInfo> folderCovers;
   final List<ComicSimplifyEntryInfo> comics;
   final Map<String, String> searchTexts;
 
@@ -121,6 +126,47 @@ Future<ShelfLoadResult> loadShelfInIsolate(ShelfLoadTask task) async {
     };
   }
 
+  var folderCovers = const <String, ComicSimplifyEntryInfo>{};
+  if (isFirstPage && !isSearching && folders.isNotEmpty) {
+    String pathOf(ComicFolder folder) => task.currentPath.isEmpty
+        ? '/${folder.name}'
+        : '${task.currentPath}/${folder.name}';
+    final latestKeys = await db.links.latestComicKeyByFolder(
+      folderType.name,
+      sources: task.sources,
+    );
+    final autoKeys = <String, String>{
+      for (final folder in folders)
+        if ((latestKeys[folder.syncId] ?? '').isNotEmpty)
+          folder.syncId: latestKeys[folder.syncId]!,
+    };
+    final explicitKeys = <String, String>{
+      for (final folder in folders)
+        if ((folder.coverComicUniqueKey ?? '').trim().isNotEmpty)
+          folder.syncId: folder.coverComicUniqueKey!.trim(),
+    };
+    final keys = <String>{...autoKeys.values, ...explicitKeys.values};
+    if (keys.isNotEmpty) {
+      final resolved = await resolveShelfComicsByKeys(
+        folderType,
+        keys.toList(),
+        db,
+      );
+      final covers = <String, ComicSimplifyEntryInfo>{};
+      for (final folder in folders) {
+        final explicit = explicitKeys[folder.syncId];
+        final auto = autoKeys[folder.syncId];
+        final info =
+            (explicit == null ? null : resolved[explicit]) ??
+            (auto == null ? null : resolved[auto]);
+        if (info != null) {
+          covers[pathOf(folder)] = info.info;
+        }
+      }
+      folderCovers = covers;
+    }
+  }
+
   // ComicLink.folderSyncId 存的是文件夹 syncId，而 currentPath 是显示路径，
   // 进入子文件夹时必须先解析，否则一条链接都匹配不到。
   final folderSyncId = !isSearching && task.currentPath.isNotEmpty
@@ -165,6 +211,7 @@ Future<ShelfLoadResult> loadShelfInIsolate(ShelfLoadTask task) async {
   return ShelfLoadResult(
     folders: folders,
     folderComicCounts: folderComicCounts,
+    folderCovers: folderCovers,
     comics: comics,
     searchTexts: searchTexts,
     nextOffset: cursor,
@@ -214,6 +261,7 @@ Future<ShelfLoadResult> _loadHistoryShelf(
   return ShelfLoadResult(
     folders: const <ComicFolder>[],
     folderComicCounts: const <String, int>{},
+    folderCovers: const <String, ComicSimplifyEntryInfo>{},
     comics: comics,
     searchTexts: searchTexts,
     nextOffset: cursor,
@@ -232,7 +280,7 @@ Future<void> _appendResolvedComics({
   required Map<String, String> searchTexts,
   required Set<String> seenKeys,
 }) async {
-  final resolvedByKey = await _resolveComics(
+  final resolvedByKey = await resolveShelfComicsByKeys(
     folderType,
     {for (final link in links) link.comicUniqueKey}.toList(),
     db,
@@ -252,51 +300,6 @@ Future<void> _appendResolvedComics({
     comics.add(resolved.info);
     searchTexts[key] = resolved.searchText;
   }
-}
-
-typedef _ResolvedComic = ({ComicSimplifyEntryInfo info, String searchText});
-
-/// 批量把 `ComicLink.comicUniqueKey` 解析成列表项与搜索文本。
-///
-/// 逐条 `getByKey` 会形成 N+1 查询（300 条链接实测约 88ms），这里按类型
-/// 批量 `WHERE "uniqueKey" IN (...)` 预取，只对命中的行做映射与搜索文本。
-Future<Map<String, _ResolvedComic>> _resolveComics(
-  ComicFolderType folderType,
-  List<String> uniqueKeys,
-  Database db,
-) async {
-  final resolved = <String, _ResolvedComic>{};
-  switch (folderType) {
-    case ComicFolderType.favorite:
-      for (final comic in await db.favorites.getByKeys(uniqueKeys)) {
-        if (comic.deleted) continue;
-        resolved[comic.uniqueKey] = (
-          info: unifiedComicFromUnifiedFavorite(comic).toSimplifyEntryInfo(),
-          searchText: buildComicSearchText(comic),
-        );
-      }
-    case ComicFolderType.download:
-      // 书架不返回章节明细：查询不取 chapters/detailJson，映射也不带 raw。
-      for (final comic in await db.downloads.getShelfByKeys(uniqueKeys)) {
-        if (comic.deleted) continue;
-        resolved[comic.uniqueKey] = (
-          info: unifiedComicFromUnifiedDownload(
-            comic,
-            includeRaw: false,
-          ).toSimplifyEntryInfo(),
-          searchText: buildComicSearchText(comic),
-        );
-      }
-    case ComicFolderType.history:
-      for (final comic in await db.histories.getByKeys(uniqueKeys)) {
-        if (comic.deleted) continue;
-        resolved[comic.uniqueKey] = (
-          info: unifiedComicFromUnifiedHistory(comic).toSimplifyEntryInfo(),
-          searchText: buildComicSearchText(comic),
-        );
-      }
-  }
-  return resolved;
 }
 
 Set<String>? _sourceFilter(List<String> sources) {

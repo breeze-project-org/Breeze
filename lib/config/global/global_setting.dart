@@ -465,6 +465,8 @@ abstract class BookshelfSettingState with _$BookshelfSettingState {
     @Default('dd') String historySort,
     @Default(false) bool rememberDownloadSort,
     @Default('dd') String downloadSort,
+    @Default(false) bool hideFavoriteFolders,
+    @Default(false) bool hideDownloadFolders,
     @Default(false) bool detailLayout,
     @Default(false) bool reverseChapters,
   }) = _BookshelfSettingState;
