@@ -3605,6 +3605,9 @@ class Translations$search$zh_CN {
 	/// zh-CN: '暂无搜索记录'
 	String get noHistory => '暂无搜索记录';
 
+	/// zh-CN: '没有匹配的搜索记录'
+	String get noMatchingHistory => '没有匹配的搜索记录';
+
 	/// zh-CN: '🔍 搜索技巧'
 	String get tipsTitle => '🔍 搜索技巧';
 
@@ -5606,6 +5609,7 @@ extension on Translations {
 			'search.descending' => '时间倒序',
 			'search.ascending' => '时间正序',
 			'search.noHistory' => '暂无搜索记录',
+			'search.noMatchingHistory' => '没有匹配的搜索记录',
 			'search.tipsTitle' => '🔍 搜索技巧',
 			'search.exactSearchTitle' => '精准搜索（同时满足）',
 			'search.exactSearchExample' => '全彩(空格)+人妻',

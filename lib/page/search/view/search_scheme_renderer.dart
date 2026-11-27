@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart' hide SearchBar;
+import 'package:zephyr/page/search/cubit/search_cubit.dart';
 import 'package:zephyr/util/json/json_value.dart';
 import 'package:zephyr/page/search/widget/history.dart';
 import 'package:zephyr/page/search/widget/search_bar.dart';
@@ -32,7 +34,11 @@ class SearchSchemeRenderer {
           );
           break;
         case 'history':
-          final child = HistoryWidget(aggregateMode: aggregateMode);
+          final child = BlocSelector<SearchCubit, SearchStates, String>(
+            selector: (state) => state.searchKeyword,
+            builder: (context, keyword) =>
+                HistoryWidget(aggregateMode: aggregateMode, keyword: keyword),
+          );
           widgets.add(
             config['expanded'] == true ? Expanded(child: child) : child,
           );

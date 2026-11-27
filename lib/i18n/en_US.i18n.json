@@ -1152,6 +1152,7 @@
     "descending": "Newest first",
     "ascending": "Oldest first",
     "noHistory": "No search history",
+    "noMatchingHistory": "No matching search history",
     "tipsTitle": "🔍 Search Tips",
     "exactSearchTitle": "Exact search (AND)",
     "exactSearchExample": "colorful + married",

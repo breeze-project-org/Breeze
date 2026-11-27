@@ -1376,6 +1376,7 @@ class _Translations$search$en_US extends Translations$search$zh_CN {
 	@override String get descending => 'Newest first';
 	@override String get ascending => 'Oldest first';
 	@override String get noHistory => 'No search history';
+	@override String get noMatchingHistory => 'No matching search history';
 	@override String get tipsTitle => '🔍 Search Tips';
 	@override String get exactSearchTitle => 'Exact search (AND)';
 	@override String get exactSearchExample => 'colorful + married';
@@ -2889,6 +2890,7 @@ extension on TranslationsEnUs {
 			'search.descending' => 'Newest first',
 			'search.ascending' => 'Oldest first',
 			'search.noHistory' => 'No search history',
+			'search.noMatchingHistory' => 'No matching search history',
 			'search.tipsTitle' => '🔍 Search Tips',
 			'search.exactSearchTitle' => 'Exact search (AND)',
 			'search.exactSearchExample' => 'colorful + married',
