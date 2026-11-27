@@ -56,6 +56,9 @@ class _NavigationBarState extends State<NavigationBar> {
   late HideOnScrollSettings hideOnScrollSettings;
   Timer? _autoSyncTimer;
   StreamSubscription<GlobalSettingState>? _globalSettingSubscription;
+  StreamSubscription<NoticeSync>? _noticeSyncSubscription;
+  StreamSubscription<NeedLogin>? _needLoginSubscription;
+  StreamSubscription<ToastEvent>? _toastSubscription;
   late Duration _autoSyncInterval;
   bool _autoSyncRunning = false;
 
@@ -67,6 +70,7 @@ class _NavigationBarState extends State<NavigationBar> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       checkUpdate(context);
       _autoSync();
       manageCacheSize(context);
@@ -111,15 +115,15 @@ class _NavigationBarState extends State<NavigationBar> {
         });
 
     // 用来手动触发同步
-    eventBus.on<NoticeSync>().listen((event) {
+    _noticeSyncSubscription = eventBus.on<NoticeSync>().listen((event) {
       _autoSync(force: event.force);
     });
 
-    eventBus.on<NeedLogin>().listen((event) {
+    _needLoginSubscription = eventBus.on<NeedLogin>().listen((event) {
       _goToLoginPage(event.from, message: event.message);
     });
 
-    eventBus.on<ToastEvent>().listen((event) {
+    _toastSubscription = eventBus.on<ToastEvent>().listen((event) {
       _showToast(event);
     });
   }
@@ -128,6 +132,9 @@ class _NavigationBarState extends State<NavigationBar> {
   void dispose() {
     _globalSettingSubscription?.cancel();
     _autoSyncTimer?.cancel();
+    _noticeSyncSubscription?.cancel();
+    _needLoginSubscription?.cancel();
+    _toastSubscription?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -410,12 +417,16 @@ class _NavigationBarState extends State<NavigationBar> {
   void _restartAutoSyncTimer() {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = Timer.periodic(_autoSyncInterval, (_) async {
+      if (!mounted) {
+        _autoSyncTimer?.cancel();
+        return;
+      }
       await _autoSync();
     });
   }
 
   Future<void> _autoSync({bool force = false}) async {
-    if (_autoSyncRunning) {
+    if (!mounted || _autoSyncRunning) {
       return;
     }
     _autoSyncRunning = true;
@@ -462,6 +473,7 @@ class _NavigationBarState extends State<NavigationBar> {
   }
 
   void _goToLoginPage(String from, {String? message}) {
+    if (!mounted) return;
     try {
       final pluginId = from.trim();
       if (pluginId.isEmpty) {
@@ -546,6 +558,7 @@ class _NavigationBarState extends State<NavigationBar> {
   }
 
   void _showToast(ToastEvent event) {
+    if (!mounted) return;
     final now = DateTime.now();
     final toastEvent = (event.type, event.title, event.message, event.duration);
     if (_lastToastEvent == toastEvent &&
