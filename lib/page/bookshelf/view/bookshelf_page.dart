@@ -156,16 +156,98 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton(
-                tooltip: t.bookshelf.filter,
-                icon: const Icon(Icons.tune),
-                onPressed: _openFilter,
-              ),
+              _buildFilterButton(onPressed: _openFilter),
             ],
           ),
         ),
       ],
     );
+  }
+
+  /// 筛选入口。当前 tab 存在非默认筛选条件时在图标上挂个小圆点，
+  /// 让用户在收起弹窗后仍知道筛选是生效的。
+  Widget _buildFilterButton({required VoidCallback onPressed}) {
+    return BlocBuilder<BookshelfSearchCubit, BookshelfSearchState>(
+      // 只关心当前 tab 的排序与源勾选：输入关键词、切换别 tab 的源都不必重建。
+      buildWhen: (previous, current) {
+        final mode = _currentMode();
+        final before = previous.stateOf(mode);
+        final after = current.stateOf(mode);
+        return before.sort != after.sort ||
+            !listEquals(before.sources, after.sources);
+      },
+      builder: (context, searchState) {
+        return BlocBuilder<GlobalSettingCubit, GlobalSettingState>(
+          // 只有「隐藏文件夹」会影响圆点，其余全局设置变化直接跳过。
+          buildWhen: (previous, current) =>
+              _hideFoldersOf(_currentMode(), previous) !=
+              _hideFoldersOf(_currentMode(), current),
+          builder: (context, settingState) {
+            final colorScheme = context.theme.colorScheme;
+            return IconButton(
+              tooltip: t.bookshelf.filter,
+              icon: _hasActiveFilter(searchState, settingState)
+                  ? Badge(
+                      smallSize: 8,
+                      backgroundColor: colorScheme.primary,
+                      child: Icon(Icons.tune, color: colorScheme.primary),
+                    )
+                  : const Icon(Icons.tune),
+              onPressed: onPressed,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// 该 tab 实际生效的排序：历史模式下残留的 `vd`/`va` 或异常值一律归一化为
+  /// 默认 `dd`。`_openFilter` 的初始值与「是否有筛选」的判定必须共用它，
+  /// 否则会出现顶栏亮着圆点、点开却是默认值且重置禁用的矛盾。
+  String _effectiveSort(ShelfPageMode mode, String rawSort) {
+    return switch ((mode, rawSort)) {
+      (ShelfPageMode.favorite || ShelfPageMode.download, 'vd' || 'va') =>
+        rawSort,
+      (_, 'da') => 'da',
+      _ => 'dd',
+    };
+  }
+
+  /// 各 tab 的「隐藏文件夹」开关；历史没有文件夹体系，恒为 false。
+  bool _hideFoldersOf(ShelfPageMode mode, GlobalSettingState settingState) {
+    return switch (mode) {
+      ShelfPageMode.favorite =>
+        settingState.bookshelfSetting.hideFavoriteFolders,
+      ShelfPageMode.download =>
+        settingState.bookshelfSetting.hideDownloadFolders,
+      ShelfPageMode.history => false,
+    };
+  }
+
+  /// 非默认筛选判定：自定义排序、隐藏文件夹，或只勾选了部分漫画源。
+  bool _hasActiveFilter(
+    BookshelfSearchState searchState,
+    GlobalSettingState settingState,
+  ) {
+    final mode = _currentMode();
+    final current = searchState.stateOf(mode);
+    if (_effectiveSort(mode, current.sort) != 'dd') {
+      return true;
+    }
+    if (_hideFoldersOf(mode, settingState)) {
+      return true;
+    }
+    final availableSources = _lastAvailableSources;
+    if (availableSources.isNotEmpty) {
+      final selectedCount = current.sources
+          .where(availableSources.contains)
+          .toSet()
+          .length;
+      if (selectedCount > 0 && selectedCount < availableSources.length) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// 展开移动端搜索栏。挂载的 SearchQueryField 自带 autoExpand，
@@ -209,11 +291,7 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
             onPressed: _exitSearch,
           ),
           Expanded(child: _buildShelfSearchField(autoExpand: true)),
-          IconButton(
-            tooltip: t.bookshelf.filter,
-            icon: const Icon(Icons.tune),
-            onPressed: _openFilterFromSearch,
-          ),
+          _buildFilterButton(onPressed: _openFilterFromSearch),
         ],
       );
     }
@@ -223,11 +301,7 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
         _buildSleekTabs(),
         const Spacer(),
         IconButton(icon: const Icon(Icons.search), onPressed: _expandSearch),
-        IconButton(
-          tooltip: t.bookshelf.filter,
-          icon: const Icon(Icons.tune),
-          onPressed: _openFilter,
-        ),
+        _buildFilterButton(onPressed: _openFilter),
       ],
     );
   }
@@ -416,11 +490,14 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
         .map((source) => source.pluginId)
         .toList();
 
-    if (availableSources.isEmpty && currentMode != ShelfPageMode.favorite) {
+    if (availableSources.isEmpty && currentMode == ShelfPageMode.history) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(t.bookshelf.noFilterSource)));
       return;
     }
+
+    final globalSettingState = context.read<GlobalSettingCubit>().state;
+    final initialHideFolders = _hideFoldersOf(currentMode, globalSettingState);
 
     var selectedSources = current.sources
         .where(availableSources.contains)
@@ -429,25 +506,29 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
       selectedSources = availableSources.toSet();
     }
 
-    final result = await showDialog<_BookshelfFilterResult>(
-      context: context,
-      builder: (_) => _BookshelfFilterDialog(
-        mode: currentMode,
-        initialSort: switch (currentMode) {
-          (ShelfPageMode.favorite || ShelfPageMode.download)
-              when current.sort == 'vd' || current.sort == 'va' =>
-            current.sort,
-          _ when current.sort == 'da' => 'da',
-          _ => 'dd',
-        },
-        initialSources: selectedSources,
-        availableSources: availableSources,
-        sourceOptions: sourceOptions,
-      ),
+    final result = await showBookshelfFilterSheet(
+      context,
+      mode: currentMode,
+      initialSort: _effectiveSort(currentMode, current.sort),
+      initialSources: selectedSources,
+      availableSources: availableSources,
+      sourceOptions: sourceOptions,
+      initialHideFolders: initialHideFolders,
     );
 
-    if (result == null) return;
+    if (result == null || !mounted) return;
 
+    context.read<GlobalSettingCubit>().updateBookshelfSetting(
+      (setting) => switch (currentMode) {
+        ShelfPageMode.favorite => setting.copyWith(
+          hideFavoriteFolders: result.hideFolders,
+        ),
+        ShelfPageMode.download => setting.copyWith(
+          hideDownloadFolders: result.hideFolders,
+        ),
+        ShelfPageMode.history => setting,
+      },
+    );
     searchCubit.setSort(currentMode, result.sort);
     _maybePersistSort(currentMode, result.sort);
 
@@ -456,7 +537,7 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
     _triggerRefresh(goTop: true);
   }
 
-  List<_FilterSourceOption> _buildFilterSourceOptions() {
+  List<BookshelfFilterSourceOption> _buildFilterSourceOptions() {
     final registry = context.read<PluginRegistryCubit>().state;
     final sourceOptions = PluginRegistryService.I.sortPlugins(
       registry.plugins.values.where(
@@ -465,7 +546,7 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
     );
     return sourceOptions
         .map(
-          (plugin) => _FilterSourceOption(
+          (plugin) => BookshelfFilterSourceOption(
             pluginId: plugin.uuid,
             title: registry.pluginName(plugin.uuid),
           ),
@@ -508,182 +589,4 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
           ..sort();
     return entries.join('|');
   }
-}
-
-class _BookshelfFilterDialog extends StatefulWidget {
-  const _BookshelfFilterDialog({
-    required this.mode,
-    required this.initialSort,
-    required this.initialSources,
-    required this.availableSources,
-    required this.sourceOptions,
-  });
-
-  final ShelfPageMode mode;
-  final String initialSort;
-  final Set<String> initialSources;
-  final List<String> availableSources;
-  final List<_FilterSourceOption> sourceOptions;
-
-  @override
-  State<_BookshelfFilterDialog> createState() => _BookshelfFilterDialogState();
-}
-
-class _BookshelfFilterDialogState extends State<_BookshelfFilterDialog> {
-  late String _selectedSort;
-  late Set<String> _selectedSources;
-
-  bool get _isFavoriteMode => widget.mode == ShelfPageMode.favorite;
-  bool get _isDownloadMode => widget.mode == ShelfPageMode.download;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedSort = widget.initialSort;
-    _selectedSources = Set<String>.from(widget.initialSources);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(t.bookshelf.filter),
-      content: SizedBox(
-        width: 420,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSortSection(context),
-              const SizedBox(height: 16),
-              _buildSourceSection(context),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(
-            _BookshelfFilterResult(
-              sort: _selectedSort,
-              sources: _selectedSources,
-            ),
-          ),
-          child: Text(t.common.apply),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSortSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(t.bookshelf.sort, style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            ChoiceChip(
-              showCheckmark: false,
-              label: Text(t.bookshelf.sortDesc),
-              selected: _selectedSort == 'dd',
-              onSelected: (_) => setState(() => _selectedSort = 'dd'),
-            ),
-            ChoiceChip(
-              showCheckmark: false,
-              label: Text(t.bookshelf.sortAsc),
-              selected: _selectedSort == 'da',
-              onSelected: (_) => setState(() => _selectedSort = 'da'),
-            ),
-            if (_isFavoriteMode || _isDownloadMode) ...[
-              ChoiceChip(
-                showCheckmark: false,
-                label: Text(t.bookshelf.viewSortDesc),
-                selected: _selectedSort == 'vd',
-                onSelected: (_) => setState(() => _selectedSort = 'vd'),
-              ),
-              ChoiceChip(
-                showCheckmark: false,
-                label: Text(t.bookshelf.viewSortAsc),
-                selected: _selectedSort == 'va',
-                onSelected: (_) => setState(() => _selectedSort = 'va'),
-              ),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSourceSection(BuildContext context) {
-    final isAllSelected =
-        _selectedSources.length == widget.availableSources.length;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              t.bookshelf.source,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(width: 8),
-            TextButton(
-              onPressed: () => setState(() {
-                if (isAllSelected) {
-                  _selectedSources.clear();
-                } else {
-                  _selectedSources = widget.availableSources.toSet();
-                }
-              }),
-              child: Text(
-                isAllSelected ? t.bookshelf.deselectAll : t.common.selectAll,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final source in widget.sourceOptions)
-              FilterChip(
-                showCheckmark: false,
-                label: Text(source.title),
-                selected: _selectedSources.contains(source.pluginId),
-                onSelected: (selected) => setState(() {
-                  if (selected) {
-                    _selectedSources.add(source.pluginId);
-                  } else {
-                    _selectedSources.remove(source.pluginId);
-                  }
-                }),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _BookshelfFilterResult {
-  _BookshelfFilterResult({required this.sort, required Set<String> sources})
-    : sources = Set<String>.from(sources);
-
-  final String sort;
-  final Set<String> sources;
-}
-
-class _FilterSourceOption {
-  const _FilterSourceOption({required this.pluginId, required this.title});
-
-  final String pluginId;
-  final String title;
 }
