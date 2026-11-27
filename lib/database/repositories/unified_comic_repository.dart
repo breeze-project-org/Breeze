@@ -84,6 +84,14 @@ class UnifiedComicFavoriteRepository {
     decode: _decodeAll,
   );
 
+  /// 按来源取 uniqueKey（删除插件清理用，只读键不解码整行）。
+  Future<List<String>> listKeysBySource(String source) => runDbRead(
+    db,
+    sql: 'SELECT "uniqueKey" FROM "UnifiedComicFavorite" WHERE "source" = ?',
+    params: <Object?>[source],
+    decode: uniqueKeysFromRows,
+  );
+
   Future<List<UnifiedComicFavorite>> listActive() => runDbRead(
     db,
     sql:
@@ -300,6 +308,14 @@ class UnifiedComicHistoryRepository {
     decode: _decodeAll,
   );
 
+  /// 按来源取 uniqueKey（删除插件清理用，只读键不解码整行）。
+  Future<List<String>> listKeysBySource(String source) => runDbRead(
+    db,
+    sql: 'SELECT "uniqueKey" FROM "UnifiedComicHistory" WHERE "source" = ?',
+    params: <Object?>[source],
+    decode: uniqueKeysFromRows,
+  );
+
   static String listActiveSql({bool ascending = false}) {
     final direction = ascending ? 'ASC' : 'DESC';
     return 'SELECT * FROM "UnifiedComicHistory" WHERE "deleted" = 0 '
@@ -316,6 +332,16 @@ class UnifiedComicHistoryRepository {
         ? listActiveSql(ascending: ascending)
         : '${listActiveSql(ascending: ascending)} LIMIT ? OFFSET ?',
     params: limit == null ? const <Object?>[] : <Object?>[limit, offset ?? 0],
+    decode: _decodeAll,
+  );
+
+  /// 追更页加载用：整表历史改在后台 isolate 查询并解码。
+  ///
+  /// 历史表可能有上千行、每行数 KB JSON；[listActive] 在调用方 isolate 解码，
+  /// 进入追更页时会卡帧。SQL 与解码完全复用，只把执行位置移到后台。
+  Future<List<UnifiedComicHistory>> listActiveInWorker() => runDbReadInWorker(
+    db,
+    sql: listActiveSql(),
     decode: _decodeAll,
   );
 
@@ -604,6 +630,14 @@ class UnifiedComicDownloadRepository {
     db,
     sql: 'SELECT * FROM "UnifiedComicDownload" ORDER BY "id"',
     decode: _decodeAll,
+  );
+
+  /// 按来源取 uniqueKey（删除插件清理用，只读键不解码整行）。
+  Future<List<String>> listKeysBySource(String source) => runDbRead(
+    db,
+    sql: 'SELECT "uniqueKey" FROM "UnifiedComicDownload" WHERE "source" = ?',
+    params: <Object?>[source],
+    decode: uniqueKeysFromRows,
   );
 
   Future<List<UnifiedComicDownload>> listActive() => runDbRead(

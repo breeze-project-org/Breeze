@@ -663,37 +663,23 @@ class PluginRegistryService {
   }
 
   Future<void> _deletePluginRelatedData(String uuid) async {
-    final favorites = (await database.favorites.getAll())
-        .where((comic) => comic.source == uuid)
-        .toList();
-    final histories = (await database.histories.getAll())
-        .where((comic) => comic.source == uuid)
-        .toList();
-    final downloads = (await database.downloads.getAll())
-        .where((comic) => comic.source == uuid)
-        .toList();
+    // 只按来源取键：getAll() 会把整张收藏/历史/下载表解码到 UI isolate，
+    // 历史表上千行时删一次插件就卡掉一两百毫秒。
+    final favoriteKeys = await database.favorites.listKeysBySource(uuid);
+    final historyKeys = await database.histories.listKeysBySource(uuid);
+    final downloadKeys = await database.downloads.listKeysBySource(uuid);
 
     // 收藏/历史属于同步数据，应当软删除（标记 deleted），让同步能把删除传播出去。
-    for (final comic in favorites) {
-      await ComicLinkService.removeComicFromAll(
-        comic.uniqueKey,
-        ComicFolderType.favorite,
-      );
+    for (final key in favoriteKeys) {
+      await ComicLinkService.removeComicFromAll(key, ComicFolderType.favorite);
     }
 
     // 历史记录没有 ComicLink，只需要软删除本体。
-    await database.histories.markDeletedByKeys(
-      histories
-          .where((comic) => !comic.deleted)
-          .map((comic) => comic.uniqueKey),
-    );
+    await database.histories.markDeletedByKeys(historyKeys);
 
     // 下载记录不参与同步，直接物理删除。
-    for (final comic in downloads) {
-      await ComicLinkService.removeComicFromAll(
-        comic.uniqueKey,
-        ComicFolderType.download,
-      );
+    for (final key in downloadKeys) {
+      await ComicLinkService.removeComicFromAll(key, ComicFolderType.download);
     }
   }
 

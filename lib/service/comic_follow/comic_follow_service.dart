@@ -50,7 +50,7 @@ class ComicFollowService {
 
   /// 查询未删除的阅读历史，供追更页关联阅读进度和最后阅读时间。
   Future<Map<String, UnifiedComicHistory>> listActiveHistories() async {
-    final histories = await database.histories.listActive();
+    final histories = await database.histories.listActiveInWorker();
     return {for (final history in histories) history.uniqueKey: history};
   }
 
