@@ -163,23 +163,87 @@ Widget webdavSync(BuildContext context, SyncServiceType syncServiceType) {
   );
 }
 
+typedef _KeywordListSelector = List<String> Function(GlobalSettingState state);
+typedef _KeywordListUpdater = GlobalSettingState Function(
+  GlobalSettingState state,
+  List<String> keywords,
+);
+
 Widget editMaskedKeywords(BuildContext context) {
+  return _keywordManagementTile(
+    context,
+    icon: Icons.shield_outlined,
+    title: t.settings.maskedKeywords,
+    subtitle: t.settings.maskedKeywordsSubtitle,
+    emptyText: t.settings.maskedKeywordsEmpty,
+    inputHint: t.settings.maskedKeywordsInputHint,
+    readKeywords: (state) => state.maskedKeywords,
+    writeKeywords: (state, keywords) =>
+        state.copyWith(maskedKeywords: keywords),
+  );
+}
+
+Widget editMaskedCommentKeywords(BuildContext context) {
+  return _keywordManagementTile(
+    context,
+    icon: Icons.comment_outlined,
+    title: t.settings.maskedCommentKeywords,
+    subtitle: t.settings.maskedCommentKeywordsSubtitle,
+    emptyText: t.settings.maskedCommentKeywordsEmpty,
+    inputHint: t.settings.maskedCommentKeywordsInputHint,
+    readKeywords: (state) => state.maskedCommentKeywords,
+    writeKeywords: (state, keywords) =>
+        state.copyWith(maskedCommentKeywords: keywords),
+  );
+}
+
+Widget _keywordManagementTile(
+  BuildContext context, {
+  required IconData icon,
+  required String title,
+  required String subtitle,
+  required String emptyText,
+  required String inputHint,
+  required _KeywordListSelector readKeywords,
+  required _KeywordListUpdater writeKeywords,
+}) {
   return ListTile(
-    leading: const Icon(Icons.shield_outlined),
-    title: Text(t.settings.maskedKeywords),
-    subtitle: Text(t.settings.maskedKeywordsSubtitle),
+    leading: Icon(icon),
+    title: Text(title),
+    subtitle: Text(subtitle),
     trailing: const Icon(Icons.chevron_right),
     onTap: () {
       showDialog(
         context: context,
-        builder: (context) => const _KeywordManagementDialog(),
+        builder: (context) => _KeywordManagementDialog(
+          title: title,
+          subtitle: subtitle,
+          emptyText: emptyText,
+          inputHint: inputHint,
+          readKeywords: readKeywords,
+          writeKeywords: writeKeywords,
+        ),
       );
     },
   );
 }
 
 class _KeywordManagementDialog extends StatefulWidget {
-  const _KeywordManagementDialog();
+  const _KeywordManagementDialog({
+    required this.title,
+    required this.subtitle,
+    required this.emptyText,
+    required this.inputHint,
+    required this.readKeywords,
+    required this.writeKeywords,
+  });
+
+  final String title;
+  final String subtitle;
+  final String emptyText;
+  final String inputHint;
+  final _KeywordListSelector readKeywords;
+  final _KeywordListUpdater writeKeywords;
 
   @override
   State<_KeywordManagementDialog> createState() =>
@@ -202,6 +266,7 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
 
     return BlocBuilder<GlobalSettingCubit, GlobalSettingState>(
       builder: (context, state) {
+        final keywords = widget.readKeywords(state);
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -215,7 +280,7 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  t.settings.maskedKeywords,
+                  widget.title,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -223,7 +288,7 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  t.settings.maskedKeywordsSubtitle,
+                  widget.subtitle,
                   style: TextStyle(
                     fontSize: 13,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -243,12 +308,12 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
                   ),
                   width: double.infinity,
                   child: SingleChildScrollView(
-                    child: state.maskedKeywords.isEmpty
+                    child: keywords.isEmpty
                         ? Center(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 36),
                               child: Text(
-                                t.settings.maskedKeywordsEmpty,
+                                widget.emptyText,
                                 style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 13,
@@ -259,69 +324,68 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
                         : Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: List.generate(
-                              state.maskedKeywords.length,
-                              (index) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primaryContainer,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 280,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          state.maskedKeywords[index],
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onPrimaryContainer,
-                                          ),
+                            children: List.generate(keywords.length, (index) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 280,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        keywords[index],
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer,
                                         ),
                                       ),
-                                      const SizedBox(width: 4),
-                                      MouseRegion(
-                                        cursor: SystemMouseCursors.click,
-                                        child: GestureDetector(
-                                          onTap: () {
+                                    ),
+                                    const SizedBox(width: 4),
+                                    MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          globalSettingCubit.updateState((
+                                            current,
+                                          ) {
                                             final newList = List<String>.from(
-                                              state.maskedKeywords,
+                                              widget.readKeywords(current),
+                                            )..removeAt(index);
+                                            return widget.writeKeywords(
+                                              current,
+                                              newList,
                                             );
-                                            newList.removeAt(index);
-                                            globalSettingCubit.updateState(
-                                              (current) => current.copyWith(
-                                                maskedKeywords: newList,
-                                              ),
-                                            );
-                                          },
-                                          child: Icon(
-                                            Icons.close,
-                                            size: 14,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onPrimaryContainer
-                                                .withValues(alpha: 0.7),
-                                          ),
+                                          });
+                                        },
+                                        child: Icon(
+                                          Icons.close,
+                                          size: 14,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer
+                                              .withValues(alpha: 0.7),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
                           ),
                   ),
                 ),
@@ -333,7 +397,7 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
                         controller: _controller,
                         style: const TextStyle(fontSize: 14),
                         decoration: InputDecoration(
-                          hintText: t.settings.maskedKeywordsInputHint,
+                          hintText: widget.inputHint,
                           hintStyle: const TextStyle(fontSize: 14),
                           filled: true,
                           fillColor: Theme.of(context)
@@ -388,10 +452,15 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
 
   void _addKeyword(GlobalSettingCubit cubit, GlobalSettingState state) {
     final text = _controller.text.trim();
-    if (text.isNotEmpty && !state.maskedKeywords.contains(text)) {
-      final newList = [...state.maskedKeywords, text];
-      cubit.updateState((current) => current.copyWith(maskedKeywords: newList));
-      _controller.clear();
+    if (text.isEmpty || widget.readKeywords(state).contains(text)) {
+      return;
     }
+    cubit.updateState(
+      (current) => widget.writeKeywords(current, [
+        ...widget.readKeywords(current),
+        text,
+      ]),
+    );
+    _controller.clear();
   }
 }

@@ -24,7 +24,7 @@ class CommentItem {
   final List<CommentItem> replies;
   final Map<String, dynamic> extern;
 
-  CommentItem copyWith({int? replyCount}) {
+  CommentItem copyWith({int? replyCount, List<CommentItem>? replies}) {
     return CommentItem(
       id: id,
       authorName: authorName,
@@ -33,7 +33,7 @@ class CommentItem {
       content: content,
       createdAt: createdAt,
       replyCount: replyCount ?? this.replyCount,
-      replies: replies,
+      replies: replies ?? this.replies,
       extern: extern,
     );
   }

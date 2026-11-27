@@ -41,6 +41,11 @@ _GlobalSettingState _$GlobalSettingStateFromJson(
           ?.map((e) => e as String)
           .toList() ??
       const [],
+  maskedCommentKeywords:
+      (json['maskedCommentKeywords'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
   socks5ProxyEnabled: json['socks5ProxyEnabled'] as bool? ?? true,
   socks5Proxy: json['socks5Proxy'] as String? ?? '',
   needCleanCache: json['needCleanCache'] as bool? ?? false,
@@ -134,6 +139,7 @@ Map<String, dynamic> _$GlobalSettingStateToJson(
   'settingUpdatedAt': instance.settingUpdatedAt,
   'syncSetting': instance.syncSetting.toJson(),
   'maskedKeywords': instance.maskedKeywords,
+  'maskedCommentKeywords': instance.maskedCommentKeywords,
   'socks5ProxyEnabled': instance.socks5ProxyEnabled,
   'socks5Proxy': instance.socks5Proxy,
   'needCleanCache': instance.needCleanCache,

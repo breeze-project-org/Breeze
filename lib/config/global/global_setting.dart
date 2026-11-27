@@ -200,6 +200,7 @@ abstract class GlobalSettingState with _$GlobalSettingState {
     @Default(<String, int>{}) Map<String, int> settingUpdatedAt,
     @Default(SyncSettingState()) SyncSettingState syncSetting,
     @Default([]) List<String> maskedKeywords,
+    @Default([]) List<String> maskedCommentKeywords,
     @Default(true) bool socks5ProxyEnabled,
     @Default('') String socks5Proxy,
     @Default(false) bool needCleanCache,

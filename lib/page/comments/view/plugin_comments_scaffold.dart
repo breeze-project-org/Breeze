@@ -111,7 +111,8 @@ class _PluginCommentsScaffoldState extends State<PluginCommentsScaffold> {
     }
 
     final merged = <CommentItem>[...state.topItems, ...state.items];
-    if (merged.isEmpty) {
+    // 屏蔽词可能把当前页全部过滤掉；只要还有下一页就保留“加载更多”。
+    if (merged.isEmpty && state.hasReachedMax) {
       return _wrapBodyContent(Center(child: Text(t.comments.noComments)));
     }
 

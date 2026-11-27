@@ -1,8 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/network/http/plugin/unified_plugin_envelope.dart';
 import 'package:zephyr/network/http/plugin/unified_comic_plugin.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/page/comments/method/filter_masked_comments.dart';
 import 'package:zephyr/page/comments/model/model.dart';
 import 'package:zephyr/util/error/error_filter.dart';
 import 'package:zephyr/util/json/json_value.dart';
@@ -293,10 +295,13 @@ class CommentsCubit extends Cubit<CommentsViewState> {
         source: response.source,
       );
       final data = envelope.data;
-      final items = asJsonList(data['items'])
-          .map(asJsonMap)
-          .map(CommentItem.fromMap)
-          .toList();
+      final items = filterMaskedComments(
+        asJsonList(data['items'])
+            .map(asJsonMap)
+            .map(CommentItem.fromMap)
+            .toList(),
+        normalizeMaskedCommentKeywords(globalSetting.maskedCommentKeywords),
+      );
       final paging = asJsonMap(data['paging']);
       final hasReachedMax = paging['hasReachedMax'] == true;
 
@@ -342,14 +347,23 @@ class CommentsCubit extends Cubit<CommentsViewState> {
       source: response.source,
     );
     final data = envelope.data;
-    final topItems = asJsonList(data['topItems'])
-        .map(asJsonMap)
-        .map(CommentItem.fromMap)
-        .toList();
-    final items = asJsonList(data['items'])
-        .map(asJsonMap)
-        .map(CommentItem.fromMap)
-        .toList();
+    final maskedKeywords = normalizeMaskedCommentKeywords(
+      globalSetting.maskedCommentKeywords,
+    );
+    final topItems = filterMaskedComments(
+      asJsonList(data['topItems'])
+          .map(asJsonMap)
+          .map(CommentItem.fromMap)
+          .toList(),
+      maskedKeywords,
+    );
+    final items = filterMaskedComments(
+      asJsonList(data['items'])
+          .map(asJsonMap)
+          .map(CommentItem.fromMap)
+          .toList(),
+      maskedKeywords,
+    );
     final paging = asJsonMap(data['paging']);
     return _CommentFeed(
       topItems: topItems,

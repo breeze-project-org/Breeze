@@ -254,6 +254,10 @@ class _Translations$settings$en_US extends Translations$settings$zh_CN {
 	@override String get maskedKeywordsSubtitle => 'Add keywords to filter unwanted content (search only)';
 	@override String get maskedKeywordsEmpty => 'No masked keywords';
 	@override String get maskedKeywordsInputHint => 'Enter new keyword...';
+	@override String get maskedCommentKeywords => 'Masked comment keywords';
+	@override String get maskedCommentKeywordsSubtitle => 'Add keywords to hide comments containing them (replies included)';
+	@override String get maskedCommentKeywordsEmpty => 'No masked comment keywords';
+	@override String get maskedCommentKeywordsInputHint => 'Enter a keyword to mask...';
 	@override String get chineseConvert => 'Chinese conversion';
 	@override String get chineseConvertSubtitle => 'Convert comic titles, descriptions, chapters and comments';
 	@override String get chineseConvertOff => 'Off';
@@ -1903,6 +1907,10 @@ extension on TranslationsEnUs {
 			'settings.maskedKeywordsSubtitle' => 'Add keywords to filter unwanted content (search only)',
 			'settings.maskedKeywordsEmpty' => 'No masked keywords',
 			'settings.maskedKeywordsInputHint' => 'Enter new keyword...',
+			'settings.maskedCommentKeywords' => 'Masked comment keywords',
+			'settings.maskedCommentKeywordsSubtitle' => 'Add keywords to hide comments containing them (replies included)',
+			'settings.maskedCommentKeywordsEmpty' => 'No masked comment keywords',
+			'settings.maskedCommentKeywordsInputHint' => 'Enter a keyword to mask...',
 			'settings.chineseConvert' => 'Chinese conversion',
 			'settings.chineseConvertSubtitle' => 'Convert comic titles, descriptions, chapters and comments',
 			'settings.chineseConvertOff' => 'Off',
@@ -2278,12 +2286,12 @@ extension on TranslationsEnUs {
 			'comicEdit.imagesImported' => ({required Object count}) => 'Imported ${count} pages',
 			'comicEdit.editVolume' => 'Edit volume',
 			'comicEdit.volumeHint' => 'Enter a volume name; leave empty for no grouping',
+			_ => null,
+		} ?? switch (path) {
 			'comicEdit.volumeLabel' => ({required Object name}) => 'Volume: ${name}',
 			'comicEdit.volumeUpdated' => 'Volume updated',
 			'comicEdit.imageMissing' => 'Image file missing',
 			'comicEdit.busy' => 'Working...',
-			_ => null,
-		} ?? switch (path) {
 			'comicEdit.notFound' => 'Download record not found',
 			'comicEdit.loadFailed' => 'Failed to load',
 			'comicInfo.follow' => 'Follow updates',
@@ -2792,12 +2800,12 @@ extension on TranslationsEnUs {
 			'realSr.coremlNoDenoise' => 'No denoise',
 			'realSr.coremlInputHint' => 'Enter input image absolute path or asset path',
 			'realSr.coremlStartUpscale' => 'Start upscale',
+			_ => null,
+		} ?? switch (path) {
 			'realSr.coremlStatusFillInput' => 'Please fill in the input image path',
 			'realSr.coremlStatusNoModelFile' => 'No model files available for current family',
 			'realSr.coremlStatusPreparing' => 'Preparing resources...',
 			'realSr.coremlStatusUpscaling' => 'Upscaling...',
-			_ => null,
-		} ?? switch (path) {
 			'realSr.coremlStatusDone' => ({required Object outputPath, required Object size}) => 'Done\n${outputPath}\nsize: ${size} bytes',
 			'realSr.coremlStatusFailed' => ({required Object error}) => 'Failed: ${error}',
 			'realSr.coremlModelOption' => 'Model option (denoise level)',

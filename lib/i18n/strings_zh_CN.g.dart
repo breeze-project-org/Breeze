@@ -524,6 +524,18 @@ class Translations$settings$zh_CN {
 	/// zh-CN: '输入新关键词...'
 	String get maskedKeywordsInputHint => '输入新关键词...';
 
+	/// zh-CN: '评论屏蔽词'
+	String get maskedCommentKeywords => '评论屏蔽词';
+
+	/// zh-CN: '添加关键词，屏蔽包含这些关键词的评论（含楼中楼）'
+	String get maskedCommentKeywordsSubtitle => '添加关键词，屏蔽包含这些关键词的评论（含楼中楼）';
+
+	/// zh-CN: '暂无评论屏蔽词'
+	String get maskedCommentKeywordsEmpty => '暂无评论屏蔽词';
+
+	/// zh-CN: '输入要屏蔽的关键词...'
+	String get maskedCommentKeywordsInputHint => '输入要屏蔽的关键词...';
+
 	/// zh-CN: '简繁转换'
 	String get chineseConvert => '简繁转换';
 
@@ -4611,6 +4623,10 @@ extension on Translations {
 			'settings.maskedKeywordsSubtitle' => '添加关键词，过滤不想看到的内容（仅搜索生效）',
 			'settings.maskedKeywordsEmpty' => '暂无屏蔽词',
 			'settings.maskedKeywordsInputHint' => '输入新关键词...',
+			'settings.maskedCommentKeywords' => '评论屏蔽词',
+			'settings.maskedCommentKeywordsSubtitle' => '添加关键词，屏蔽包含这些关键词的评论（含楼中楼）',
+			'settings.maskedCommentKeywordsEmpty' => '暂无评论屏蔽词',
+			'settings.maskedCommentKeywordsInputHint' => '输入要屏蔽的关键词...',
 			'settings.chineseConvert' => '简繁转换',
 			'settings.chineseConvertSubtitle' => '将漫画标题、简介、章节、评论等转为简体或繁体',
 			'settings.chineseConvertOff' => '关闭',
@@ -4986,12 +5002,12 @@ extension on Translations {
 			'comicEdit.imagesImported' => ({required Object count}) => '已导入 ${count} 张图片',
 			'comicEdit.editVolume' => '编辑分卷',
 			'comicEdit.volumeHint' => '输入分卷名称，留空表示不分组',
+			_ => null,
+		} ?? switch (path) {
 			'comicEdit.volumeLabel' => ({required Object name}) => '分卷：${name}',
 			'comicEdit.volumeUpdated' => '分卷已更新',
 			'comicEdit.imageMissing' => '图片文件缺失',
 			'comicEdit.busy' => '处理中...',
-			_ => null,
-		} ?? switch (path) {
 			'comicEdit.notFound' => '下载记录不存在',
 			'comicEdit.loadFailed' => '加载失败',
 			'comicInfo.follow' => '加入追更',
@@ -5500,12 +5516,12 @@ extension on Translations {
 			'realSr.coremlNoise0' => '降噪 0',
 			'realSr.coremlNoDenoise' => '无降噪',
 			'realSr.coremlInputHint' => '输入图片绝对路径或 asset 路径',
+			_ => null,
+		} ?? switch (path) {
 			'realSr.coremlStartUpscale' => '开始超分',
 			'realSr.coremlStatusFillInput' => '请填写输入图片路径',
 			'realSr.coremlStatusNoModelFile' => '当前模型族没有可用的模型文件',
 			'realSr.coremlStatusPreparing' => '正在准备资源...',
-			_ => null,
-		} ?? switch (path) {
 			'realSr.coremlStatusUpscaling' => '正在超分...',
 			'realSr.coremlStatusDone' => ({required Object outputPath, required Object size}) => '完成\n${outputPath}\nsize: ${size} bytes',
 			'realSr.coremlStatusFailed' => ({required Object error}) => '失败: ${error}',
