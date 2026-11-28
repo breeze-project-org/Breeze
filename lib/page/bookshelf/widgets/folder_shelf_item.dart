@@ -270,22 +270,23 @@ class FolderShelfItem extends StatelessWidget {
                   width: isSelected && selectionMode ? 2 : 1,
                 ),
               ),
+              padding: const EdgeInsets.all(4),
               child: SizedBox(
-                height: 64,
+                height: 56,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(6),
                       child: SizedBox(
-                        width: 48,
-                        height: 64,
+                        width: 42,
+                        height: 56,
                         child: coverInfo == null
                             ? ColoredBox(
                                 color: c.surface2,
                                 child: Icon(
                                   Icons.folder_rounded,
-                                  size: 26,
+                                  size: 24,
                                   color: c.accent,
                                 ),
                               )
@@ -295,8 +296,9 @@ class FolderShelfItem extends StatelessWidget {
                                 id: coverInfo!.id,
                                 pictureType: coverInfo!.pictureType,
                                 from: coverInfo!.from,
-                                width: 48,
-                                height: 64,
+                                roundedCorner: false,
+                                width: 42,
+                                height: 56,
                               ),
                       ),
                     ),
@@ -411,7 +413,7 @@ class FolderShelfItem extends StatelessWidget {
                               ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                   ],
                 ),
               ),

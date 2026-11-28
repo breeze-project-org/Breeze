@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -336,14 +337,6 @@ class _PageCountWidgetState extends State<PageCountWidget> {
       batteryIcon: getBatteryIcon(),
       opacityPercent: opacityPercent,
       fontSize: fontSize,
-      // 信息浮层直接压在漫画上：底色/字色都要尊重阅读器自己的前景与背景色，
-      // 透明度按用户设置平滑地“漏”出底下的画面。
-      readerBackgroundColor: readSetting.resolveReaderBackgroundColor(
-        Theme.of(context).brightness,
-      ),
-      readerForegroundColor: readSetting.resolveReaderForegroundColor(
-        Theme.of(context).brightness,
-      ),
     );
 
     final isTop =
@@ -392,8 +385,6 @@ class _PageInfoPanel extends StatelessWidget {
   final IconData batteryIcon;
   final int opacityPercent;
   final double fontSize;
-  final Color readerBackgroundColor;
-  final Color readerForegroundColor;
 
   const _PageInfoPanel({
     required this.pageText,
@@ -407,46 +398,23 @@ class _PageInfoPanel extends StatelessWidget {
     required this.batteryIcon,
     required this.opacityPercent,
     required this.fontSize,
-    required this.readerBackgroundColor,
-    required this.readerForegroundColor,
   });
-
-  /// 胶囊里的字色：在 CalmUI 正文色与阅读器前景色之间取对比更强的那个。
-  ///
-  /// 阅读器允许“浅色主题 + 纯黑底”这类反主题组合，单靠 [CalmColors.text]
-  /// 在低不透明度时可能糊在底上；阅读器前景色是用户自己选定的对比色，
-  /// 两个候选都来自配置，不会出现写死的黑白。
-  Color _pickInk(CalmColors c, Color capsule) {
-    final calmContrast = _contrastRatio(c.text, capsule);
-    final readerContrast = _contrastRatio(readerForegroundColor, capsule);
-    return readerContrast > calmContrast ? readerForegroundColor : c.text;
-  }
-
-  static double _contrastRatio(Color a, Color b) {
-    final la = a.computeLuminance();
-    final lb = b.computeLuminance();
-    final lighter = la > lb ? la : lb;
-    final darker = la > lb ? lb : la;
-    return (lighter + 0.05) / (darker + 0.05);
-  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.calm;
     final alpha = (opacityPercent / 100).clamp(0.2, 1.0);
-    final capsuleColor = Color.alphaBlend(
-      c.surface.withValues(alpha: alpha),
-      readerBackgroundColor,
-    );
-    final ink = _pickInk(c, capsuleColor);
-    final mutedInk = Color.alphaBlend(
-      ink.withValues(alpha: 0.74),
-      capsuleColor,
-    );
-    final borderColor = Color.alphaBlend(
-      ink.withValues(alpha: 0.14),
-      capsuleColor,
-    );
+    final radius = BorderRadius.circular(10);
+    final capsuleColor = c.surface.withValues(alpha: alpha);
+    // 胶囊底色始终是 c.surface（带透明度），字色必须与自身底色成对取 c.text，
+    // 避免浅色主题配黑色阅读背景时把白字画在半透明白底上。
+    final ink = c.text;
+    final mutedInk = ink.withValues(alpha: 0.74);
+    final borderColor = ink.withValues(alpha: 0.14 * alpha);
+    final shadows = [
+      for (final s in c.shadowSm)
+        s.copyWith(color: s.color.withValues(alpha: s.color.a * alpha)),
+    ];
 
     final textStyle = TextStyle(
       color: ink,
@@ -480,12 +448,11 @@ class _PageInfoPanel extends StatelessWidget {
       items.add(Text(currentTime, style: textStyle));
     }
 
-    return DecoratedBox(
+    final capsule = DecoratedBox(
       decoration: BoxDecoration(
         color: capsuleColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: radius,
         border: Border.all(color: borderColor),
-        boxShadow: c.shadowSm,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -498,6 +465,19 @@ class _PageInfoPanel extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(borderRadius: radius, boxShadow: shadows),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: alpha < 1.0
+            ? BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: capsule,
+              )
+            : capsule,
       ),
     );
   }

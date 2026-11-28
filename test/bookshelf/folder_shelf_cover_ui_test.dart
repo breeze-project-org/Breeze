@@ -10,6 +10,7 @@ import 'package:zephyr/page/bookshelf/cubit/bookshelf_search_cubit.dart';
 import 'package:zephyr/page/bookshelf/models/shelf_page_mode.dart';
 import 'package:zephyr/page/bookshelf/service/comic_folder_service.dart';
 import 'package:zephyr/page/bookshelf/service/comic_link_service.dart';
+import 'package:zephyr/page/bookshelf/widgets/folder_shelf_item.dart';
 import 'package:zephyr/page/bookshelf/widgets/folder_shelf_page.dart';
 import 'package:zephyr/util/rust/rust_loader.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/cover.dart';
@@ -135,6 +136,59 @@ void main() {
       description: '文件夹隐藏',
     );
     expect(find.text(rootComic.title), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('详情模式下文件夹封面缩进在卡片内且不超出高度', (tester) async {
+    await tester.runAsync(() async {
+      await ComicFolderService.createFolder(
+        '',
+        'DetailFolder',
+        ComicFolderType.favorite,
+      );
+      final favorite = createTestFavorite('test:detail-folder-cover')
+        ..cover = const ComicImage(
+          id: 'detail-cover-id',
+          url: '',
+          name: '',
+          path: 'detail-folder-cover.jpg',
+          extern: {'path': 'detail-folder-cover.jpg'},
+        );
+      await database.favorites.put(favorite);
+      await ComicLinkService.addComic(
+        favorite.uniqueKey,
+        '/DetailFolder',
+        ComicFolderType.favorite,
+      );
+    });
+
+    final global = await pumpShelf(tester);
+    global.updateBookshelfSetting(
+      (setting) => setting.copyWith(detailLayout: true),
+    );
+    await waitFor(
+      tester,
+      () => find.byType(CoverWidget).evaluate().any(
+        (element) =>
+            (element.widget as CoverWidget).path == 'detail-folder-cover.jpg',
+      ),
+      description: '详情模式文件夹封面',
+    );
+
+    final itemRect = tester.getRect(find.byType(FolderShelfItem));
+    final coverFinder = find.descendant(
+      of: find.byType(FolderShelfItem),
+      matching: find.byType(CoverWidget),
+    );
+    final coverRect = tester.getRect(coverFinder);
+    final coverWidget = tester.widget<CoverWidget>(coverFinder);
+
+    expect(itemRect.height, 64);
+    expect(coverRect.size, const Size(42, 56));
+    expect(coverRect.top, greaterThan(itemRect.top));
+    expect(coverRect.bottom, lessThan(itemRect.bottom));
+    expect(coverRect.left, greaterThan(itemRect.left));
+    expect(coverWidget.roundedCorner, isFalse);
     await tester.pump(const Duration(seconds: 5));
   });
 }
