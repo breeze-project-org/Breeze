@@ -1565,26 +1565,37 @@ class _ChapterGroupHeaderBar extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textHeightBehavior: kCalmTextHeightBehavior,
-                        strutStyle: calmStrut(12.5),
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: c.text,
-                          height: 1.2,
-                          leadingDistribution: TextLeadingDistribution.even,
-                        ),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textHeightBehavior: kCalmTextHeightBehavior,
+                              strutStyle: calmStrut(12.5),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: c.text,
+                                height: 1.2,
+                                leadingDistribution:
+                                    TextLeadingDistribution.even,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          CalmBadge(
+                            label: countLabel,
+                            tone: CalmBadgeTone.neutral,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 7),
-                    CalmBadge(label: countLabel, tone: CalmBadgeTone.neutral),
-                    const Spacer(),
-                    if (onDownloadGroup != null)
+                    if (onDownloadGroup != null) ...[
+                      const SizedBox(width: 8),
                       CalmIconButton(
                         icon: Icons.download_outlined,
                         tooltip: t.comicInfo.downloadGroup,
@@ -1592,6 +1603,7 @@ class _ChapterGroupHeaderBar extends StatelessWidget {
                         iconSize: 15,
                         onPressed: onDownloadGroup,
                       ),
+                    ],
                   ],
                 ),
               ),
