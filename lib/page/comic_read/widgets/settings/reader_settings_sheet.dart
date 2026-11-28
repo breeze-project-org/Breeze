@@ -179,7 +179,7 @@ class _ReaderSettingsCard extends StatelessWidget {
   }
 }
 
-/// 设置页头部：抓手 + 标题行 + 轻盈 TabBar（阅读页入口多一个“本漫”tab）。
+/// 设置页头部：抓手 + 轻盈 TabBar（阅读页入口多一个“本漫”tab）。
 class _ReaderSettingsHeader extends StatelessWidget {
   final bool showPerComicTab;
 
@@ -189,12 +189,13 @@ class _ReaderSettingsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.calm;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => Navigator.of(context).maybePop(),
             child: Center(
@@ -208,17 +209,11 @@ class _ReaderSettingsHeader extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          Text(
-            t.reader.settings,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: c.text,
-            ),
-          ),
-          const SizedBox(height: 2),
-          TabBar(
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             padding: EdgeInsets.zero,
@@ -234,22 +229,24 @@ class _ReaderSettingsHeader extends StatelessWidget {
             unselectedLabelColor: c.text3,
             labelPadding: const EdgeInsets.symmetric(horizontal: 12),
             labelStyle: const TextStyle(
-              fontSize: 12.5,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
             unselectedLabelStyle: const TextStyle(
-              fontSize: 12.5,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
             tabs: [
-              Tab(text: t.reader.settings),
-              Tab(text: t.reader.gesture),
-              Tab(text: t.reader.infoBar),
-              if (showPerComicTab) Tab(text: t.reader.perComicThisComic),
+              Tab(height: 40, text: t.reader.settings),
+              Tab(height: 40, text: t.reader.gesture),
+              Tab(height: 40, text: t.reader.infoBar),
+              if (showPerComicTab)
+                Tab(height: 40, text: t.reader.perComicThisComic),
             ],
           ),
-        ],
-      ),
+        ),
+        Divider(height: 1, thickness: 1, color: c.border),
+      ],
     );
   }
 }

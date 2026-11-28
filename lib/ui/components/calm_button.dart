@@ -157,13 +157,14 @@ class _CalmButtonState extends State<CalmButton> {
   }
 }
 
-/// 轻盈圆形图标按钮（支持选中激活态，如收藏/置顶）。
+/// 轻盈图标按钮（默认圆形浅底；`ghost: true` 时静息透明、悬停显底，适合卡片工具条）。
 class CalmIconButton extends StatefulWidget {
   const CalmIconButton({
     super.key,
     required this.icon,
     this.onPressed,
     this.selected = false,
+    this.ghost = false,
     this.tooltip,
     this.size = 32,
     this.iconSize = 16,
@@ -172,6 +173,7 @@ class CalmIconButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback? onPressed;
   final bool selected;
+  final bool ghost;
   final String? tooltip;
   final double size;
   final double iconSize;
@@ -191,10 +193,12 @@ class _CalmIconButtonState extends State<CalmIconButton> {
 
     final bg = widget.selected
         ? c.accentSoft
-        : _hovered
-        ? c.surfaceHover
-        : c.surface2;
-    final fg = widget.selected ? c.accent : (_hovered ? c.text : c.text2);
+        : _hovered && enabled
+        ? (widget.ghost ? c.surface2 : c.surfaceHover)
+        : (widget.ghost ? Colors.transparent : c.surface2);
+    final fg = widget.selected
+        ? c.accent
+        : (_hovered && enabled ? c.text : (widget.ghost ? c.text3 : c.text2));
 
     final btn = MouseRegion(
       cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
@@ -204,6 +208,7 @@ class _CalmIconButtonState extends State<CalmIconButton> {
         _pressed = false;
       }),
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
         onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
         onTapCancel: () => setState(() => _pressed = false),
@@ -215,7 +220,12 @@ class _CalmIconButtonState extends State<CalmIconButton> {
             duration: const Duration(milliseconds: 140),
             width: widget.size,
             height: widget.size,
-            decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(
+                widget.ghost ? 8 : widget.size / 2,
+              ),
+            ),
             alignment: Alignment.center,
             child: Icon(widget.icon, size: widget.iconSize, color: fg),
           ),

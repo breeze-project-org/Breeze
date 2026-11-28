@@ -431,8 +431,13 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
         ),
       );
     }
+    final leftHandMode = context
+        .watch<GlobalSettingCubit>()
+        .state
+        .leftHandModeEnabled;
     return CalmSpeedDial(
       label: t.common.more,
+      alignLeft: leftHandMode,
       actions: [
         (
           label: t.bookshelf.multiSelect,

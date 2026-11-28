@@ -52,19 +52,20 @@ class PluginCard extends StatelessWidget {
   /// 加载态：轻盈骨架行，避免整卡片转圈造成的跳动感。
   Widget _buildLoading(BuildContext context) {
     return const CalmCard(
+      radius: 16,
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       child: Row(
         children: [
-          CalmSkeletonBox(width: 44, height: 44, radius: 12),
-          SizedBox(width: 12),
+          CalmSkeletonBox(width: 38, height: 38, radius: 11),
+          SizedBox(width: 11),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CalmSkeletonBox(width: 132, height: 12, radius: 6),
-                SizedBox(height: 8),
-                CalmSkeletonBox(width: 208, height: 10, radius: 5),
+                CalmSkeletonBox(width: 120, height: 12, radius: 6),
+                SizedBox(height: 6),
+                CalmSkeletonBox(width: 64, height: 10, radius: 5),
               ],
             ),
           ),
@@ -76,16 +77,17 @@ class PluginCard extends StatelessWidget {
   Widget _buildError(BuildContext context, String? error) {
     final c = context.calm;
     return CalmCard(
-      padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+      radius: 16,
+      padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: c.dangerSoft,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(11),
             ),
             alignment: Alignment.center,
             child: Icon(Icons.error_outline_rounded, size: 19, color: c.danger),
@@ -112,6 +114,46 @@ class PluginCard extends StatelessWidget {
     );
   }
 
+  String _resolveVersion(Map<String, dynamic> info) {
+    final raw = pluginState.version.trim().isNotEmpty
+        ? pluginState.version.trim()
+        : (info['version']?.toString().trim() ?? '');
+    if (raw.isEmpty) return '';
+    if (raw.startsWith('v') || raw.startsWith('V')) return raw;
+    return 'v$raw';
+  }
+
+  Widget _buildIconPlaceholder(
+    BuildContext context,
+    String title,
+    bool isEnabled,
+  ) {
+    final c = context.calm;
+    final trimmed = title.trim();
+    final initial = trimmed.isNotEmpty
+        ? trimmed.characters.first.toUpperCase()
+        : '';
+    return ColoredBox(
+      color: isEnabled ? c.accentSoft : c.surface2,
+      child: Center(
+        child: initial.isNotEmpty
+            ? Text(
+                initial,
+                textHeightBehavior: kCalmTextHeightBehavior,
+                strutStyle: calmStrut(15),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: isEnabled ? c.accent : c.text3,
+                  height: 1.2,
+                  leadingDistribution: TextLeadingDistribution.even,
+                ),
+              )
+            : Icon(Icons.extension_outlined, size: 19, color: c.text3),
+      ),
+    );
+  }
+
   Widget _buildLoaded(BuildContext context, Map<String, dynamic> info) {
     final c = context.calm;
     final isEnabled = pluginState.isEnabled;
@@ -123,111 +165,172 @@ class PluginCard extends StatelessWidget {
     final title = pluginName.isNotEmpty
         ? pluginName
         : t.discover.pluginCapability;
+    final versionText = _resolveVersion(info);
     final iconUrl = info['iconUrl']?.toString().trim() ?? '';
-    final iconWidget = ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: PluginIcon(
-        url: iconUrl,
-        placeholder: ColoredBox(
-          color: c.surface2,
-          child: Center(
-            child: Icon(Icons.extension_outlined, size: 20, color: c.text3),
+
+    final iconWidget = AnimatedOpacity(
+      duration: const Duration(milliseconds: 160),
+      opacity: isEnabled ? 1 : 0.62,
+      child: Container(
+        width: 38,
+        height: 38,
+        foregroundDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: c.border.withValues(alpha: c.border.a * 0.85),
+            width: 1,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: PluginIcon(
+            url: iconUrl,
+            placeholder: _buildIconPlaceholder(context, title, isEnabled),
           ),
         ),
       ),
     );
 
+    final showTray = isEnabled && rawFunctions.isNotEmpty;
+    final trayBg = Color.alphaBlend(
+      c.surface2.withValues(alpha: 0.55),
+      c.surface,
+    );
+
     return CalmCard(
-      padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(width: 44, height: 44, child: iconWidget),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textHeightBehavior: kCalmTextHeightBehavior,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isEnabled ? c.text : c.text2,
-                          height: 1.25,
-                          leadingDistribution: TextLeadingDistribution.even,
+      radius: 16,
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  iconWidget,
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textHeightBehavior: kCalmTextHeightBehavior,
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: isEnabled ? c.text : c.text2,
+                                  height: 1.25,
+                                  leadingDistribution:
+                                      TextLeadingDistribution.even,
+                                ),
+                              ),
+                            ),
+                            if (!isEnabled) ...[
+                              const SizedBox(width: 6),
+                              CalmBadge(
+                                label: t.discover.disabled,
+                                tone: CalmBadgeTone.neutral,
+                              ),
+                            ],
+                          ],
                         ),
-                      ),
-                    ),
-                    if (!isEnabled) ...[
-                      const SizedBox(width: 7),
-                      CalmBadge(
-                        label: t.discover.disabled,
-                        tone: CalmBadgeTone.neutral,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              // 插件关闭时搜索入口置灰（CalmIconButton 仅在 onPressed 为空时不响应）。
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 140),
-                opacity: isEnabled ? 1 : 0.42,
-                child: CalmIconButton(
-                  icon: Icons.search_rounded,
-                  size: 28,
-                  iconSize: 15,
-                  tooltip: t.common.search,
-                  onPressed: isEnabled ? onSearch : null,
-                ),
-              ),
-              const SizedBox(width: 4),
-              CalmIconButton(
-                icon: Icons.settings_outlined,
-                size: 28,
-                iconSize: 15,
-                tooltip: t.discover.settings,
-                onPressed: () => onSettings(title),
-              ),
-              const SizedBox(width: 8),
-              if (isToggling)
-                SizedBox(
-                  width: 38,
-                  height: 22,
-                  child: Center(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.8,
-                        strokeCap: StrokeCap.round,
-                        color: c.accent,
-                        backgroundColor: c.accentSoft,
-                      ),
+                        if (versionText.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            versionText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textHeightBehavior: kCalmTextHeightBehavior,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: c.text3,
+                              height: 1.25,
+                              leadingDistribution: TextLeadingDistribution.even,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                )
-              else
-                CalmSwitch(value: isEnabled, onChanged: onToggleEnabled),
-            ],
-          ),
-          // 插件关闭时完全收起功能胶囊栏，只保留紧凑头部行。
-          if (isEnabled && rawFunctions.isNotEmpty) ...[
-            const SizedBox(height: 9),
-            Padding(
-              padding: const EdgeInsets.only(left: 55, right: 4),
-              child: _buildFunctionButtons(context, rawFunctions),
+                  const SizedBox(width: 6),
+                  // 插件关闭时搜索入口置灰（CalmIconButton 仅在 onPressed 为空时不响应）。
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 140),
+                    opacity: isEnabled ? 1 : 0.35,
+                    child: CalmIconButton(
+                      icon: Icons.search_rounded,
+                      ghost: true,
+                      size: 30,
+                      iconSize: 16,
+                      tooltip: t.common.search,
+                      onPressed: isEnabled ? onSearch : null,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  CalmIconButton(
+                    icon: Icons.settings_outlined,
+                    ghost: true,
+                    size: 30,
+                    iconSize: 16,
+                    tooltip: t.discover.settings,
+                    onPressed: () => onSettings(title),
+                  ),
+                  const SizedBox(width: 8),
+                  if (isToggling)
+                    SizedBox(
+                      width: 38,
+                      height: 22,
+                      child: Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.8,
+                            strokeCap: StrokeCap.round,
+                            color: c.accent,
+                            backgroundColor: c.accentSoft,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    CalmSwitch(value: isEnabled, onChanged: onToggleEnabled),
+                ],
+              ),
             ),
+            // 下半区功能托盘：插件关闭时完全收起，只保留紧凑头部行。
+            if (showTray)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(12, 9, 12, 10),
+                decoration: BoxDecoration(
+                  color: trayBg,
+                  border: Border(
+                    top: BorderSide(
+                      color: c.border.withValues(alpha: c.border.a * 0.8),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: _buildFunctionButtons(context, rawFunctions),
+              ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -247,7 +350,7 @@ class PluginCard extends StatelessWidget {
         };
       }
       final enabled = action.isNotEmpty;
-      return _PluginFunctionPill(
+      return _PluginFunctionKeycap(
         label: text.let(convertChineseForDisplay),
         onTap: enabled ? () => onAction(action) : null,
       );
@@ -256,64 +359,98 @@ class PluginCard extends StatelessWidget {
   }
 }
 
-/// 动态功能胶囊：功能来自 QJS 插件 JSON，不硬编码图标，保持纯文字紧凑胶囊。
-class _PluginFunctionPill extends StatefulWidget {
-  const _PluginFunctionPill({required this.label, required this.onTap});
+/// 动态功能键帽入口：功能来自 QJS 插件 JSON，白底轻描边 + 悬停亮主题色。
+class _PluginFunctionKeycap extends StatefulWidget {
+  const _PluginFunctionKeycap({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback? onTap;
 
   @override
-  State<_PluginFunctionPill> createState() => _PluginFunctionPillState();
+  State<_PluginFunctionKeycap> createState() => _PluginFunctionKeycapState();
 }
 
-class _PluginFunctionPillState extends State<_PluginFunctionPill> {
+class _PluginFunctionKeycapState extends State<_PluginFunctionKeycap> {
   bool _hovered = false;
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
     final c = context.calm;
     final enabled = widget.onTap != null;
     final bg = !enabled
-        ? c.surface2.withValues(alpha: 0.55)
+        ? c.surface2.withValues(alpha: 0.5)
+        : _pressed
+        ? Color.alphaBlend(c.accent.withValues(alpha: 0.12), c.surface)
         : _hovered
-        ? Color.alphaBlend(c.accent.withValues(alpha: 0.08), c.accentSoft)
-        : c.accentSoft;
-    final fg = enabled ? c.accent : c.text3;
+        ? Color.alphaBlend(c.accent.withValues(alpha: 0.06), c.surface)
+        : c.surface;
+    final borderColor = !enabled
+        ? c.border.withValues(alpha: c.border.a * 0.5)
+        : (_hovered || _pressed)
+        ? c.accent.withValues(alpha: 0.55)
+        : c.border;
+    final fg = !enabled
+        ? c.text3
+        : (_hovered || _pressed)
+        ? c.accent
+        : c.text;
+    final chevronColor = (_hovered || _pressed)
+        ? c.accent
+        : c.text3.withValues(alpha: 0.75);
 
     return MouseRegion(
       cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
       onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onExit: (_) => setState(() {
+        _hovered = false;
+        _pressed = false;
+      }),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
+        onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
+        onTapCancel: () => setState(() => _pressed = false),
         onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          height: 26,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                widget.label,
-                textHeightBehavior: kCalmTextHeightBehavior,
-                strutStyle: calmStrut(11.5),
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w500,
-                  color: fg,
-                  height: 1.2,
-                  leadingDistribution: TextLeadingDistribution.even,
+        child: AnimatedScale(
+          scale: _pressed && enabled ? 0.97 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 130),
+            curve: Curves.easeOut,
+            height: 28,
+            padding: EdgeInsets.only(left: 10, right: enabled ? 7 : 10),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderColor, width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  widget.label,
+                  textHeightBehavior: kCalmTextHeightBehavior,
+                  strutStyle: calmStrut(12),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: fg,
+                    height: 1.2,
+                    leadingDistribution: TextLeadingDistribution.even,
+                  ),
                 ),
-              ),
-            ],
+                if (enabled) ...[
+                  const SizedBox(width: 2),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 13,
+                    color: chevronColor,
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),

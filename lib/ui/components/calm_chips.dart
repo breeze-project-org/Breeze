@@ -172,15 +172,19 @@ class CalmInputChip extends StatelessWidget {
                 Icon(icon, size: 12.5, color: c.text3),
                 const SizedBox(width: 5),
               ],
-              Text(
-                label,
-                textHeightBehavior: kCalmTextHeightBehavior,
-                strutStyle: calmStrut(11.5),
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: c.text,
-                  height: 1.2,
-                  leadingDistribution: TextLeadingDistribution.even,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textHeightBehavior: kCalmTextHeightBehavior,
+                  strutStyle: calmStrut(11.5),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: c.text,
+                    height: 1.2,
+                    leadingDistribution: TextLeadingDistribution.even,
+                  ),
                 ),
               ),
               if (onDeleted != null) ...[

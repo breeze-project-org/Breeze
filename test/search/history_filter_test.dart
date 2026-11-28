@@ -74,4 +74,19 @@ void main() {
     expect(find.text(t.search.noHistory), findsOneWidget);
     expect(find.text(t.search.noMatchingHistory), findsNothing);
   });
+
+  testWidgets('超长历史词条在窄屏下自动裁剪不溢出', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final longKeyword = '关于我在异世界转生变成史莱姆顺便拯救整个大陆顺带看漫画的那些超长标题合集' * 2;
+    final cubit = _TestGlobalSettingCubit([longKeyword, '短词']);
+    await tester.pumpWidget(_app(cubit, ''));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    final chipRect = tester.getRect(find.byType(CalmInputChip).first);
+    expect(chipRect.width, lessThanOrEqualTo(320));
+  });
 }
