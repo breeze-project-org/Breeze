@@ -448,8 +448,11 @@ class CalmTheme {
           'Noto Sans CJK SC',
           const ['WenQuanYi Micro Hei', 'Droid Sans Fallback'],
         );
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
+      // android / fuchsia，以及 OHOS Flutter 分支额外加入的 TargetPlatform.ohos。
+      // 官方 SDK 的枚举里没有 ohos，不能写出具名 case，否则鸿蒙构建会因
+      // “not exhaustively matched” 直接失败；这里用 default 兜底，保留 null
+      // 让系统按平台默认字体渲染（鸿蒙即 HarmonyOS Sans）。
+      default:
         return (
           null,
           const ['Noto Sans CJK SC', 'HarmonyOS Sans SC', 'MiSans'],
