@@ -75,10 +75,7 @@ class DohSettingPage extends StatelessWidget {
           const SizedBox(height: 12),
           CalmStatusBanner(title: t.settings.dohIpHint),
           const SizedBox(height: 8),
-          CalmStatusBanner(
-            title: t.settings.dohNote,
-            tone: CalmTone.info,
-          ),
+          CalmStatusBanner(title: t.settings.dohNote, tone: CalmTone.info),
           const SizedBox(height: 32),
         ],
       ),

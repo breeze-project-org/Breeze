@@ -339,11 +339,8 @@ class UnifiedComicHistoryRepository {
   ///
   /// 历史表可能有上千行、每行数 KB JSON；[listActive] 在调用方 isolate 解码，
   /// 进入追更页时会卡帧。SQL 与解码完全复用，只把执行位置移到后台。
-  Future<List<UnifiedComicHistory>> listActiveInWorker() => runDbReadInWorker(
-    db,
-    sql: listActiveSql(),
-    decode: _decodeAll,
-  );
+  Future<List<UnifiedComicHistory>> listActiveInWorker() =>
+      runDbReadInWorker(db, sql: listActiveSql(), decode: _decodeAll);
 
   Future<int> count() => runDbRead(
     db,

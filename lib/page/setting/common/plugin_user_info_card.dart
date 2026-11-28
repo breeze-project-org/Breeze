@@ -56,9 +56,7 @@ class PluginUserInfoCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: i == 0 ? 12.5 : 11.5,
-                        fontWeight: i == 0
-                            ? FontWeight.w600
-                            : FontWeight.w400,
+                        fontWeight: i == 0 ? FontWeight.w600 : FontWeight.w400,
                         color: i == 0 ? c.text : c.text2,
                         height: 1.35,
                       ),

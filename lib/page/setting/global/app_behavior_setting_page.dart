@@ -355,10 +355,7 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
               tone: CalmTone.danger,
               bodyBuilder: (dialogContext) => Text(
                 t.settings.appLockSubtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: dialogContext.calm.text2,
-                ),
+                style: TextStyle(fontSize: 12, color: dialogContext.calm.text2),
               ),
               actionsBuilder: (dialogContext) => [
                 CalmButton(
@@ -377,9 +374,8 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
               return;
             }
             cubit.updateState(
-              (current) => current.copyWith(
-                appLockSetting: const AppLockSettingState(),
-              ),
+              (current) =>
+                  current.copyWith(appLockSetting: const AppLockSettingState()),
             );
             showSuccessToast(t.common.settingSaved);
           },

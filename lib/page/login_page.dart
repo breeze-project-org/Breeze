@@ -517,9 +517,7 @@ class _LoginPageState extends State<LoginPage> {
         if (spec.multiline)
           CalmTextArea(
             controller: controller,
-            hintText: spec.placeholder.isEmpty
-                ? spec.label
-                : spec.placeholder,
+            hintText: spec.placeholder.isEmpty ? spec.label : spec.placeholder,
             minLines: 3,
             maxLines: 5,
           )

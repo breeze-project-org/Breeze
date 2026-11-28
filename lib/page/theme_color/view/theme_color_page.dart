@@ -95,9 +95,7 @@ class _ThemeColorPageState extends State<ThemeColorPage> {
               builder: (context, constraints) {
                 const spacing = 8.0;
                 // 自适应列宽：窄屏 4 列，宽屏最多 8 列，永不出现内容溢出。
-                final columns = (constraints.maxWidth / 76)
-                    .floor()
-                    .clamp(4, 9);
+                final columns = (constraints.maxWidth / 76).floor().clamp(4, 9);
                 final itemWidth =
                     (constraints.maxWidth - spacing * (columns - 1)) / columns;
                 return Wrap(

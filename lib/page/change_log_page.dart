@@ -270,9 +270,8 @@ class _ReleaseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.calm;
-    final dateStr = DateFormat(
-      'yyyy-MM-dd HH:mm',
-    ).format(release.publishedAt.toLocal());
+    final dateStr = DateFormat('yyyy-MM-dd HH:mm')
+        .format(release.publishedAt.toLocal());
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -472,9 +471,7 @@ class _AttachmentChipState extends State<_AttachmentChip> {
               decoration: BoxDecoration(
                 color: bg,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: _hovered ? c.accentBorder : c.border,
-                ),
+                border: Border.all(color: _hovered ? c.accentBorder : c.border),
                 boxShadow: c.shadowSm,
               ),
               child: Row(

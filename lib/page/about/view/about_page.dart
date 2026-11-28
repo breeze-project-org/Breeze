@@ -299,10 +299,7 @@ class _AboutPageState extends State<AboutPage> {
     required String htmlUrl,
   }) {
     return Tooltip(
-      message: t.about.contributionsTooltip(
-        login: login,
-        count: contributions,
-      ),
+      message: t.about.contributionsTooltip(login: login, count: contributions),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
@@ -425,7 +422,10 @@ class _LinkCardState extends State<_LinkCard> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: c.rowVPadding),
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: c.rowVPadding,
+          ),
           decoration: BoxDecoration(
             color: _hovered
                 ? c.surface2.withValues(alpha: 0.7)

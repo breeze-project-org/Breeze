@@ -20,11 +20,7 @@ void main() {
       child: MaterialApp(
         theme: ThemeData(brightness: brightness),
         home: const Scaffold(
-          body: Stack(
-            children: [
-              PageCountWidget(epPages: '12'),
-            ],
-          ),
+          body: Stack(children: [PageCountWidget(epPages: '12')]),
         ),
       ),
     );
@@ -43,9 +39,7 @@ void main() {
         .firstWhere((decoration) => decoration.color != null);
   }
 
-  testWidgets('阅读器信息条背景透明度跟随 pageInfoOpacityPercent 变化并带高斯模糊', (
-    tester,
-  ) async {
+  testWidgets('阅读器信息条背景透明度跟随 pageInfoOpacityPercent 变化并带高斯模糊', (tester) async {
     final globalCubit = GlobalSettingCubit();
     addTearDown(globalCubit.close);
     final readerCubit = ReaderCubit()
@@ -118,9 +112,7 @@ void main() {
     );
   });
 
-  testWidgets('浅色主题配合黑色阅读背景在 50% 透明度下仍使用深色文字与白底成对显示', (
-    tester,
-  ) async {
+  testWidgets('浅色主题配合黑色阅读背景在 50% 透明度下仍使用深色文字与白底成对显示', (tester) async {
     final globalCubit = GlobalSettingCubit();
     addTearDown(globalCubit.close);
     final readerCubit = ReaderCubit()

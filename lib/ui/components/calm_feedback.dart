@@ -372,9 +372,10 @@ class _ToastSlideInState extends State<_ToastSlideIn>
     return FadeTransition(
       opacity: curve,
       child: SlideTransition(
-        position: Tween<Offset>(begin: beginOffset, end: Offset.zero).animate(
-          curve,
-        ),
+        position: Tween<Offset>(
+          begin: beginOffset,
+          end: Offset.zero,
+        ).animate(curve),
         child: ScaleTransition(
           scale: Tween<double>(begin: 0.94, end: 1.0).animate(curve),
           alignment: widget.slideFromRight

@@ -46,15 +46,14 @@ class FontSettingPage extends StatelessWidget {
                       _FontWeightTile(
                         weight: _weights[i],
                         label: fontWeightLabels[_weights[i]]!,
-                        filePath:
-                            controller.pathForWeight(_weights[i]) ?? '',
+                        filePath: controller.pathForWeight(_weights[i]) ?? '',
                         sampleText: _sampleText,
                         onPick: () => _pickWeight(_weights[i]),
                         onClear:
                             (controller.pathForWeight(_weights[i]) ?? '')
-                                    .isEmpty
-                                ? null
-                                : () => _saveWeight(_weights[i], ''),
+                                .isEmpty
+                            ? null
+                            : () => _saveWeight(_weights[i], ''),
                       ),
                       if (i != _weights.length - 1)
                         const Padding(

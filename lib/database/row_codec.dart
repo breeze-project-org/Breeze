@@ -70,5 +70,6 @@ Map<String, dynamic> withDefaultId(Map<String, dynamic> row) {
 }
 
 /// `SELECT "uniqueKey" ...` 的行解码：只回传键，不解码整行。
-List<String> uniqueKeysFromRows(List<Map<String, dynamic>> rows) =>
-    <String>[for (final row in rows) row['uniqueKey'] as String];
+List<String> uniqueKeysFromRows(List<Map<String, dynamic>> rows) => <String>[
+  for (final row in rows) row['uniqueKey'] as String,
+];

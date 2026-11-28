@@ -42,10 +42,7 @@ class UserAvatar extends StatelessWidget {
                             'asset/image/assets/default_cover.png',
                             fit: BoxFit.cover,
                           )
-                        : Image.file(
-                            File(state.imagePath!),
-                            fit: BoxFit.cover,
-                          ),
+                        : Image.file(File(state.imagePath!), fit: BoxFit.cover),
                   ),
                 );
               case PictureLoadStatus.failure:

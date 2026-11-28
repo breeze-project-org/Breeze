@@ -120,7 +120,11 @@ class _StorageSettingPageState extends State<StorageSettingPage> {
               },
             ),
           const SizedBox(width: 2),
-          Icon(Icons.chevron_right_rounded, size: 18, color: context.calm.text3),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: context.calm.text3,
+          ),
         ],
       ),
       onTap: () async {

@@ -40,10 +40,7 @@ Future<Set<String>?> showMultiChoiceListDialog(
         // 高度在矮屏上收敛到 55% 屏高，避免窄屏 / 矮屏溢出与挤压。
         return SizedBox(
           width: double.infinity,
-          height: math.min(
-            height,
-            MediaQuery.sizeOf(context).height * 0.55,
-          ),
+          height: math.min(height, MediaQuery.sizeOf(context).height * 0.55),
           child: ListView.builder(
             padding: EdgeInsets.zero,
             itemCount: options.length,

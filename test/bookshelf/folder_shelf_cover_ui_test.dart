@@ -55,10 +55,7 @@ void main() {
         ],
         child: const MaterialApp(
           home: Scaffold(
-            body: FolderShelfPage(
-              mode: ShelfPageMode.favorite,
-              isActive: true,
-            ),
+            body: FolderShelfPage(mode: ShelfPageMode.favorite, isActive: true),
           ),
         ),
       ),
@@ -92,10 +89,13 @@ void main() {
     await pumpShelf(tester);
     await waitFor(
       tester,
-      () => find.byType(CoverWidget).evaluate().any(
-        (element) =>
-            (element.widget as CoverWidget).path == 'folder-cover.jpg',
-      ),
+      () => find
+          .byType(CoverWidget)
+          .evaluate()
+          .any(
+            (element) =>
+                (element.widget as CoverWidget).path == 'folder-cover.jpg',
+          ),
       description: '文件夹自动封面',
     );
     expect(find.text('CoverFolder'), findsOneWidget);
@@ -207,10 +207,14 @@ void main() {
     );
     await waitFor(
       tester,
-      () => find.byType(CoverWidget).evaluate().any(
-        (element) =>
-            (element.widget as CoverWidget).path == 'detail-folder-cover.jpg',
-      ),
+      () => find
+          .byType(CoverWidget)
+          .evaluate()
+          .any(
+            (element) =>
+                (element.widget as CoverWidget).path ==
+                'detail-folder-cover.jpg',
+          ),
       description: '详情模式文件夹封面',
     );
 

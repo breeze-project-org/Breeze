@@ -671,7 +671,8 @@ class _DemoHomePageState extends State<_DemoHomePage> {
             CalmTriCheckbox(
               label: entry.key,
               state: entry.value,
-              onChanged: (next) => setState(() => _triFilters[entry.key] = next),
+              onChanged: (next) =>
+                  setState(() => _triFilters[entry.key] = next),
             ),
             const SizedBox(height: 6),
           ],
@@ -818,11 +819,7 @@ class _DemoHomePageState extends State<_DemoHomePage> {
                         label: '网格',
                         icon: Icons.grid_view_rounded,
                       ),
-                      (
-                        value: 'compact',
-                        label: '紧凑',
-                        icon: Icons.apps_rounded,
-                      ),
+                      (value: 'compact', label: '紧凑', icon: Icons.apps_rounded),
                       (
                         value: 'list',
                         label: '列表',
@@ -889,10 +886,7 @@ class _DemoHomePageState extends State<_DemoHomePage> {
                 tone: CalmBadgeTone.warning,
               ),
               CalmBadge(label: '连接超时', tone: CalmBadgeTone.danger),
-              CalmBadge(
-                label: '1.6.0 → 1.6.2',
-                tone: CalmBadgeTone.tonal,
-              ),
+              CalmBadge(label: '1.6.0 → 1.6.2', tone: CalmBadgeTone.tonal),
             ],
           ),
         ],
@@ -947,7 +941,11 @@ class _DemoHomePageState extends State<_DemoHomePage> {
                         style: TextStyle(fontSize: 11.5, color: c.text3),
                       ),
                       const SizedBox(width: 2),
-                      Icon(Icons.chevron_right_rounded, size: 16, color: c.text3),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 16,
+                        color: c.text3,
+                      ),
                     ],
                   ),
                   onTap: () => _toast('打开更新周期设置'),
@@ -981,10 +979,8 @@ class _DemoHomePageState extends State<_DemoHomePage> {
                         label: '复制',
                         size: CalmButtonSize.xs,
                         variant: CalmButtonVariant.ghost,
-                        onPressed: () => _toast(
-                          '已复制 User-Agent',
-                          tone: CalmTone.success,
-                        ),
+                        onPressed: () =>
+                            _toast('已复制 User-Agent', tone: CalmTone.success),
                       ),
                     ],
                   ),
@@ -1056,10 +1052,8 @@ class _DemoHomePageState extends State<_DemoHomePage> {
                     tone: s.tone,
                     actionLabel: s.action,
                     onAction: s.action != null
-                        ? () => _toast(
-                            '已触发「${s.action}」',
-                            tone: CalmTone.success,
-                          )
+                        ? () =>
+                              _toast('已触发「${s.action}」', tone: CalmTone.success)
                         : null,
                   ),
                   child: CalmToastCard(
@@ -1068,10 +1062,8 @@ class _DemoHomePageState extends State<_DemoHomePage> {
                     tone: s.tone,
                     actionLabel: s.action,
                     onAction: s.action != null
-                        ? () => _toast(
-                            '已触发「${s.action}」',
-                            tone: CalmTone.success,
-                          )
+                        ? () =>
+                              _toast('已触发「${s.action}」', tone: CalmTone.success)
                         : null,
                   ),
                 ),
@@ -1411,10 +1403,8 @@ class _DemoHomePageState extends State<_DemoHomePage> {
       context,
       title: '重命名书架文件夹',
       subtitle: '同步后自动更新至五端设备',
-      bodyBuilder: (ctx) => CalmTextField(
-        controller: _renameCtrl,
-        hintText: '请输入新的文件夹名称…',
-      ),
+      bodyBuilder: (ctx) =>
+          CalmTextField(controller: _renameCtrl, hintText: '请输入新的文件夹名称…'),
       actionsBuilder: (ctx) => [
         CalmButton(
           label: '取消',
@@ -1565,11 +1555,8 @@ class _DemoHomePageState extends State<_DemoHomePage> {
           CalmPinField(
             length: 4,
             initialValue: '2026',
-            onCompleted: (code) => _toast(
-              'PIN 输入完成',
-              desc: '输入内容：$code',
-              tone: CalmTone.success,
-            ),
+            onCompleted: (code) =>
+                _toast('PIN 输入完成', desc: '输入内容：$code', tone: CalmTone.success),
           ),
           const SizedBox(height: 8),
           Text(
@@ -1627,17 +1614,16 @@ class _DemoHomePageState extends State<_DemoHomePage> {
           color: c.success,
         ),
         const SizedBox(height: 12),
-        const CalmProgressBar(
-          value: null,
-          label: '正在拉取云端插件仓库索引…',
-        ),
+        const CalmProgressBar(value: null, label: '正在拉取云端插件仓库索引…'),
         const SizedBox(height: 10),
         CalmButton(
           label: '推进下载进度 +12%',
           size: CalmButtonSize.xs,
           variant: CalmButtonVariant.secondary,
           onPressed: () => setState(() {
-            _dlProgress = _dlProgress >= 0.99 ? 0.16 : (_dlProgress + 0.12).clamp(0.0, 1.0);
+            _dlProgress = _dlProgress >= 0.99
+                ? 0.16
+                : (_dlProgress + 0.12).clamp(0.0, 1.0);
           }),
         ),
       ],
@@ -1679,11 +1665,7 @@ class _DemoHomePageState extends State<_DemoHomePage> {
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                progressCol,
-                const SizedBox(height: 16),
-                avatarCol,
-              ],
+              children: [progressCol, const SizedBox(height: 16), avatarCol],
             ),
     );
   }
@@ -1696,11 +1678,7 @@ class _DemoHomePageState extends State<_DemoHomePage> {
         icon: Icons.collections_bookmark_outlined,
         activeIcon: Icons.collections_bookmark_rounded,
       ),
-      CalmNavItem(
-        label: '更新',
-        icon: Icons.schedule_rounded,
-        badgeCount: 12,
-      ),
+      CalmNavItem(label: '更新', icon: Icons.schedule_rounded, badgeCount: 12),
       CalmNavItem(label: '历史', icon: Icons.history_rounded),
       CalmNavItem(
         label: '浏览',
@@ -1708,11 +1686,7 @@ class _DemoHomePageState extends State<_DemoHomePage> {
         activeIcon: Icons.explore_rounded,
         badgeCount: 1,
       ),
-      CalmNavItem(
-        label: '更多',
-        icon: Icons.more_horiz_rounded,
-        shortcut: '⌘,',
-      ),
+      CalmNavItem(label: '更多', icon: Icons.more_horiz_rounded, shortcut: '⌘,'),
     ];
 
     final isWide = width >= 720;
@@ -1965,8 +1939,7 @@ class _DemoHomePageState extends State<_DemoHomePage> {
           ),
           child: const CalmExpandableText(
             maxLines: 2,
-            text:
-                '打倒魔王后的十年旅途结束，长寿的精灵魔法使芙莉莲在昔日勇者离世后，决定踏上重新认识人类情感与时间意义的北方之旅。一路上她结识了新伙伴菲伦与休塔尔克，在平淡却温柔的日常中回望过去。',
+            text: '打倒魔王后的十年旅途结束，长寿的精灵魔法使芙莉莲在昔日勇者离世后，决定踏上重新认识人类情感与时间意义的北方之旅。一路上她结识了新伙伴菲伦与休塔尔克，在平淡却温柔的日常中回望过去。',
           ),
         ),
       ],
@@ -2037,10 +2010,7 @@ class _DemoHomePageState extends State<_DemoHomePage> {
         ),
         const SizedBox(height: 14),
         _subLabel('主题色选择网格 (CalmColorGrid · 与顶部实时联动)'),
-        CalmColorGrid(
-          selected: widget.seed,
-          onSelected: widget.onSeedChanged,
-        ),
+        CalmColorGrid(selected: widget.seed, onSelected: widget.onSeedChanged),
       ],
     );
 
@@ -2086,11 +2056,7 @@ class _DemoHomePageState extends State<_DemoHomePage> {
           else
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                leftCol,
-                const SizedBox(height: 16),
-                rightCol,
-              ],
+              children: [leftCol, const SizedBox(height: 16), rightCol],
             ),
           const SizedBox(height: 16),
           Divider(height: 1, color: c.border),
@@ -2191,7 +2157,11 @@ class _DemoHomePageState extends State<_DemoHomePage> {
           children: [
             Text(
               '手机端作为底部 BottomSheet 滑出，平板与桌面端自动切换为右侧 SideSheet，避免大屏底部弹窗过宽。',
-              style: TextStyle(fontSize: 12.5, color: ctx.calm.text2, height: 1.5),
+              style: TextStyle(
+                fontSize: 12.5,
+                color: ctx.calm.text2,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 16),
             CalmListTile(

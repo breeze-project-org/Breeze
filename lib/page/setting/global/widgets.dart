@@ -103,8 +103,7 @@ Widget proxyAddressEdit(BuildContext context, String currentProxy) {
           controller: controller,
           hintText: t.settings.proxyHint,
           prefixIcon: Icons.link_rounded,
-          onSubmitted: (value) =>
-              Navigator.of(dialogContext).pop(value.trim()),
+          onSubmitted: (value) => Navigator.of(dialogContext).pop(value.trim()),
         ),
         actionsBuilder: (dialogContext) => [
           CalmButton(

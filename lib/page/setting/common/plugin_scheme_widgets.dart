@@ -88,9 +88,8 @@ class _PluginSettingSchemeSectionState
           if (title.isNotEmpty) {
             widgets.add(settingSectionTitle(context, title));
           }
-          final fields = asJsonList(
-            section['fields'],
-          ).map((item) => asJsonMap(item));
+          final fields = asJsonList(section['fields'])
+              .map((item) => asJsonMap(item));
           widgets.add(
             settingCardGroup([
               for (final field in fields) _buildField(field, values),
@@ -235,8 +234,7 @@ class _PluginAdvancedActionSectionState
 
         return settingCardGroup(
           actions.map((action) {
-            final title =
-                action['title']?.toString() ?? t.plugin.unnamedAction;
+            final title = action['title']?.toString() ?? t.plugin.unnamedAction;
             final fnPath = action['fnPath']?.toString() ?? '';
             return CalmListTile(
               leading: settingTileIcon(Icons.extension_outlined),
@@ -263,9 +261,8 @@ class _PluginAdvancedActionSectionState
                   );
 
                   if (!pageContext.mounted) return;
-                  final pretty = const JsonEncoder.withIndent(
-                    '  ',
-                  ).convert(result);
+                  final pretty = const JsonEncoder.withIndent('  ')
+                      .convert(result);
                   await showCalmDialog<void>(
                     pageContext,
                     title: title,

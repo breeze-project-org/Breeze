@@ -41,9 +41,7 @@ class SettingsWidget extends StatelessWidget {
               return _ChevronTile(
                 icon: Icons.notifications_active_outlined,
                 title: t.more.comicFollow,
-                badge: updateCount > 0
-                    ? _NewBadge(count: updateCount)
-                    : null,
+                badge: updateCount > 0 ? _NewBadge(count: updateCount) : null,
                 onTap: () => context.pushRoute(ComicFollowRoute()),
               );
             },

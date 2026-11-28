@@ -68,7 +68,8 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
   @override
   Widget build(BuildContext context) {
     final globalSettingCubit = context.watch<GlobalSettingCubit>();
-    final syncServiceType = globalSettingCubit.state.syncSetting.syncServiceType;
+    final syncServiceType =
+        globalSettingCubit.state.syncSetting.syncServiceType;
     final title = syncServiceType == SyncServiceType.none
         ? t.webdavSync.title
         : t.webdavSync.serviceTitle(service: syncServiceType.label);

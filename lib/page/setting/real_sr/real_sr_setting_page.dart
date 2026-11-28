@@ -377,8 +377,7 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
         child: CalmProgressBar(
           value: _downloadProgress,
           label: t.realSr.downloadingModel,
-          trailingText:
-              '${(_downloadProgress * 100).toStringAsFixed(1)}%',
+          trailingText: '${(_downloadProgress * 100).toStringAsFixed(1)}%',
         ),
       );
     }
@@ -510,7 +509,8 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
                 settingCardGroup([
                   Builder(
                     builder: (context) {
-                      final effective = _concurrencyOptions.contains(_concurrency)
+                      final effective =
+                          _concurrencyOptions.contains(_concurrency)
                           ? _concurrency
                           : RealSrSettings.defaultConcurrency;
                       return CalmListTile(
@@ -556,10 +556,7 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
                 settingSectionTitle(context, t.realSr.modelSection),
                 settingCardGroup(_buildModelItems()),
 
-                settingSectionTitle(
-                  context,
-                  t.realSr.modelManagementSection,
-                ),
+                settingSectionTitle(context, t.realSr.modelManagementSection),
                 settingCardGroup([
                   _buildModelManagementTile(),
                   _buildManualDownloadTile(),

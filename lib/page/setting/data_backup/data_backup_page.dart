@@ -263,6 +263,7 @@ class _DataBackupPageState extends State<DataBackupPage> {
       ],
     );
   }
+
   /// 选择要导入的 zip 备份文件。
   ///
   /// Android 上使用原生 MethodChannel 选择器，把文件直接拷贝到应用缓存，
@@ -357,10 +358,7 @@ class _DataBackupPageState extends State<DataBackupPage> {
                       style: TextStyle(fontSize: 11.5, color: c.text2),
                     ),
                   ),
-                  CalmBadge(
-                    label: currentVersion,
-                    tone: CalmBadgeTone.accent,
-                  ),
+                  CalmBadge(label: currentVersion, tone: CalmBadgeTone.accent),
                 ],
               ),
             ],
