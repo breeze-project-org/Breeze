@@ -165,7 +165,9 @@ class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
     Emitter<FolderShelfState> emit,
   ) async {
     if (_isHistoryMode) return;
-    emit(state.copyWith(currentPath: event.path, error: null));
+    // 先置 loading 再换路径：否则从 path 变更到 load 事件之间会有一帧
+    // isLoading=false + 旧文件夹 items 的中间态，UI 会误把它当成新列表。
+    emit(state.copyWith(currentPath: event.path, isLoading: true, error: null));
     add(const FolderShelfLoadRequested());
   }
 
@@ -178,7 +180,7 @@ class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
     final parentPath = lastIndex <= 0
         ? kFolderShelfRootPath
         : state.currentPath.substring(0, lastIndex);
-    emit(state.copyWith(currentPath: parentPath, error: null));
+    emit(state.copyWith(currentPath: parentPath, isLoading: true, error: null));
     add(const FolderShelfLoadRequested());
   }
 
@@ -187,7 +189,13 @@ class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
     Emitter<FolderShelfState> emit,
   ) async {
     if (state.isRoot) return;
-    emit(state.copyWith(currentPath: kFolderShelfRootPath, error: null));
+    emit(
+      state.copyWith(
+        currentPath: kFolderShelfRootPath,
+        isLoading: true,
+        error: null,
+      ),
+    );
     add(const FolderShelfLoadRequested());
   }
 

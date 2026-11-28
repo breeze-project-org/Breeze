@@ -85,7 +85,10 @@ void main() {
     throw StateError('等待列表项 "$text" 消失超时');
   }
 
-  Future<void> pumpShelf(WidgetTester tester) async {
+  Future<void> pumpShelf(
+    WidgetTester tester, {
+    ShelfPageMode mode = ShelfPageMode.favorite,
+  }) async {
     await LocaleSettings.setLocale(AppLocale.zhCn);
     addTearDown(() => LocaleSettings.useDeviceLocale());
 
@@ -97,13 +100,99 @@ void main() {
             create: (_) => BookshelfSearchCubit(),
           ),
         ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: FolderShelfPage(mode: ShelfPageMode.favorite, isActive: true),
-          ),
+        child: MaterialApp(
+          home: Scaffold(body: FolderShelfPage(mode: mode, isActive: true)),
         ),
       ),
     );
+  }
+
+  /// 取页面内部的 bloc：FolderShelfPage 自己创建 BlocProvider，
+  /// 从 BlocConsumer 的 context 向上读。
+  FolderShelfBloc shelfBlocOf(WidgetTester tester) {
+    final finder = find.byWidgetPredicate(
+      (widget) => widget is BlocConsumer<FolderShelfBloc, FolderShelfState>,
+    );
+    return BlocProvider.of<FolderShelfBloc>(tester.element(finder));
+  }
+
+  /// 主列表（GridView / CustomScrollView）的滚动位置；空态/加载态返回 null。
+  double? shelfOffset(WidgetTester tester) {
+    final finder = find.descendant(
+      of: find.byWidgetPredicate(
+        (widget) => widget is GridView || widget is CustomScrollView,
+      ),
+      matching: find.byType(Scrollable),
+    );
+    if (finder.evaluate().isEmpty) return null;
+    return tester.state<ScrollableState>(finder).position.pixels;
+  }
+
+  /// 等 bloc 进入某路径且 load 完成（isLoading 结束）。
+  Future<void> waitForShelfPath(
+    WidgetTester tester,
+    bool Function(String path) predicate,
+  ) async {
+    for (var i = 0; i < 150; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pump();
+      final state = shelfBlocOf(tester).state;
+      if (!state.isLoading && predicate(state.currentPath)) return;
+    }
+    throw StateError('等待书架路径超时（当前 "${shelfBlocOf(tester).state.currentPath}"）');
+  }
+
+  /// 等列表滚动位置回到 [expected]（帧后恢复是异步的，多推几帧）。
+  Future<void> waitForShelfOffset(WidgetTester tester, double expected) async {
+    for (var i = 0; i < 100; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      final current = shelfOffset(tester);
+      if (current != null && (current - expected).abs() <= 0.5) return;
+    }
+    throw StateError('等待滚动偏移 $expected 超时（当前 ${shelfOffset(tester)}）');
+  }
+
+  /// 当前视口内第一个匹配名称的文件夹行（按名称正则挑一个把名字取出来）。
+  /// 缓存区里的行也会被构建，必须按卡片中心是否落在列表视口内过滤。
+  String visibleFolderName(WidgetTester tester, RegExp pattern) {
+    final viewport = tester.getRect(find.byType(GridView));
+    for (final item in tester.widgetList<FolderShelfItem>(
+      find.byType(FolderShelfItem),
+    )) {
+      final name = item.folder.name;
+      if (!pattern.hasMatch(name)) continue;
+      final rect = tester.getRect(find.byWidget(item));
+      if (viewport.contains(rect.center)) return name;
+    }
+    throw StateError('当前视口内没有文件夹行');
+  }
+
+  /// 根目录向下滚动一段，返回停稳后的偏移（必须 > 0）。
+  Future<double> scrollRootDown(WidgetTester tester) async {
+    await tester.fling(find.byType(GridView), const Offset(0, -1200), 2000);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final offset = shelfOffset(tester);
+    expect(offset, isNotNull);
+    expect(offset!, greaterThan(0));
+    return offset;
+  }
+
+  /// 建 [count] 个根文件夹（f00/f01...），每个挂一个子文件夹 [childName]。
+  Future<void> seedFolders(
+    ComicFolderType type,
+    int count, {
+    String childName = 'inner',
+  }) async {
+    final prefix = type == ComicFolderType.download ? 'd' : 'f';
+    for (var i = 0; i < count; i++) {
+      final name = '$prefix${i.toString().padLeft(2, '0')}';
+      await ComicFolderService.createFolder('', name, type);
+      await ComicFolderService.createFolder('/$name', childName, type);
+    }
   }
 
   testWidgets('进两级文件夹后返回逐级回退，到根放行', (tester) async {
@@ -230,6 +319,205 @@ void main() {
     expect(currentPath(), isNotEmpty);
     await tester.pump();
     expect(offset(), 0);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('收藏：返回根目录恢复滚动位置，重进子目录回到顶部', (tester) async {
+    await tester.runAsync(() async {
+      await seedFolders(ComicFolderType.favorite, 40);
+    });
+
+    await pumpShelf(tester);
+    await waitForText(tester, 'f39');
+
+    final initialOffset = await scrollRootDown(tester);
+    expect(initialOffset, greaterThan(0));
+
+    // 视口内挑一个文件夹：卡片都在视口外时 ensureVisible 会把它拉进来。
+    final folderName = visibleFolderName(tester, RegExp(r'^f\d\d$'));
+    await Scrollable.ensureVisible(
+      tester.element(itemText(folderName)),
+      duration: Duration.zero,
+    );
+    await tester.pump();
+    final rootOffset = shelfOffset(tester)!;
+    expect(rootOffset, greaterThan(0));
+
+    // 进子文件夹：新列表从顶部开始。
+    await tester.tap(itemText(folderName));
+    await waitForShelfPath(tester, (path) => path == '/$folderName');
+    await waitForItemText(tester, 'inner');
+    expect(shelfOffset(tester), 0);
+
+    // 系统返回：子目录 -> 根，恢复根目录偏移。
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await waitForShelfPath(tester, (path) => path.isEmpty);
+    await waitForItemText(tester, folderName);
+    await waitForShelfOffset(tester, rootOffset);
+
+    // 再进同一子目录：必须仍然从 0 开始，不能带上次的位置。
+    await tester.tap(itemText(folderName));
+    await waitForShelfPath(tester, (path) => path == '/$folderName');
+    await waitForItemText(tester, 'inner');
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(shelfOffset(tester), 0);
+    }
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('收藏：从空文件夹返回也恢复根目录滚动位置', (tester) async {
+    await tester.runAsync(() async {
+      for (var i = 0; i < 40; i++) {
+        await ComicFolderService.createFolder(
+          '',
+          'f${i.toString().padLeft(2, '0')}',
+          ComicFolderType.favorite,
+        );
+      }
+      // empty 建得最晚 → 倒序排在最顶，滚动后在视口外，直接发事件进入。
+      await ComicFolderService.createFolder(
+        '',
+        'empty',
+        ComicFolderType.favorite,
+      );
+    });
+
+    await pumpShelf(tester);
+    await waitForText(tester, 'f39');
+    final rootOffset = await scrollRootDown(tester);
+
+    shelfBlocOf(tester).add(const FolderShelfEnterFolder('/empty'));
+    await waitForShelfPath(tester, (path) => path == '/empty');
+    // 空文件夹是空态单列滚动视图，不挂主列表控制器。
+    expect(shelfOffset(tester), isNull);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await waitForShelfPath(tester, (path) => path.isEmpty);
+    await waitForShelfOffset(tester, rootOffset);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('下载：面包屑返回与 GoBack 都恢复根目录滚动位置', (tester) async {
+    await tester.runAsync(() async {
+      await seedFolders(ComicFolderType.download, 40, childName: 'sub');
+    });
+
+    await pumpShelf(tester, mode: ShelfPageMode.download);
+    await waitForText(tester, 'd39');
+
+    final initialOffset = await scrollRootDown(tester);
+    expect(initialOffset, greaterThan(0));
+
+    final folderName = visibleFolderName(tester, RegExp(r'^d\d\d?$'));
+    await Scrollable.ensureVisible(
+      tester.element(itemText(folderName)),
+      duration: Duration.zero,
+    );
+    await tester.pump();
+    final rootOffset = shelfOffset(tester)!;
+    expect(rootOffset, greaterThan(0));
+
+    // 面包屑返回按钮：GoBack 回根并恢复。
+    await tester.tap(itemText(folderName));
+    await waitForShelfPath(tester, (path) => path == '/$folderName');
+    await waitForItemText(tester, 'sub');
+    expect(shelfOffset(tester), 0);
+    // 面包屑滑入动画 220ms，等它停稳再点。
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await waitForShelfPath(tester, (path) => path.isEmpty);
+    await waitForShelfOffset(tester, rootOffset);
+
+    // 再进一次，直接发 GoBack 事件：同样恢复。
+    await tester.tap(itemText(folderName));
+    await waitForShelfPath(tester, (path) => path == '/$folderName');
+    await waitForItemText(tester, 'sub');
+    shelfBlocOf(tester).add(const FolderShelfGoBack());
+    await waitForShelfPath(tester, (path) => path.isEmpty);
+    await waitForShelfOffset(tester, rootOffset);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('多级目录：逐级返回分别恢复各级滚动位置', (tester) async {
+    await tester.runAsync(() async {
+      // parent 先建 → 倒序排在最后一行，滚到底才可见。
+      await ComicFolderService.createFolder(
+        '',
+        'parent',
+        ComicFolderType.favorite,
+      );
+      for (var i = 0; i < 30; i++) {
+        await ComicFolderService.createFolder(
+          '',
+          'f${i.toString().padLeft(2, '0')}',
+          ComicFolderType.favorite,
+        );
+      }
+      for (var i = 0; i < 30; i++) {
+        await ComicFolderService.createFolder(
+          '/parent',
+          'c${i.toString().padLeft(2, '0')}',
+          ComicFolderType.favorite,
+        );
+      }
+    });
+
+    await pumpShelf(tester);
+    await waitForText(tester, 'f29');
+
+    // 根目录滚到底，parent 是最后一行。
+    await tester.fling(find.byType(GridView), const Offset(0, -4000), 3000);
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    if (itemText('parent').evaluate().isEmpty) {
+      await tester.fling(find.byType(GridView), const Offset(0, -2000), 2000);
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+    await Scrollable.ensureVisible(
+      tester.element(itemText('parent')),
+      duration: Duration.zero,
+    );
+    await tester.pump();
+    final rootOffset = shelfOffset(tester)!;
+    expect(rootOffset, greaterThan(0));
+
+    // 进 parent：从顶部开始，随后在 parent 内向下滚动。
+    await tester.tap(itemText('parent'));
+    await waitForShelfPath(tester, (path) => path == '/parent');
+    await waitForItemText(tester, 'c29');
+    expect(shelfOffset(tester), 0);
+
+    await tester.fling(find.byType(GridView), const Offset(0, -800), 2000);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final childName = visibleFolderName(tester, RegExp(r'^c\d\d$'));
+    await Scrollable.ensureVisible(
+      tester.element(itemText(childName)),
+      duration: Duration.zero,
+    );
+    await tester.pump();
+    final parentOffset = shelfOffset(tester)!;
+    expect(parentOffset, greaterThan(0));
+
+    // 进子目录（空文件夹）。
+    await tester.tap(itemText(childName));
+    await waitForShelfPath(tester, (path) => path == '/parent/$childName');
+    expect(shelfOffset(tester), isNull);
+
+    // 子目录 -> parent：恢复 parent 偏移。
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await waitForShelfPath(tester, (path) => path == '/parent');
+    await waitForShelfOffset(tester, parentOffset);
+
+    // parent -> 根：恢复根目录偏移。
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await waitForShelfPath(tester, (path) => path.isEmpty);
+    await waitForShelfOffset(tester, rootOffset);
     await tester.pump(const Duration(seconds: 5));
   });
 }

@@ -101,9 +101,26 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
   /// 上次的路径：listener 里与新 state 比较，只在路径变化时回顶+置显 bar。
   /// error/选择模式变化走同一 listener，不能顺手把用户藏起来的 bar 弹出来。
   String? _lastPath;
+
+  /// 每个路径一个 ScrollController：列表 key 带路径，换路径会销毁旧 Scrollable，
+  /// 返回上级时复用同一个控制器，再按保存的偏移 jumpTo 回去。
+  final Map<String, ScrollController> _scrollControllers =
+      <String, ScrollController>{};
+
+  /// 各路径最后一次的纵向偏移，返回上级目录时用来恢复。
+  final Map<String, double> _savedScrollOffsets = <String, double>{};
+
+  /// 待恢复目标：路径 + 偏移。等该路径 load 完成、列表首帧布局后再跳。
+  String? _pendingRestorePath;
+  double? _pendingRestoreOffset;
+
+  /// 帧后恢复回调是否已排：同一帧只排一次。
+  bool _restoreScheduled = false;
+
   @override
   void initState() {
     super.initState();
+    _lastPath = context.read<FolderShelfBloc>().state.currentPath;
     if (_isDesktop) {
       HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     }
@@ -115,6 +132,11 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
       HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     }
     _removeBackEntry();
+    for (final controller in _scrollControllers.values) {
+      controller.dispose();
+    }
+    _scrollControllers.clear();
+    _savedScrollOffsets.clear();
     super.dispose();
   }
 
@@ -226,19 +248,18 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
       listenWhen: (previous, current) =>
           (current.error != null && current.error != previous.error) ||
           current.selectionMode != previous.selectionMode ||
-          current.currentPath != previous.currentPath,
+          current.currentPath != previous.currentPath ||
+          current.isLoading != previous.isLoading ||
+          current.isLoadingMore != previous.isLoadingMore,
       listener: (context, state) {
         final error = state.error;
         if (error != null && error.isNotEmpty) {
           showErrorToast(error);
         }
         if (state.currentPath != _lastPath) {
-          _lastPath = state.currentPath;
-          // 换路径=全新列表：悬浮导航直接置显，不依赖滚动通知。
-          // 靠 jumpTo 间接触发通知的链路不可靠（新列表替换/高度修正会吞掉
-          // 那次通知），内容不够滑时 bar 会永远出不来。
-          _setNavVisible(true);
+          _handleFolderPathChanged(state.currentPath);
         }
+        _maybeScheduleScrollRestore(state);
         _syncBackEntry(state);
       },
       builder: (context, state) {
@@ -266,11 +287,25 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
     setState(() => _navVisible = visible);
   }
 
-  /// 列表滚动方向联动悬浮物：上滑浏览时隐藏，下滑/回顶时显示。
+  /// 列表滚动通知：保存当前路径的偏移，并联动悬浮物显隐。
   /// 只处理垂直主列表的通知，底部横向操作条不参与；不吞通知，RefreshIndicator 照常工作。
   bool _onGridScroll(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) {
       return false;
+    }
+    if (notification is ScrollStartNotification &&
+        notification.dragDetails != null) {
+      // 手指接管滚动：放弃未完成的恢复，避免加载完成后列表又突然跳走。
+      _pendingRestorePath = null;
+      _pendingRestoreOffset = null;
+    }
+    // 恢复中的 jumpTo 不写入，否则会把半路位置当成用户位置。
+    if ((notification is ScrollUpdateNotification ||
+            notification is ScrollEndNotification) &&
+        !context.read<FolderShelfBloc>().state.isLoading &&
+        _pendingRestorePath == null &&
+        _lastPath != null) {
+      _savedScrollOffsets[_lastPath!] = notification.metrics.pixels;
     }
     if (notification.metrics.pixels <= notification.metrics.minScrollExtent) {
       _setNavVisible(true);
@@ -295,6 +330,157 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
       }
     }
     return false;
+  }
+
+  ScrollController _scrollControllerFor(String path) {
+    return _scrollControllers.putIfAbsent(path, ScrollController.new);
+  }
+
+  /// [candidateAncestor] 是否 [path] 的严格祖先（根路径 '' 是所有非空路径的祖先）。
+  bool _isAncestorPath(String candidateAncestor, String path) {
+    if (candidateAncestor == path) return false;
+    if (candidateAncestor.isEmpty) return path.isNotEmpty;
+    return path.startsWith('$candidateAncestor/');
+  }
+
+  /// 删除指定路径的控制器与偏移，控制器延后到帧结束再 dispose。
+  /// 当前帧里即将卸载的列表还持有这些控制器，立即释放会触发已释放访问。
+  void _dropScrollState(Iterable<String> paths) {
+    final removed = <ScrollController>[];
+    for (final path in paths.toList()) {
+      _savedScrollOffsets.remove(path);
+      final controller = _scrollControllers.remove(path);
+      if (controller != null) removed.add(controller);
+    }
+    if (removed.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final controller in removed) {
+        controller.dispose();
+      }
+    });
+  }
+
+  /// 路径变化：保存旧路径位置；返回上级时取出上级位置待恢复，
+  /// 进入子目录时清掉目标路径残留，保证从 0 开始。
+  void _handleFolderPathChanged(String newPath) {
+    final oldPath = _lastPath;
+    if (oldPath != null) {
+      // 如果旧路径上有被打断的恢复目标，它才是用户最后看到的位置。
+      final pendingOffset = _pendingRestorePath == oldPath
+          ? _pendingRestoreOffset
+          : null;
+      if (pendingOffset != null) {
+        _savedScrollOffsets[oldPath] = pendingOffset;
+      } else {
+        final controller = _scrollControllers[oldPath];
+        if (controller != null && controller.hasClients) {
+          _savedScrollOffsets[oldPath] = controller.offset;
+        }
+      }
+    }
+
+    _lastPath = newPath;
+    // 换路径=全新列表：悬浮导航直接置显，不依赖滚动通知。
+    // 靠 jumpTo 间接触发通知的链路不可靠（新列表替换/高度修正会吞掉
+    // 那次通知），内容不够滑时 bar 会永远出不来。
+    _setNavVisible(true);
+
+    final knownPaths = <String>{
+      ..._savedScrollOffsets.keys,
+      ..._scrollControllers.keys,
+    };
+
+    if (oldPath != null && _isAncestorPath(newPath, oldPath)) {
+      // 返回上级（返回键 / 面包屑 / 回根）：回收离开分支的缓存，
+      // 只保留新路径自己的位置。
+      _dropScrollState(
+        knownPaths.where((path) => _isAncestorPath(newPath, path)),
+      );
+      final savedOffset = _savedScrollOffsets[newPath];
+      if (savedOffset != null && savedOffset > 0) {
+        _pendingRestorePath = newPath;
+        _pendingRestoreOffset = savedOffset;
+      } else {
+        _pendingRestorePath = null;
+        _pendingRestoreOffset = null;
+      }
+    } else {
+      // 进入子目录 / 其它目录：目标是全新列表，清掉它的残留，从 0 开始。
+      _pendingRestorePath = null;
+      _pendingRestoreOffset = null;
+      _dropScrollState(
+        knownPaths.where(
+          (path) => path == newPath || _isAncestorPath(newPath, path),
+        ),
+      );
+    }
+  }
+
+  /// 待恢复目标就绪（load/loadMore 结束）时安排一次帧后恢复。
+  void _maybeScheduleScrollRestore(FolderShelfState state) {
+    if (_pendingRestorePath != state.currentPath ||
+        _pendingRestoreOffset == null ||
+        state.isLoading ||
+        state.isLoadingMore) {
+      return;
+    }
+    if (state.error != null) {
+      _pendingRestorePath = null;
+      _pendingRestoreOffset = null;
+      return;
+    }
+    _scheduleScrollRestore();
+  }
+
+  /// 同一帧只排一次恢复回调：首帧布局结束才知道 maxScrollExtent。
+  void _scheduleScrollRestore() {
+    if (_restoreScheduled) return;
+    _restoreScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _restoreScheduled = false;
+      _tryRestoreScrollOffset();
+    });
+  }
+
+  /// 把待恢复偏移落到列表上；目标超出已加载内容时先翻页再继续。
+  void _tryRestoreScrollOffset() {
+    if (!mounted) return;
+    final state = context.read<FolderShelfBloc>().state;
+    final pendingPath = _pendingRestorePath;
+    final targetOffset = _pendingRestoreOffset;
+    if (state.isLoading ||
+        state.isLoadingMore ||
+        pendingPath == null ||
+        targetOffset == null ||
+        state.currentPath != pendingPath) {
+      return;
+    }
+    final controller = _scrollControllers[state.currentPath];
+    if (controller == null || !controller.hasClients) {
+      // 空文件夹（或首帧列表还没挂上）：没有可恢复的位置。
+      _pendingRestorePath = null;
+      _pendingRestoreOffset = null;
+      return;
+    }
+    final position = controller.position;
+    final maxExtent = position.maxScrollExtent;
+    final minExtent = position.minScrollExtent;
+    if (targetOffset <= maxExtent || !state.hasMore) {
+      final clamped = targetOffset.clamp(minExtent, maxExtent).toDouble();
+      if ((position.pixels - clamped).abs() > 0.5) {
+        controller.jumpTo(clamped);
+      }
+      _pendingRestorePath = null;
+      _pendingRestoreOffset = null;
+      return;
+    }
+    // 目标在已加载内容之外：先落到已加载末尾，再靠分页补足。
+    if ((position.pixels - maxExtent).abs() > 0.5) {
+      controller.jumpTo(maxExtent);
+    }
+    if (!state.isLoading && !state.isLoadingMore && state.hasMore) {
+      context.read<FolderShelfBloc>().add(const FolderShelfLoadMoreRequested());
+    }
   }
 
   /// 悬浮物拆成两个独立 Positioned：
@@ -513,7 +699,8 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
               prev.hasMore != curr.hasMore ||
               prev.error != curr.error ||
               prev.sortAscending != curr.sortAscending ||
-              prev.selectionMode != curr.selectionMode,
+              prev.selectionMode != curr.selectionMode ||
+              prev.currentPath != curr.currentPath,
           builder: (context, state) {
             final bookshelfSetting = context
                 .watch<GlobalSettingCubit>()
@@ -612,6 +799,7 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
             final shelfList = detailed
                 ? CustomScrollView(
                     key: ValueKey('shelf-${state.currentPath}'),
+                    controller: _scrollControllerFor(state.currentPath),
                     // 内容不足一屏时也要能下拉，否则 RefreshIndicator 收不到手势。
                     physics: const AlwaysScrollableScrollPhysics(),
                     slivers: [
@@ -627,6 +815,7 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
                   )
                 : GridView.builder(
                     key: ValueKey('shelf-${state.currentPath}'),
+                    controller: _scrollControllerFor(state.currentPath),
                     // 内容不足一屏时也要能下拉，否则 RefreshIndicator 收不到手势。
                     physics: const AlwaysScrollableScrollPhysics(),
                     // 悬浮物盖在列表上层：子文件夹有面包屑浮栏，留 64px 顶部滚动边距；
