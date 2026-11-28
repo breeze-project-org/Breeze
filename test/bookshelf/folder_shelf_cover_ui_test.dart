@@ -139,6 +139,45 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
+  testWidgets('文件夹卡片显示含子文件夹的漫画总数', (tester) async {
+    await tester.runAsync(() async {
+      await ComicFolderService.createFolder(
+        '',
+        'test',
+        ComicFolderType.favorite,
+      );
+      await ComicFolderService.createFolder(
+        '/test',
+        'test1',
+        ComicFolderType.favorite,
+      );
+      Future<void> addComics(String prefix, int count, String path) async {
+        for (var i = 0; i < count; i++) {
+          final favorite = createTestFavorite('$prefix:$i');
+          await database.favorites.put(favorite);
+          await ComicLinkService.addComic(
+            favorite.uniqueKey,
+            path,
+            ComicFolderType.favorite,
+          );
+        }
+      }
+
+      await addComics('folder-total:root', 5, '/test');
+      await addComics('folder-total:child', 3, '/test/test1');
+    });
+
+    await pumpShelf(tester);
+    await waitFor(
+      tester,
+      () => find.text('8 本').evaluate().isNotEmpty,
+      description: '文件夹递归漫画数徽章',
+    );
+    expect(find.text('8 本'), findsOneWidget);
+    expect(find.text('5 本'), findsNothing);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('详情模式下文件夹封面缩进在卡片内且不超出高度', (tester) async {
     await tester.runAsync(() async {
       await ComicFolderService.createFolder(

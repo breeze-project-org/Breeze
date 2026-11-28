@@ -110,19 +110,27 @@ Future<ShelfLoadResult> loadShelfInIsolate(ShelfLoadTask task) async {
           db: db,
         )
       : const <ComicFolder>[];
+  // 文件夹数量按「自身 + 所有未删除子孙文件夹」递归统计：根目录的 /test
+  // 需要把 /test/test1 里的漫画也算进去，否则父文件夹看起来是空的。
   var folderComicCounts = const <String, int>{};
-  if (isFirstPage && !isSearching) {
-    final byFolder = await db.links.countActiveByFolder(
+  if (isFirstPage && !isSearching && folders.isNotEmpty) {
+    final directCounts = await db.links.countActiveByFolder(
       folderType.name,
       sources: task.sources,
     );
+    final activeFolders = await db.folders.listActiveByType(folderType.name);
+    final subtreeCounts = _computeFolderSubtreeCounts(
+      folders: folders,
+      activeFolders: activeFolders,
+      directCounts: directCounts,
+    );
     folderComicCounts = <String, int>{
       for (final folder in folders)
-        if ((byFolder[folder.syncId] ?? 0) > 0)
+        if ((subtreeCounts[folder.syncId] ?? 0) > 0)
           (task.currentPath.isEmpty
                   ? '/${folder.name}'
                   : '${task.currentPath}/${folder.name}'):
-              byFolder[folder.syncId]!,
+              subtreeCounts[folder.syncId]!,
     };
   }
 
@@ -217,6 +225,45 @@ Future<ShelfLoadResult> loadShelfInIsolate(ShelfLoadTask task) async {
     nextOffset: cursor,
     hasMore: hasMore,
   );
+}
+
+/// 计算 [folders] 每个文件夹的递归漫画数（自身直属 + 全部未删除子孙文件夹）。
+///
+/// [directCounts] 为 `folderSyncId -> 直属未删除漫画数`；[activeFolders] 只含
+/// 未软删除的文件夹，因此已删除文件夹里的链接不会被任何父文件夹计入。
+/// 结果带记忆化，并用 [visiting] 兜住历史脏数据里可能出现的环。
+Map<String, int> _computeFolderSubtreeCounts({
+  required List<ComicFolder> folders,
+  required List<ComicFolder> activeFolders,
+  required Map<String, int> directCounts,
+}) {
+  final childrenOf = <String, List<String>>{};
+  for (final folder in activeFolders) {
+    final parentSyncId = folder.parentSyncId;
+    if (parentSyncId == null || parentSyncId.isEmpty) continue;
+    (childrenOf[parentSyncId] ??= <String>[]).add(folder.syncId);
+  }
+
+  final memo = <String, int>{};
+  final visiting = <String>{};
+
+  int countSubtree(String syncId) {
+    final cached = memo[syncId];
+    if (cached != null) return cached;
+    // 环上重复展开的那一层直接返回 0，避免无限递归。
+    if (!visiting.add(syncId)) return 0;
+    var total = directCounts[syncId] ?? 0;
+    for (final child in childrenOf[syncId] ?? const <String>[]) {
+      total += countSubtree(child);
+    }
+    visiting.remove(syncId);
+    memo[syncId] = total;
+    return total;
+  }
+
+  return <String, int>{
+    for (final folder in folders) folder.syncId: countSubtree(folder.syncId),
+  };
 }
 
 Future<ShelfLoadResult> _loadHistoryShelf(

@@ -37,7 +37,7 @@ class FolderShelfItem extends StatelessWidget {
   /// 详情模式：横行样式，对齐漫画详情行（同高、同底色、小图标 + 标题 + 数量）。
   final bool detailed;
 
-  /// 文件夹直属漫画数；null 时不显示数量徽章。
+  /// 文件夹漫画总数（含所有子孙子文件夹）；null 时不显示数量徽章。
   final int? comicCount;
 
   /// 文件夹封面用的漫画；null 时回退到文件夹图标。

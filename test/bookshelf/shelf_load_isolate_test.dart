@@ -41,6 +41,60 @@ Future<void> _addLink(String comicUniqueKey, String type) async {
   );
 }
 
+/// 写入一个收藏文件夹；[parentSyncId] 为空表示根目录。
+Future<ComicFolder> _putFolder({
+  required String syncId,
+  required String name,
+  String parentSyncId = '',
+  bool deleted = false,
+}) async {
+  final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+  final type = ComicFolderType.favorite.name;
+  final folder = ComicFolder(
+    syncId: syncId,
+    parentSyncId: parentSyncId.isEmpty ? null : parentSyncId,
+    uniqueKey: '$parentSyncId|$name|$type',
+    name: name,
+    typeData: type,
+    versionVector: {},
+    createdAt: now,
+    updatedAt: now,
+  );
+  if (deleted) folder.deletedAt = now;
+  await database.folders.put(folder);
+  return folder;
+}
+
+/// 在指定文件夹（null = 根目录）下写入 [count] 条收藏链接。
+Future<void> _addComicsToFolder(
+  String prefix,
+  int count,
+  String? folderSyncId, {
+  String source = 'test',
+  bool deleted = false,
+}) async {
+  final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+  for (var i = 0; i < count; i++) {
+    final favorite = createTestFavorite(
+      '$prefix:$i',
+      source: source,
+      deleted: deleted,
+    );
+    await database.favorites.put(favorite);
+    await database.links.put(
+      ComicLink(
+        uniqueKey: '${favorite.uniqueKey}|${folderSyncId ?? ''}|favorite',
+        comicUniqueKey: favorite.uniqueKey,
+        folderSyncId: folderSyncId,
+        typeData: ComicFolderType.favorite.name,
+        versionVector: {},
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+  }
+}
+
 void main() {
   setUpAll(TestDatabaseHelper.setUpTestDatabase);
   tearDownAll(TestDatabaseHelper.tearDownTestDatabase);
@@ -251,6 +305,92 @@ void main() {
 
     final filtered = await _load('favorite', sources: ['src-a']);
     expect(filtered.folderComicCounts['/A'], 1);
+  });
+
+  test('文件夹数量递归包含所有子孙文件夹的漫画', () async {
+    await _putFolder(syncId: 'sync-test', name: 'test');
+    await _putFolder(
+      syncId: 'sync-test1',
+      name: 'test1',
+      parentSyncId: 'sync-test',
+    );
+    await _putFolder(
+      syncId: 'sync-test2',
+      name: 'test2',
+      parentSyncId: 'sync-test1',
+    );
+    await _addComicsToFolder('rec:test', 5, 'sync-test');
+    await _addComicsToFolder('rec:test1', 3, 'sync-test1');
+    await _addComicsToFolder('rec:test2', 2, 'sync-test2');
+
+    final root = await _load('favorite');
+    expect(root.folderComicCounts['/test'], 10);
+
+    final insideTest = await _load('favorite', currentPath: '/test');
+    expect(insideTest.folders.map((f) => f.name), contains('test1'));
+    expect(insideTest.folderComicCounts['/test/test1'], 5);
+
+    final insideTest1 = await _load('favorite', currentPath: '/test/test1');
+    expect(insideTest1.folders.map((f) => f.name), contains('test2'));
+    expect(insideTest1.folderComicCounts['/test/test1/test2'], 2);
+  });
+
+  test('空父文件夹显示子文件夹里的漫画数，空子树不显示', () async {
+    await _putFolder(syncId: 'sync-empty', name: 'empty');
+    await _putFolder(
+      syncId: 'sync-empty-child',
+      name: 'child',
+      parentSyncId: 'sync-empty',
+    );
+    await _putFolder(syncId: 'sync-blank', name: 'blank');
+    await _addComicsToFolder('empty:child', 3, 'sync-empty-child');
+
+    final root = await _load('favorite');
+    expect(root.folderComicCounts['/empty'], 3);
+    expect(root.folderComicCounts.containsKey('/blank'), isFalse);
+
+    final inside = await _load('favorite', currentPath: '/empty');
+    expect(inside.folderComicCounts['/empty/child'], 3);
+  });
+
+  test('递归计数排除软删文件夹、软删漫画与来源筛选', () async {
+    await _putFolder(syncId: 'sync-root', name: 'root');
+    await _putFolder(
+      syncId: 'sync-sub',
+      name: 'sub',
+      parentSyncId: 'sync-root',
+    );
+    await _putFolder(
+      syncId: 'sync-gone',
+      name: 'gone',
+      parentSyncId: 'sync-root',
+      deleted: true,
+    );
+    await _addComicsToFolder('keep:root', 1, 'sync-root', source: 'src-a');
+    await _addComicsToFolder('keep:sub', 1, 'sync-sub', source: 'src-a');
+    await _addComicsToFolder('other:root', 1, 'sync-root', source: 'src-b');
+    await _addComicsToFolder(
+      'deleted:root',
+      2,
+      'sync-root',
+      source: 'src-a',
+      deleted: true,
+    );
+    await _addComicsToFolder('gone:sub', 2, 'sync-gone', source: 'src-a');
+
+    final all = await _load('favorite');
+    expect(all.folderComicCounts['/root'], 3);
+
+    final filtered = await _load('favorite', sources: ['src-a']);
+    expect(filtered.folderComicCounts['/root'], 2);
+
+    final inside = await _load(
+      'favorite',
+      currentPath: '/root',
+      sources: ['src-a'],
+    );
+    expect(inside.folders.map((f) => f.name), isNot(contains('gone')));
+    expect(inside.folderComicCounts['/root/sub'], 1);
   });
 
   test('文件夹封面自动取最新、指定优先、失效回退自动', () async {
