@@ -23,83 +23,63 @@ class DohSettingPage extends StatelessWidget {
     return SettingPageShell(
       title: t.settings.doh,
       child: ListView(
+        padding: kSettingPagePadding,
         children: [
-          SwitchListTile(
-            secondary: const Icon(Icons.shield_outlined),
-            title: Text(t.settings.doh),
-            subtitle: Text(t.settings.dohEnabledSubtitle),
-            thumbIcon: kSettingSwitchThumbIcon,
-            value: setting.enabled,
-            onChanged: (value) =>
-                _update(cubit, setting.copyWith(enabled: value)),
-          ),
-          const Divider(height: 1, thickness: 0.3),
+          settingCardGroup([
+            settingSwitchTile(
+              icon: Icons.shield_outlined,
+              title: t.settings.doh,
+              subtitle: t.settings.dohEnabledSubtitle,
+              value: setting.enabled,
+              onChanged: (value) =>
+                  _update(cubit, setting.copyWith(enabled: value)),
+            ),
+          ]),
           settingSectionTitle(
             context,
             t.settings.dohProviders,
             icon: Icons.dns_outlined,
           ),
-          if (setting.providers.isEmpty)
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: Text(t.settings.dohEmpty),
-            ),
-          for (final provider in setting.providers)
-            ListTile(
-              leading: const Icon(Icons.language_outlined),
-              title: Text(_hostOf(provider)),
-              subtitle: Text(
-                provider,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+          settingCardGroup([
+            if (setting.providers.isEmpty)
+              CalmListTile(
+                leading: settingTileIcon(Icons.info_outline_rounded),
+                title: t.settings.dohEmpty,
               ),
-              trailing: IconButton(
-                tooltip: t.common.delete,
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => _remove(cubit, setting, provider),
+            for (final provider in setting.providers)
+              CalmListTile(
+                leading: settingTileIcon(Icons.language_outlined),
+                title: _hostOf(provider),
+                subtitle: provider,
+                trailing: CalmIconButton(
+                  icon: Icons.delete_outline_rounded,
+                  tooltip: t.common.delete,
+                  onPressed: () => _remove(cubit, setting, provider),
+                ),
+              ),
+            settingActionTile(
+              icon: Icons.add_rounded,
+              title: t.settings.dohAdd,
+              subtitle: t.settings.dohAddHint,
+              onTap: () => _add(context, cubit, setting),
+            ),
+            settingActionTile(
+              icon: Icons.restart_alt_rounded,
+              title: t.settings.dohReset,
+              onTap: () => _update(
+                cubit,
+                setting.copyWith(providers: defaultDohProviders),
               ),
             ),
-          ListTile(
-            leading: const Icon(Icons.add),
-            title: Text(t.settings.dohAdd),
-            subtitle: Text(t.settings.dohAddHint),
-            onTap: () => _add(context, cubit, setting),
+          ]),
+          const SizedBox(height: 12),
+          CalmStatusBanner(title: t.settings.dohIpHint),
+          const SizedBox(height: 8),
+          CalmStatusBanner(
+            title: t.settings.dohNote,
+            tone: CalmTone.info,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.lightbulb_outline,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    t.settings.dohIpHint,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.restart_alt),
-            title: Text(t.settings.dohReset),
-            onTap: () => _update(
-              cubit,
-              setting.copyWith(providers: defaultDohProviders),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-            child: Text(
-              t.settings.dohNote,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -128,49 +108,53 @@ class DohSettingPage extends StatelessWidget {
     GlobalSettingCubit cubit,
     DohSettingState setting,
   ) async {
-    var input = '';
-    String? error;
+    final controller = TextEditingController();
+    // 用 ValueNotifier 承载校验错误：底部按钮无法直接重建 body，
+    // 由 ValueListenableBuilder 在弹窗内部自动刷新错误提示。
+    final error = ValueNotifier<String?>(null);
 
-    final result = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setState) => AlertDialog(
-          title: Text(t.settings.dohAdd),
-          content: TextField(
-            autofocus: true,
-            onChanged: (value) {
-              input = value.trim();
-              if (error != null) {
-                setState(() => error = null);
-              }
-            },
-            decoration: InputDecoration(
-              hintText: t.settings.dohAddHint,
-              errorText: error,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: Text(t.common.cancel),
-              onPressed: () => Navigator.pop(dialogContext),
-            ),
-            TextButton(
-              child: Text(t.common.ok),
-              onPressed: () {
-                final value = input.trim();
-                final uri = Uri.tryParse(value);
-                if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
-                  setState(() => error = t.settings.dohInvalidUrl);
-                  return;
-                }
-                Navigator.pop(dialogContext, value);
-              },
-            ),
-          ],
+    final result = await showCalmDialog<String>(
+      context,
+      title: t.settings.dohAdd,
+      subtitle: t.settings.dohAddHint,
+      icon: Icons.dns_outlined,
+      bodyBuilder: (dialogContext) => ValueListenableBuilder<String?>(
+        valueListenable: error,
+        builder: (context, errorText, _) => CalmTextField(
+          controller: controller,
+          hintText: t.settings.dohAddHint,
+          prefixIcon: Icons.link_rounded,
+          errorText: errorText,
+          keyboardType: TextInputType.url,
+          onChanged: (_) {
+            if (error.value != null) error.value = null;
+          },
         ),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () {
+            final value = controller.text.trim();
+            final uri = Uri.tryParse(value);
+            if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+              // 校验失败时留在弹窗内，靠 errorText 提示，不关闭路由。
+              error.value = t.settings.dohInvalidUrl;
+              return;
+            }
+            Navigator.of(dialogContext).pop(value);
+          },
+        ),
+      ],
     );
+    controller.dispose();
+    error.dispose();
 
     if (result == null) return;
     final providers = [...setting.providers];

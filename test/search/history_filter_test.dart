@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/search/widget/history.dart';
+import 'package:zephyr/ui/ui.dart';
 
 class _TestGlobalSettingCubit extends GlobalSettingCubit {
   _TestGlobalSettingCubit(List<String> history) {
@@ -25,9 +26,11 @@ Widget _app(GlobalSettingCubit cubit, String keyword) {
   );
 }
 
+// 历史词条已迁到 CalmUI 的 CalmInputChip（label 为 String），
+// finder 随之换成同名控件；下面的排序/过滤断言保持不变。
 List<String> _chipLabels(WidgetTester tester) => tester
-    .widgetList<InputChip>(find.byType(InputChip))
-    .map((chip) => (chip.label as Text).data!)
+    .widgetList<CalmInputChip>(find.byType(CalmInputChip))
+    .map((chip) => chip.label)
     .toList();
 
 void main() {
@@ -59,7 +62,7 @@ void main() {
 
     await tester.pumpWidget(_app(cubit, 'zzz'));
     await tester.pump();
-    expect(find.byType(InputChip), findsNothing);
+    expect(find.byType(CalmInputChip), findsNothing);
     expect(find.text(t.search.noMatchingHistory), findsOneWidget);
   });
 

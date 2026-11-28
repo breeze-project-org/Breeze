@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/main.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
 
 import 'package:zephyr/widgets/picture_bloc/bloc/picture_bloc.dart';
@@ -85,6 +86,8 @@ class _CoverWidgetState extends State<CoverWidget> {
     );
   }
 
+  double get _radius => widget.roundedCorner ? kComicCardBorderRadius : 0.0;
+
   @override
   Widget build(BuildContext context) {
     final width = widget.width ?? context.screenWidth * 0.3;
@@ -92,6 +95,8 @@ class _CoverWidgetState extends State<CoverWidget> {
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final decodeWidth = ((width * devicePixelRatio) * 1.2).round();
     final decodeHeight = ((height * devicePixelRatio) * 1.2).round();
+    final c = context.calm;
+    final radius = _radius;
     return BlocProvider.value(
       value: _bloc,
       child: SizedBox(
@@ -106,17 +111,21 @@ class _CoverWidgetState extends State<CoverWidget> {
           builder: (context, state) {
             switch (state.status) {
               case PictureLoadStatus.initial:
+                // 占位保持静态（不用骨架动画/转圈）：墨水屏模式下反复重绘
+                // 会留下残影，静态微图标在所有平台都不会持续驱动刷新。
                 return Container(
                   width: width,
                   height: height,
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(
-                      widget.roundedCorner ? kComicCardBorderRadius : 0.0,
-                    ),
+                    color: c.surface2,
+                    borderRadius: BorderRadius.circular(radius),
                   ),
                   child: Center(
-                    child: Icon(Icons.image, color: Colors.grey[300], size: 30),
+                    child: Icon(
+                      Icons.auto_stories_outlined,
+                      color: c.text3.withValues(alpha: 0.55),
+                      size: 24,
+                    ),
                   ),
                 );
               case PictureLoadStatus.success:
@@ -142,10 +151,8 @@ class _CoverWidgetState extends State<CoverWidget> {
                     width: width,
                     height: height,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(
-                        widget.roundedCorner ? 5.0 : 0.0,
-                      ),
+                      color: c.surface2,
+                      borderRadius: BorderRadius.circular(radius),
                       image: DecorationImage(
                         fit: BoxFit.cover,
                         image: _imageProvider!,
@@ -163,20 +170,45 @@ class _CoverWidgetState extends State<CoverWidget> {
               case PictureLoadStatus.failure:
                 if (state.result.toString().contains('404')) {
                   return ClipRRect(
-                    borderRadius: BorderRadius.circular(kComicCardBorderRadius),
+                    borderRadius: BorderRadius.circular(radius),
                     child: Image.asset(
                       'asset/image/error_image/404.png',
                       fit: BoxFit.cover,
                     ),
                   );
-                } else {
-                  return InkWell(
+                }
+                return MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
                     onTap: () {
                       context.read<PictureBloc>().add(GetPicture(_pictureInfo));
                     },
-                    child: Center(child: Icon(Icons.refresh)),
-                  );
-                }
+                    child: Container(
+                      width: width,
+                      height: height,
+                      decoration: BoxDecoration(
+                        color: c.surface2,
+                        borderRadius: BorderRadius.circular(radius),
+                      ),
+                      alignment: Alignment.center,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: c.surface,
+                          shape: BoxShape.circle,
+                          boxShadow: c.shadowSm,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.refresh_rounded,
+                          size: 16,
+                          color: c.text2,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
             }
           },
         ),

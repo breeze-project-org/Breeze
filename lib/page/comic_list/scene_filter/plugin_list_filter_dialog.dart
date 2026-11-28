@@ -1,9 +1,14 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_list/scene_filter/plugin_choice_dropdown.dart';
 import 'package:zephyr/page/comic_list/scene_filter/plugin_list_filter_schema.dart';
-import 'package:zephyr/i18n/strings.g.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 
+/// 插件列表筛选面板（CalmUI）。
+///
+/// 保持公开构造签名不变，外部仍可直接 `showDialog(builder: (_) =>
+/// PluginListFilterDialog(...))`。内部改为透明 [Dialog] + [CalmDialogSurface]：
+/// 手机贴底滑出（带抓手）、平板与桌面居中卡片，与 [showCalmDialog] 视觉一致。
 class PluginListFilterDialog extends StatefulWidget {
   const PluginListFilterDialog({
     super.key,
@@ -27,33 +32,61 @@ class _PluginListFilterDialogState extends State<PluginListFilterDialog> {
     _selections = Map<String, String>.from(widget.initialSelections);
   }
 
+  int get _activeCount =>
+      _selections.values.where((value) => value.trim().isNotEmpty).length;
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        widget.scheme.title.isNotEmpty
-            ? widget.scheme.title
-            : t.comicList.filter,
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: widget.scheme.fields
-              .map((field) => _buildField(context, field))
-              .toList(),
+    final isPhone = MediaQuery.sizeOf(context).width < 600;
+    final title = widget.scheme.title.isNotEmpty
+        ? widget.scheme.title
+        : t.comicList.filter;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      alignment: isPhone ? Alignment.bottomCenter : Alignment.center,
+      insetPadding: isPhone ? EdgeInsets.zero : const EdgeInsets.all(24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: CalmDialogSurface(
+          title: title,
+          icon: Icons.tune_rounded,
+          badge: _activeCount > 0 ? '$_activeCount' : null,
+          isBottomSheet: isPhone,
+          onClose: () => Navigator.of(context).pop(),
+          body: _buildBody(context),
+          actions: [
+            CalmButton(
+              label: t.common.cancel,
+              variant: CalmButtonVariant.ghost,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            CalmButton(
+              label: t.common.ok,
+              variant: CalmButtonVariant.primary,
+              onPressed: () =>
+                  Navigator.of(context)
+                      .pop(Map<String, String>.from(_selections)),
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(t.common.cancel),
-        ),
-        FilledButton(
-          onPressed: () =>
-              Navigator.pop(context, Map<String, String>.from(_selections)),
-          child: Text(t.common.ok),
-        ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (widget.scheme.fields.isEmpty) {
+      return CalmEmptyState(
+        icon: Icons.filter_alt_off_rounded,
+        title: t.comicList.filter,
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final field in widget.scheme.fields) _buildField(context, field),
       ],
     );
   }
@@ -67,21 +100,16 @@ class _PluginListFilterDialogState extends State<PluginListFilterDialog> {
 
     if (field.isDropdownField) {
       return Padding(
-        padding: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.only(bottom: 14),
         child: Column(
+          // 不能 stretch：FluentDropdown 以自身宽度作为菜单最小宽度，
+          // 被拉满整行时会让菜单宽度超过上限。
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (field.label.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  field.label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: context.theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
+            if (field.label.isNotEmpty) ...[
+              _FieldLabel(label: field.label),
+              const SizedBox(height: 6),
+            ],
             PluginChoiceDropdown(
               field: field,
               selectedValue: _selections[field.key] ?? '',
@@ -102,21 +130,14 @@ class _PluginListFilterDialogState extends State<PluginListFilterDialog> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (field.label.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                field.label,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: context.theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
+          if (field.label.isNotEmpty) ...[
+            _FieldLabel(label: field.label),
+            const SizedBox(height: 8),
+          ],
           ...visibleLevelOptionSets.asMap().entries.map((entry) {
             final level = entry.key;
             final filterLevel = entry.value;
@@ -137,30 +158,30 @@ class _PluginListFilterDialogState extends State<PluginListFilterDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (levelLabel != null)
+                  if (levelLabel != null) ...[
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: 6),
                       child: Text(
                         levelLabel,
                         style: TextStyle(
-                          color: context.theme.colorScheme.onSurfaceVariant,
+                          fontSize: 10.5,
+                          height: 1.2,
+                          color: context.calm.text3,
                         ),
                       ),
                     ),
+                  ],
                   Wrap(
                     spacing: 8,
-                    runSpacing: 6,
+                    runSpacing: 8,
                     children: levelOptions.map((option) {
                       final value = option.value;
                       final optionLabel = option.label.isNotEmpty
                           ? option.label
                           : value;
-                      final selected = selectedValue == value;
-
-                      return ChoiceChip(
-                        label: Text(optionLabel),
-                        selected: selected,
-                        showCheckmark: false,
+                      return CalmFilterChip(
+                        label: optionLabel,
+                        selected: selectedValue == value,
                         onSelected: (_) {
                           setState(() {
                             _selections[field.key] = value;
@@ -175,6 +196,48 @@ class _PluginListFilterDialogState extends State<PluginListFilterDialog> {
           }),
         ],
       ),
+    );
+  }
+}
+
+/// 分组小标题：左侧 3px 主色竖条 + 文案，和 CalmSectionHeader 同一套语汇。
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 3,
+          height: 12,
+          decoration: BoxDecoration(
+            color: c.accent,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(12),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: c.text2,
+              height: 1.2,
+              leadingDistribution: TextLeadingDistribution.even,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

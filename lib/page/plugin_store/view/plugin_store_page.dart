@@ -7,6 +7,7 @@ import 'package:zephyr/page/plugin_store/cubit/plugin_store_cubit.dart';
 import 'package:zephyr/page/plugin_store/widgets/cloud_plugin_card.dart';
 import 'package:zephyr/page/plugin_store/widgets/plugin_store_status_banner.dart';
 import 'package:zephyr/plugin/utils/plugin_local_file_picker.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/system/external_link.dart';
 import 'package:zephyr/widgets/toast.dart';
 
@@ -53,86 +54,65 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return BlocBuilder<PluginStoreCubit, PluginStoreState>(
       builder: (context, state) {
-        return Scaffold(
-          appBar: AppBar(title: Text(t.plugin.store)),
-          body: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildSearchCard(colorScheme, state.installing),
-                  const SizedBox(height: 14),
-                  _buildInstallButtons(state.installing),
-                  const SizedBox(height: 16),
-                  _buildCloudPluginsSection(state),
-                ],
-              ),
+        return CalmPageScaffold(
+          title: t.plugin.store,
+          maxContentWidth: 840,
+          actions: [
+            CalmIconButton(
+              icon: Icons.refresh_rounded,
+              tooltip: t.common.refresh,
+              onPressed: state.cloudLoading
+                  ? null
+                  : context.read<PluginStoreCubit>().loadCloudPlugins,
             ),
+          ],
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            children: [
+              CalmTextField(
+                controller: _searchController,
+                prefixIcon: Icons.search_rounded,
+                hintText: t.plugin.searchHint,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              _buildInstallButtons(state.installing),
+              const SizedBox(height: 18),
+              _buildCloudPluginsSection(state),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildSearchCard(ColorScheme colorScheme, bool installing) {
-    return TextField(
-      controller: _searchController,
-      enabled: !installing,
-      decoration: InputDecoration(
-        hintText: t.plugin.searchHint,
-        prefixIcon: const Icon(Icons.search),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        isDense: true,
-      ),
-    );
-  }
-
   Widget _buildInstallButtons(bool installing) {
     return Wrap(
-      spacing: 12,
-      runSpacing: 12,
+      spacing: 8,
+      runSpacing: 8,
       children: [
-        OutlinedButton.icon(
-          style: _installButtonStyle,
+        CalmButton(
+          label: t.plugin.localInstall,
+          icon: Icons.folder_open_outlined,
+          variant: CalmButtonVariant.tonal,
+          size: CalmButtonSize.sm,
           onPressed: installing ? null : _installFromLocal,
-          icon: const Icon(Icons.folder_open_outlined, size: 16),
-          label: Text(t.plugin.localInstall),
         ),
-        OutlinedButton.icon(
-          style: _installButtonStyle,
+        CalmButton(
+          label: t.plugin.networkInstall,
+          icon: Icons.language_rounded,
+          variant: CalmButtonVariant.secondary,
+          size: CalmButtonSize.sm,
           onPressed: installing ? null : _installFromNetwork,
-          icon: const Icon(Icons.language_outlined, size: 16),
-          label: Text(t.plugin.networkInstall),
         ),
       ],
     );
   }
 
-  /// 小圆角 chip 手感，替代 M3 默认的大圆角药丸按钮。
-  ButtonStyle get _installButtonStyle => OutlinedButton.styleFrom(
-    visualDensity: VisualDensity.compact,
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    minimumSize: const Size(0, 36),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  );
-
   Widget _buildCloudPluginsSection(PluginStoreState state) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final cubit = context.read<PluginStoreCubit>();
     final query = _searchController.text.trim().toLowerCase();
     final displayPlugins = state.cloudPlugins.where((item) {
       if (query.isEmpty) return true;
@@ -145,6 +125,7 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
     }).toList();
 
     final hasData = state.cloudPlugins.isNotEmpty;
+    final hasError = state.cloudError.trim().isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,98 +134,63 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
           PluginStoreStatusBanner(message: state.installMessage),
           const SizedBox(height: 12),
         ],
-        Row(
-          children: [
-            const Icon(Icons.cloud_outlined, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              t.plugin.cloudPlugins,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const Spacer(),
-            IconButton(
-              tooltip: t.common.refresh,
-              visualDensity: VisualDensity.compact,
-              onPressed: state.cloudLoading
-                  ? null
-                  : context.read<PluginStoreCubit>().loadCloudPlugins,
-              icon: state.cloudLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.refresh),
-            ),
-          ],
+        CalmSectionHeader(
+          title: t.plugin.cloudPlugins,
+          countText: hasData ? '${displayPlugins.length}' : null,
+          trailing: state.cloudLoading
+              ? const CalmLoading(size: 14)
+              : CalmIconButton(
+                  icon: Icons.refresh_rounded,
+                  size: 26,
+                  iconSize: 14,
+                  tooltip: t.common.refresh,
+                  onPressed: cubit.loadCloudPlugins,
+                ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         if (state.cloudLoading && !hasData)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (state.cloudError.trim().isNotEmpty && !hasData)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  state.cloudError,
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: colorScheme.error),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: state.cloudLoading
-                      ? null
-                      : context.read<PluginStoreCubit>().loadCloudPlugins,
-                  icon: const Icon(Icons.refresh),
-                  label: Text(t.common.retry),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 28),
+            child: Center(child: CalmLoading(label: t.common.loading)),
+          )
+        else if (hasError && !hasData)
+          CalmErrorState(
+            title: t.plugin.cloudPlugins,
+            errorDetail: state.cloudError,
+            retryLabel: t.common.retry,
+            onRetry: cubit.loadCloudPlugins,
           )
         else if (!hasData)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              t.plugin.noCloudPlugins,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: colorScheme.outline),
-            ),
+          CalmEmptyState(
+            icon: Icons.cloud_off_rounded,
+            title: t.plugin.noCloudPlugins,
           )
         else if (displayPlugins.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              t.plugin.noMatchingPlugins,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: colorScheme.outline),
-            ),
+          CalmEmptyState(
+            icon: Icons.search_off_rounded,
+            title: t.plugin.noMatchingPlugins,
           )
         else
           Column(
             children: displayPlugins
                 .map(
-                  (item) => CloudPluginCard(
-                    item: item,
-                    installing: state.installing,
-                    onOpenHome: _openExternalUrl,
-                    onInstall: () =>
-                        context.read<PluginStoreCubit>().installFromCloud(item),
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: CloudPluginCard(
+                      item: item,
+                      installing: state.installing,
+                      onOpenHome: _openExternalUrl,
+                      onInstall: () => context
+                          .read<PluginStoreCubit>()
+                          .installFromCloud(item),
+                    ),
                   ),
                 )
                 .toList(),
           ),
-        if (state.cloudError.trim().isNotEmpty && hasData) ...[
-          const SizedBox(height: 8),
-          Text(
-            state.cloudError,
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: colorScheme.error),
-          ),
+        if (hasError && hasData) ...[
+          const SizedBox(height: 10),
+          CalmStatusBanner(title: state.cloudError, tone: CalmTone.danger),
         ],
       ],
     );
@@ -314,26 +260,30 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
     required String hintText,
   }) {
     final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: hintText),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: Text(t.plugin.startInstall),
-          ),
-        ],
+    return showCalmDialog<String>(
+      context,
+      title: title,
+      icon: Icons.link_rounded,
+      bodyBuilder: (dialogContext) => CalmTextField(
+        controller: controller,
+        prefixIcon: Icons.link_rounded,
+        hintText: hintText,
+        onSubmitted: (value) => Navigator.of(dialogContext).pop(value),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          size: CalmButtonSize.xs,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+        CalmButton(
+          label: t.plugin.startInstall,
+          variant: CalmButtonVariant.primary,
+          size: CalmButtonSize.xs,
+          onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+        ),
+      ],
     );
   }
 }

@@ -192,22 +192,27 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
   }
 
   Future<void> _deleteModel() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.realSr.deleteModel),
-        content: Text(t.realSr.deleteModelConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(t.common.delete),
-          ),
-        ],
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: t.realSr.deleteModel,
+      icon: Icons.delete_outline_rounded,
+      tone: CalmTone.danger,
+      bodyBuilder: (dialogContext) => Text(
+        t.realSr.deleteModelConfirm,
+        style: TextStyle(fontSize: 12, color: dialogContext.calm.text2),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.delete,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
 
     if (confirmed != true || !mounted) return;
@@ -281,10 +286,10 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
   List<Widget> _buildModelItems() {
     if (_usesCoreML) {
       return [
-        ListTile(
-          leading: const Icon(Icons.speed_outlined),
-          title: Text(t.realSr.model),
-          subtitle: Text(t.realSr.modelSubtitle),
+        CalmListTile(
+          leading: settingTileIcon(Icons.speed_outlined),
+          title: t.realSr.model,
+          subtitle: t.realSr.modelSubtitle,
           trailing: FluentDropdown<CoreMLModelFamily>(
             value: _coreMLFamily,
             displayValue: _coreMLFamily.localizedLabel,
@@ -295,10 +300,10 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
             onChanged: _setCoreMLFamily,
           ),
         ),
-        ListTile(
-          leading: const Icon(Icons.healing_outlined),
-          title: Text(t.realSr.noiseLevel),
-          subtitle: Text(t.realSr.noiseLevelSubtitle),
+        CalmListTile(
+          leading: settingTileIcon(Icons.healing_outlined),
+          title: t.realSr.noiseLevel,
+          subtitle: t.realSr.noiseLevelSubtitle,
           trailing: FluentDropdown<CoreMLModelVariant>(
             value: _coreMLVariant,
             displayValue: _coreMLVariant.localizedDisplayName,
@@ -309,15 +314,19 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
             onChanged: _setCoreMLVariant,
           ),
         ),
-        ListTile(
-          leading: const Icon(Icons.grid_view_outlined),
-          title: Text(t.realSr.blockInfo),
-          subtitle: Text(_coreMLBlockInfo),
+        CalmListTile(
+          leading: settingTileIcon(Icons.grid_view_outlined),
+          title: t.realSr.blockInfo,
+          subtitle: _coreMLBlockInfo,
           trailing: Tooltip(
             triggerMode: TooltipTriggerMode.tap,
             showDuration: const Duration(seconds: 5),
             message: t.realSr.blockInfoTooltip,
-            child: const Icon(Icons.help_outline),
+            child: Icon(
+              Icons.help_outline_rounded,
+              size: 16,
+              color: context.calm.text3,
+            ),
           ),
         ),
       ];
@@ -325,19 +334,19 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
 
     if (Platform.isAndroid) {
       return [
-        ListTile(
-          leading: const Icon(Icons.info_outline),
-          title: Text(t.realSr.androidSuperResolution),
-          subtitle: Text(t.realSr.androidSuperResolutionSubtitle),
+        CalmListTile(
+          leading: settingTileIcon(Icons.info_outline_rounded),
+          title: t.realSr.androidSuperResolution,
+          subtitle: t.realSr.androidSuperResolutionSubtitle,
         ),
       ];
     }
 
     return [
-      ListTile(
-        leading: const Icon(Icons.speed_outlined),
-        title: Text(t.realSr.desktopStrategy),
-        subtitle: Text(t.realSr.desktopStrategySubtitle),
+      CalmListTile(
+        leading: settingTileIcon(Icons.speed_outlined),
+        title: t.realSr.desktopStrategy,
+        subtitle: t.realSr.desktopStrategySubtitle,
         trailing: FluentDropdown<AndroidNcnnMode>(
           value: _desktopNcnnMode,
           displayValue: _desktopNcnnMode.label,
@@ -345,10 +354,10 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
           onChanged: _setDesktopNcnnMode,
         ),
       ),
-      ListTile(
-        leading: const Icon(Icons.healing_outlined),
-        title: Text(t.realSr.desktopNoiseLevel),
-        subtitle: Text(t.realSr.desktopNoiseLevelSubtitle),
+      CalmListTile(
+        leading: settingTileIcon(Icons.healing_outlined),
+        title: t.realSr.desktopNoiseLevel,
+        subtitle: t.realSr.desktopNoiseLevelSubtitle,
         trailing: FluentDropdown<AndroidNcnnNoise>(
           value: _desktopNcnnNoise,
           displayValue: _desktopNcnnNoise.label,
@@ -363,51 +372,52 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
 
   Widget _buildModelManagementTile() {
     if (_downloading) {
-      return ListTile(
-        leading: const Icon(Icons.downloading_outlined),
-        title: Text(t.realSr.downloadingModel),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            LinearProgressIndicator(value: _downloadProgress),
-            const SizedBox(height: 4),
-            Text('${(_downloadProgress * 100).toStringAsFixed(1)}%'),
-          ],
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        child: CalmProgressBar(
+          value: _downloadProgress,
+          label: t.realSr.downloadingModel,
+          trailingText:
+              '${(_downloadProgress * 100).toStringAsFixed(1)}%',
         ),
       );
     }
 
     if (_isAvailable) {
-      return ListTile(
-        leading: Icon(
-          Icons.check_circle,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        title: Text(t.realSr.modelReady),
+      return CalmListTile(
+        leading: settingTileIcon(Icons.check_circle_outline_rounded),
+        title: t.realSr.modelReady,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextButton(
+            CalmButton(
+              label: t.realSr.deleteModel,
+              variant: CalmButtonVariant.danger,
+              size: CalmButtonSize.xs,
               onPressed: _deleteModel,
-              child: Text(t.realSr.deleteModel),
             ),
-            TextButton(
+            const SizedBox(width: 6),
+            CalmButton(
+              label: t.realSr.redownload,
+              variant: CalmButtonVariant.secondary,
+              size: CalmButtonSize.xs,
               onPressed: _downloadModel,
-              child: Text(t.realSr.redownload),
             ),
           ],
         ),
       );
     }
 
-    return ListTile(
-      leading: const Icon(Icons.warning_amber_rounded),
-      title: Text(t.realSr.modelNotDownloaded),
-      subtitle: Text(t.realSr.modelNotDownloadedSubtitle),
-      trailing: ElevatedButton(
+    return CalmListTile(
+      leading: settingTileIcon(Icons.warning_amber_rounded),
+      title: t.realSr.modelNotDownloaded,
+      subtitle: t.realSr.modelNotDownloadedSubtitle,
+      trailing: CalmButton(
+        label: t.realSr.downloadModel,
+        icon: Icons.download_rounded,
+        variant: CalmButtonVariant.primary,
+        size: CalmButtonSize.xs,
         onPressed: _downloadModel,
-        child: Text(t.realSr.downloadModel),
       ),
     );
   }
@@ -415,37 +425,37 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
   Widget _buildManualDownloadTile() {
     final url = RealSrSuperResolution.manualDownloadUrl;
     if (url == null) {
-      return ListTile(
-        leading: const Icon(Icons.open_in_browser_outlined),
-        title: Text(t.realSr.manualDownload),
-        subtitle: Text(t.realSr.manualDownloadUnsupported),
+      return CalmListTile(
+        leading: settingTileIcon(Icons.open_in_browser_outlined),
+        title: t.realSr.manualDownload,
+        subtitle: t.realSr.manualDownloadUnsupported,
       );
     }
-    return ListTile(
-      leading: const Icon(Icons.open_in_browser_outlined),
-      title: Text(t.realSr.manualDownload),
-      subtitle: Text(url, maxLines: 2, overflow: TextOverflow.ellipsis),
-      trailing: TextButton(
+    return CalmListTile(
+      leading: settingTileIcon(Icons.open_in_browser_outlined),
+      title: t.realSr.manualDownload,
+      subtitle: url,
+      trailing: CalmButton(
+        label: t.realSr.openDownloadUrl,
+        variant: CalmButtonVariant.ghost,
+        size: CalmButtonSize.xs,
         onPressed: _openManualDownloadUrl,
-        child: Text(t.realSr.openDownloadUrl),
       ),
     );
   }
 
   Widget _buildImportModelTile() {
-    return ListTile(
-      leading: const Icon(Icons.file_open_outlined),
-      title: Text(t.realSr.importModel),
-      subtitle: Text(t.realSr.importModelSubtitle),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.file_open_outlined),
+      title: t.realSr.importModel,
+      subtitle: t.realSr.importModelSubtitle,
       trailing: _importing
-          ? const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : TextButton(
+          ? const CalmLoading(size: 16)
+          : CalmButton(
+              label: t.realSr.importModelAction,
+              variant: CalmButtonVariant.secondary,
+              size: CalmButtonSize.xs,
               onPressed: _importModel,
-              child: Text(t.realSr.importModelAction),
             ),
     );
   }
@@ -463,97 +473,98 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
               ),
             )
           : ListView(
+              padding: kSettingPagePadding,
               children: [
                 settingSectionTitle(context, t.realSr.autoUpscaleSection),
-                SwitchListTile(
-                  secondary: const Icon(Icons.auto_fix_high_outlined),
-                  title: Text(t.realSr.autoUpscale),
-                  subtitle: Text(
-                    !_isAvailable
+                settingCardGroup([
+                  settingSwitchTile(
+                    icon: Icons.auto_fix_high_outlined,
+                    title: t.realSr.autoUpscale,
+                    subtitle: !_isAvailable
                         ? t.realSr.autoUpscaleSubtitleUnavailable
                         : t.realSr.autoUpscaleSubtitleAvailable,
+                    value: _autoUpscale,
+                    onChanged: _setAutoUpscale,
                   ),
-                  thumbIcon: kSettingSwitchThumbIcon,
-                  value: _autoUpscale,
-                  onChanged: _setAutoUpscale,
-                ),
+                ]),
 
-                const SizedBox(height: 8),
-                const Divider(height: 1, thickness: 0.3),
                 settingSectionTitle(context, t.realSr.conditionSection),
-                ListTile(
-                  leading: const Icon(Icons.hd_outlined),
-                  title: Text(t.realSr.resolutionThreshold),
-                  subtitle: Text(t.realSr.resolutionThresholdSubtitle),
-                  trailing: FluentDropdown<RealSrResolutionThreshold>(
-                    value: _effectiveThreshold,
-                    displayValue: _effectiveThreshold.label,
-                    items: {
-                      for (final threshold in _availableThresholds)
-                        threshold: threshold.label,
-                    },
-                    onChanged: _setResolutionThreshold,
+                settingCardGroup([
+                  CalmListTile(
+                    leading: settingTileIcon(Icons.hd_outlined),
+                    title: t.realSr.resolutionThreshold,
+                    subtitle: t.realSr.resolutionThresholdSubtitle,
+                    trailing: FluentDropdown<RealSrResolutionThreshold>(
+                      value: _effectiveThreshold,
+                      displayValue: _effectiveThreshold.label,
+                      items: {
+                        for (final threshold in _availableThresholds)
+                          threshold: threshold.label,
+                      },
+                      onChanged: _setResolutionThreshold,
+                    ),
                   ),
-                ),
+                ]),
 
-                const SizedBox(height: 8),
-                const Divider(height: 1, thickness: 0.3),
                 settingSectionTitle(context, t.realSr.performanceSection),
-                Builder(
-                  builder: (context) {
-                    final effective = _concurrencyOptions.contains(_concurrency)
-                        ? _concurrency
-                        : RealSrSettings.defaultConcurrency;
-                    return ListTile(
-                      leading: const Icon(Icons.speed_outlined),
-                      title: Text(t.realSr.concurrency),
-                      subtitle: Text(t.realSr.concurrencySubtitle),
-                      trailing: FluentDropdown<int>(
-                        value: effective,
-                        displayValue: _concurrencyLabels[effective]!,
-                        items: {
-                          for (final option in _concurrencyOptions)
-                            option: _concurrencyLabels[option]!,
-                        },
-                        onChanged: _setConcurrency,
-                      ),
-                    );
-                  },
-                ),
-                if (!_usesCoreML)
+                settingCardGroup([
                   Builder(
                     builder: (context) {
-                      final effective = _tileSizeOptions.contains(_tileSize)
-                          ? _tileSize
-                          : 0;
-                      return ListTile(
-                        leading: const Icon(Icons.grid_on_outlined),
-                        title: Text(t.realSr.tileSize),
-                        subtitle: Text(t.realSr.tileSizeSubtitle),
+                      final effective = _concurrencyOptions.contains(_concurrency)
+                          ? _concurrency
+                          : RealSrSettings.defaultConcurrency;
+                      return CalmListTile(
+                        leading: settingTileIcon(Icons.speed_outlined),
+                        title: t.realSr.concurrency,
+                        subtitle: t.realSr.concurrencySubtitle,
                         trailing: FluentDropdown<int>(
                           value: effective,
-                          displayValue: _tileSizeLabels[effective]!,
+                          displayValue: _concurrencyLabels[effective]!,
                           items: {
-                            for (final option in _tileSizeOptions)
-                              option: _tileSizeLabels[option]!,
+                            for (final option in _concurrencyOptions)
+                              option: _concurrencyLabels[option]!,
                           },
-                          onChanged: _setTileSize,
+                          onChanged: _setConcurrency,
                         ),
                       );
                     },
                   ),
+                  if (!_usesCoreML)
+                    Builder(
+                      builder: (context) {
+                        final effective = _tileSizeOptions.contains(_tileSize)
+                            ? _tileSize
+                            : 0;
+                        return CalmListTile(
+                          leading: settingTileIcon(Icons.grid_on_outlined),
+                          title: t.realSr.tileSize,
+                          subtitle: t.realSr.tileSizeSubtitle,
+                          trailing: FluentDropdown<int>(
+                            value: effective,
+                            displayValue: _tileSizeLabels[effective]!,
+                            items: {
+                              for (final option in _tileSizeOptions)
+                                option: _tileSizeLabels[option]!,
+                            },
+                            onChanged: _setTileSize,
+                          ),
+                        );
+                      },
+                    ),
+                ]),
 
-                const SizedBox(height: 8),
-                const Divider(height: 1, thickness: 0.3),
                 settingSectionTitle(context, t.realSr.modelSection),
-                ..._buildModelItems(),
+                settingCardGroup(_buildModelItems()),
 
-                const SizedBox(height: 8),
-                const Divider(height: 1, thickness: 0.3),
-                settingSectionTitle(context, t.realSr.modelManagementSection),
-                _buildModelManagementTile(),
-                _buildManualDownloadTile(),
-                _buildImportModelTile(),
+                settingSectionTitle(
+                  context,
+                  t.realSr.modelManagementSection,
+                ),
+                settingCardGroup([
+                  _buildModelManagementTile(),
+                  _buildManualDownloadTile(),
+                  _buildImportModelTile(),
+                ]),
                 const SizedBox(height: 32),
               ],
             ),

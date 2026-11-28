@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/page/comic_edit/method/comic_edit_debug.dart';
 import 'package:zephyr/page/comic_edit/view/comic_edit_page.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/storage/get_path.dart';
 import 'package:zephyr/util/rust/rust_loader.dart';
 
@@ -150,9 +151,17 @@ void main() {
     expect(find.text('章节'), findsOneWidget);
     expect(find.text('图片'), findsOneWidget);
     expect(find.text('Original'), findsOneWidget);
-    final titleField = tester.widget<TextField>(find.byType(TextField).first);
+    // 标题必须是多行文本域：长漫画标题要换行完整展示，不能单行截断。
+    expect(find.byType(CalmTextArea), findsOneWidget);
+    final titleField = tester.widget<TextField>(
+      find.descendant(
+        of: find.byType(CalmTextArea),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(titleField.minLines, 1);
     expect(titleField.maxLines, 6);
-    expect(titleField.keyboardType, TextInputType.text);
+    expect(titleField.keyboardType, TextInputType.multiline);
 
     await tester.tap(find.text('章节'));
     await tester.pumpAndSettle();
@@ -187,7 +196,7 @@ void main() {
     expect(find.textContaining('第2话'), findsWidgets);
     expect(find.byIcon(Icons.check), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(TextButton, '取消'));
+    await tester.tap(find.widgetWithText(CalmButton, '取消'));
     await tester.pumpAndSettle();
     expect(find.text('选择章节'), findsNothing);
   });

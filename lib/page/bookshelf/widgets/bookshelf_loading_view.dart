@@ -1,7 +1,8 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 
+/// 书架首屏加载占位：轻盈环形指示器 + 短提示。
 class BookshelfLoadingView extends StatelessWidget {
   const BookshelfLoadingView({super.key, this.message = ''});
 
@@ -9,23 +10,10 @@ class BookshelfLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          LoadingAnimationWidget.staggeredDotsWave(
-            color: theme.colorScheme.primary,
-            size: 48,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message.isEmpty ? t.common.loading : message,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+      child: CalmLoading(
+        label: message.isEmpty ? t.common.loading : message,
+        size: 26,
       ),
     );
   }

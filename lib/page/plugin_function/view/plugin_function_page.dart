@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/page/discover/view/discover_scheme_renderer.dart';
 import 'package:zephyr/page/plugin_function/cubit/plugin_function_cubit.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 
 @RoutePage()
 class PluginFunctionPage extends StatelessWidget {
@@ -35,6 +36,10 @@ class PluginFunctionPage extends StatelessWidget {
   }
 }
 
+/// 插件动态功能页（CalmUI 版）：轻盈顶栏 + 三态（加载 / 错误 / 正常渲染）。
+///
+/// 内部仍由 [DiscoverSchemeRenderer] 解析插件下发的 QJS 页面 schema 并分派 action，
+/// 本页只负责外壳与状态，cubit 状态与回调签名保持不变。
 class _PluginFunctionView extends StatelessWidget {
   const _PluginFunctionView({
     required this.from,
@@ -51,39 +56,46 @@ class _PluginFunctionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final renderer = const DiscoverSchemeRenderer();
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
+    return CalmPageScaffold(
+      title: title,
+      maxContentWidth: 960,
       body: BlocBuilder<PluginFunctionCubit, PluginFunctionState>(
-        builder: (context, state) => state.loading
-            ? const Center(child: CircularProgressIndicator())
-            : state.error.isNotEmpty
-            ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(state.error),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () => context.read<PluginFunctionCubit>().load(
-                        from: from,
-                        functionId: functionId,
-                      ),
-                      child: Text(t.common.retry),
+        builder: (context, state) {
+          if (state.loading) {
+            return Center(child: CalmLoading(label: t.common.loading));
+          }
+          if (state.error.isNotEmpty) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: CalmErrorState(
+                    title: t.common.loadingFailed,
+                    errorDetail: state.error,
+                    errorDetailMaxLines: 4,
+                    retryLabel: t.common.retry,
+                    onRetry: () => context.read<PluginFunctionCubit>().load(
+                      from: from,
+                      functionId: functionId,
                     ),
-                  ],
+                  ),
                 ),
-              )
-            : renderer.buildPage(
-                context,
-                from: from,
-                scheme: state.scheme,
-                data: state.data,
-                onReachBottom: () async {},
-                onAction: onAction,
-                isLoadingMore: false,
-                showLoadMoreRetry: false,
-                onRetryLoadMore: () {},
               ),
+            );
+          }
+          return renderer.buildPage(
+            context,
+            from: from,
+            scheme: state.scheme,
+            data: state.data,
+            onReachBottom: () async {},
+            onAction: onAction,
+            isLoadingMore: false,
+            showLoadMoreRetry: false,
+            onRetryLoadMore: () {},
+          );
+        },
       ),
     );
   }

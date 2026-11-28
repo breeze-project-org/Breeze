@@ -3,13 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/cubit/plugin_registry_cubit.dart';
+import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/object_box/model.dart';
 import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
 import 'package:zephyr/page/comic_follow/view/follow_display.dart';
 import 'package:zephyr/type/enum.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/comic_entry/models/models.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/cover.dart';
-import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/widgets/error_view.dart';
 import 'package:zephyr/widgets/toast.dart';
 
@@ -44,14 +45,15 @@ class _ComicFollowPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(t.comicFollow.title)),
+    return CalmPageScaffold(
+      title: t.comicFollow.title,
+      maxContentWidth: 768,
       body: BlocBuilder<ComicFollowCubit, ComicFollowState>(
         builder: (context, state) {
           switch (state.status) {
             case ComicFollowStatus.initial:
             case ComicFollowStatus.loading:
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CalmLoading());
             case ComicFollowStatus.failure:
               return ErrorView(
                 errorMessage: t.comicFollow.loadFailed(result: state.result),
@@ -70,40 +72,16 @@ class _ComicFollowPageContent extends StatelessWidget {
   }
 
   Widget _buildEmptyView(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: scheme.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.notifications_none_outlined,
-                size: 44,
-                color: scheme.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              t.comicFollow.empty,
-              style: Theme.of(context).textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              t.comicFollow.emptyHint,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-          ],
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: CalmEmptyState(
+            icon: Icons.notifications_none_outlined,
+            title: t.comicFollow.empty,
+            subtitle: t.comicFollow.emptyHint,
+          ),
         ),
       ),
     );
@@ -111,54 +89,40 @@ class _ComicFollowPageContent extends StatelessWidget {
 
   Widget _buildContent(BuildContext context, ComicFollowState state) {
     final visibleItems = state.visibleItems;
-    // 桌面端窄栏居中：与 more/plugin_store 等页一致，Align + 768 上限，
-    // 摘要条/筛选行/列表整体收进同一栏，不再全宽拉伸。
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 768),
-        child: Column(
-          children: [
-            _SummaryBar(state: state),
-            _FilterRow(state: state),
-            Expanded(
-              child:
-                  visibleItems.isEmpty &&
-                      state.filter == ComicFollowFilter.unread
-                  ? _buildFilteredEmptyView(context)
-                  : _FollowList(items: visibleItems),
-            ),
-          ],
+    // 页面外壳已按 768 限宽居中，这里只做纵向三段式布局。
+    return Column(
+      children: [
+        _SummaryBar(state: state),
+        _FilterRow(state: state),
+        Expanded(
+          child:
+              visibleItems.isEmpty && state.filter == ComicFollowFilter.unread
+              ? _buildFilteredEmptyView(context)
+              : _FollowList(items: visibleItems),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildFilteredEmptyView(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 56,
-            color: scheme.outlineVariant,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            t.comicFollow.noUnread,
-            style: Theme.of(context).textTheme.titleMedium
-                ?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => context.read<ComicFollowCubit>().setFilter(
-              ComicFollowFilter.all,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: CalmEmptyState(
+            icon: Icons.check_circle_outline_rounded,
+            title: t.comicFollow.noUnread,
+            action: CalmButton(
+              label: t.comicFollow.showAll,
+              icon: Icons.done_all_rounded,
+              variant: CalmButtonVariant.tonal,
+              onPressed: () => context.read<ComicFollowCubit>().setFilter(
+                ComicFollowFilter.all,
+              ),
             ),
-            child: Text(t.comicFollow.showAll),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -172,91 +136,110 @@ class _SummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final c = context.calm;
     final unread = state.updateCount;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: unread > 0
-                  ? scheme.primary
-                  : scheme.surfaceContainerHighest,
-              shape: BoxShape.circle,
+    final title = unread == 1
+        ? t.comicFollow.updatedComicsSingle
+        : unread > 1
+        ? t.comicFollow.updatedComicsMultiple(count: unread)
+        : t.comicFollow.noUnread;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+      child: CalmCard(
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: unread > 0 ? c.accentSoft : c.surface2,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                unread > 0
+                    ? Icons.notifications_active_outlined
+                    : Icons.notifications_none_outlined,
+                size: 17,
+                color: unread > 0 ? c.accent : c.text3,
+              ),
             ),
-            child: Icon(
-              unread > 0
-                  ? Icons.notifications_active_outlined
-                  : Icons.notifications_none_outlined,
-              size: 20,
-              color: unread > 0 ? scheme.onPrimary : scheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  unread == 1
-                      ? t.comicFollow.updatedComicsSingle
-                      : unread > 1
-                      ? t.comicFollow.updatedComicsMultiple(count: unread)
-                      : t.comicFollow.noUnread,
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textHeightBehavior: kCalmTextHeightBehavior,
+                    strutStyle: calmStrut(12.5),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: c.text,
+                      height: 1.2,
+                      leadingDistribution: TextLeadingDistribution.even,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  state.isCheckingUpdates
-                      ? t.common.loading
-                      : t.comicFollow.checkTime(
-                          time: formatFollowCheckTime(_latestCheck(state)),
-                        ),
-                  style: textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
+                  const SizedBox(height: 2),
+                  Text(
+                    state.isCheckingUpdates
+                        ? t.common.loading
+                        : t.comicFollow.checkTime(
+                            time: formatFollowCheckTime(_latestCheck(state)),
+                          ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textHeightBehavior: kCalmTextHeightBehavior,
+                    strutStyle: calmStrut(10.5),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: c.text3,
+                      height: 1.2,
+                      leadingDistribution: TextLeadingDistribution.even,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          if (!state.isCheckingUpdates && unread > 0)
-            IconButton(
-              tooltip: t.comicFollow.markAllReadHint,
-              icon: const Icon(Icons.done_all_outlined),
-              onPressed: () async {
-                await context.read<ComicFollowCubit>().markAllAsRead();
-                if (context.mounted) {
-                  showSuccessToast(t.comicFollow.markAllReadDone);
-                }
-              },
+            if (!state.isCheckingUpdates && unread > 0) ...[
+              const SizedBox(width: 4),
+              CalmIconButton(
+                icon: Icons.done_all_rounded,
+                tooltip: t.comicFollow.markAllReadHint,
+                size: 30,
+                iconSize: 16,
+                onPressed: () => _markAllAsRead(context),
+              ),
+            ],
+            const SizedBox(width: 2),
+            CalmIconButton(
+              icon: Icons.refresh_rounded,
+              tooltip: t.common.refresh,
+              size: 30,
+              iconSize: 16,
+              onPressed: state.isCheckingUpdates
+                  ? null
+                  : () => context.read<ComicFollowCubit>().checkUpdates(),
             ),
-          IconButton(
-            tooltip: t.common.refresh,
-            onPressed: state.isCheckingUpdates
-                ? null
-                : () => context.read<ComicFollowCubit>().checkUpdates(),
-            icon: state.isCheckingUpdates
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _markAllAsRead(BuildContext context) async {
+    await context.read<ComicFollowCubit>().markAllAsRead();
+    if (context.mounted) {
+      showSuccessToast(t.comicFollow.markAllReadDone);
+    }
   }
 
   DateTime _latestCheck(ComicFollowState state) {
@@ -270,7 +253,7 @@ class _SummaryBar extends StatelessWidget {
   }
 }
 
-/// 筛选行：全部 / 未读 SegmentedButton + 排序菜单。
+/// 筛选行：全部 / 未读 胶囊分段控件 + 排序菜单。
 class _FilterRow extends StatelessWidget {
   const _FilterRow({required this.state});
 
@@ -278,59 +261,72 @@ class _FilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final cubit = context.read<ComicFollowCubit>();
+    final sortLabel = state.sort == ComicFollowSort.lastRead
+        ? t.comicFollow.lastRead
+        : t.comicFollow.lastUpdate;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 4),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Row(
         children: [
-          SegmentedButton<ComicFollowFilter>(
-            showSelectedIcon: false,
-            style: SegmentedButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-            ),
-            segments: [
-              ButtonSegment(
+          CalmSegmentedControl<ComicFollowFilter>(
+            value: state.filter,
+            options: [
+              (
                 value: ComicFollowFilter.all,
-                label: Text(t.comicFollow.all),
+                label: t.comicFollow.all,
+                icon: Icons.list_alt_rounded,
               ),
-              ButtonSegment(
+              (
                 value: ComicFollowFilter.unread,
-                label: Text(t.comicFollow.unread),
+                label: t.comicFollow.unread,
+                icon: Icons.fiber_new_outlined,
               ),
             ],
-            selected: {state.filter},
-            onSelectionChanged: (selected) => cubit.setFilter(selected.first),
+            onChanged: cubit.setFilter,
           ),
           const Spacer(),
-          PopupMenuButton<ComicFollowSort>(
-            tooltip: t.comicFollow.sort,
-            initialValue: state.sort,
-            onSelected: cubit.setSort,
-            itemBuilder: (context) => [
-              PopupMenuItem(
+          CalmPopupMenuButton<ComicFollowSort>(
+            entries: [
+              CalmPopupMenuEntry.item(
                 value: ComicFollowSort.lastRead,
-                child: Text(t.comicFollow.lastRead),
+                label: t.comicFollow.lastRead,
+                icon: Icons.history_rounded,
               ),
-              PopupMenuItem(
+              CalmPopupMenuEntry.item(
                 value: ComicFollowSort.update,
-                child: Text(t.comicFollow.lastUpdate),
+                label: t.comicFollow.lastUpdate,
+                icon: Icons.update_rounded,
               ),
             ],
-            child: Padding(
-              padding: const EdgeInsets.all(8),
+            onSelected: cubit.setSort,
+            child: Container(
+              height: 28,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: c.surface2,
+                borderRadius: BorderRadius.circular(999),
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  Icon(Icons.sort_rounded, size: 13, color: c.text3),
+                  const SizedBox(width: 5),
                   Text(
-                    state.sort == ComicFollowSort.lastRead
-                        ? t.comicFollow.lastRead
-                        : t.comicFollow.lastUpdate,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    sortLabel,
+                    textHeightBehavior: kCalmTextHeightBehavior,
+                    strutStyle: calmStrut(11),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: c.text2,
+                      height: 1.2,
+                      leadingDistribution: TextLeadingDistribution.even,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.sort, size: 18),
                 ],
               ),
             ),
@@ -341,7 +337,7 @@ class _FilterRow extends StatelessWidget {
   }
 }
 
-/// 单列列表：最大宽度约束居中，下拉刷新。
+/// 单列列表：下拉刷新。
 class _FollowList extends StatelessWidget {
   const _FollowList({required this.items});
 
@@ -349,14 +345,13 @@ class _FollowList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 外层已用 ConstrainedBox(768) 居中，这里只留固定边距。
     return RefreshIndicator(
       onRefresh: () => context.read<ComicFollowCubit>().checkUpdates(),
       child: BlocBuilder<ComicFollowCubit, ComicFollowState>(
         builder: (context, state) {
           return ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+            padding: const EdgeInsets.fromLTRB(16, 2, 16, 88),
             itemCount: items.length,
             separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
@@ -396,8 +391,7 @@ class _FollowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final c = context.calm;
     final cover = resolveFollowCover(follow);
 
     return Dismissible(
@@ -405,57 +399,69 @@ class _FollowCard extends StatelessWidget {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        padding: const EdgeInsets.only(right: 22),
         decoration: BoxDecoration(
-          color: scheme.errorContainer,
-          borderRadius: BorderRadius.circular(16),
+          color: c.dangerSoft,
+          borderRadius: BorderRadius.circular(18),
         ),
-        child: Icon(Icons.delete_outline, color: scheme.onErrorContainer),
+        child: Icon(Icons.delete_outline_rounded, color: c.danger),
       ),
       confirmDismiss: (_) => _askUnfollow(context),
       onDismissed: (_) => _removeFollow(context),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _openDetail(context),
-        onLongPress: () => _onLongPress(context),
-        child: Container(
-          decoration: BoxDecoration(
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _openDetail(context),
+          onLongPress: () => _onLongPress(context),
+          child: CalmCard(
+            padding: EdgeInsets.zero,
             color: hasUnreadUpdate
-                ? scheme.primaryContainer.withValues(alpha: 0.35)
-                : scheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: hasUnreadUpdate
-                  ? scheme.primary.withValues(alpha: 0.5)
-                  : scheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildCover(cover),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                  child: Column(
+                ? Color.alphaBlend(c.accent.withValues(alpha: 0.05), c.surface)
+                : c.surface,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Stack(
+                children: [
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTitleRow(theme),
-                      const SizedBox(height: 4),
-                      _buildSourceLine(theme),
-                      const SizedBox(height: 8),
-                      _buildProgress(theme),
-                      const SizedBox(height: 8),
-                      _buildLatestLine(context, theme),
-                      const SizedBox(height: 2),
-                      _buildReadingLine(theme),
-                      const SizedBox(height: 6),
-                      _buildBottomRow(context, theme),
+                      _buildCover(cover),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildTitleRow(context),
+                              const SizedBox(height: 4),
+                              _buildSourceLine(context),
+                              const SizedBox(height: 8),
+                              _buildProgress(context),
+                              const SizedBox(height: 8),
+                              _buildLatestLine(context),
+                              const SizedBox(height: 2),
+                              _buildReadingLine(context),
+                              const SizedBox(height: 6),
+                              _buildBottomRow(context),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                ),
+                  // 未读更新：左侧 3px 柔和主色竖条，替代厚重描边。
+                  if (hasUnreadUpdate)
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 3,
+                      child: ColoredBox(color: c.accent),
+                    ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -489,31 +495,42 @@ class _FollowCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTitleRow(ThemeData theme) {
+  Widget _buildTitleRow(BuildContext context) {
+    final c = context.calm;
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Text(
             follow.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(13),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: c.text,
+              height: 1.25,
+              leadingDistribution: TextLeadingDistribution.even,
             ),
           ),
         ),
         if (hasUnreadUpdate) ...[
           const SizedBox(width: 8),
-          _UnreadPill(count: unreadChapterCount),
+          CalmBadge(
+            label: t.comicFollow.newChaptersShort(diff: unreadChapterCount),
+            tone: CalmBadgeTone.accent,
+            dot: true,
+          ),
         ],
       ],
     );
   }
 
   /// 来源插件名 + 作者，插件名走全局 cubit 的 infos，热切换。
-  Widget _buildSourceLine(ThemeData theme) {
-    final scheme = theme.colorScheme;
+  Widget _buildSourceLine(BuildContext context) {
+    final c = context.calm;
     return BlocSelector<PluginRegistryCubit, PluginRegistryState, String>(
       selector: (registry) => registry.pluginName(follow.source),
       builder: (context, pluginLabel) {
@@ -526,15 +543,20 @@ class _FollowCard extends StatelessWidget {
         }
         return Row(
           children: [
-            Icon(Icons.source_outlined, size: 13, color: scheme.outline),
+            Icon(Icons.source_outlined, size: 12, color: c.text3),
             const SizedBox(width: 4),
             Expanded(
               child: Text(
                 parts.join(' · '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
+                textHeightBehavior: kCalmTextHeightBehavior,
+                strutStyle: calmStrut(11),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: c.text2,
+                  height: 1.2,
+                  leadingDistribution: TextLeadingDistribution.even,
                 ),
               ),
             ),
@@ -545,8 +567,8 @@ class _FollowCard extends StatelessWidget {
   }
 
   /// 阅读进度条：读到 order / 最新总数。
-  Widget _buildProgress(ThemeData theme) {
-    final scheme = theme.colorScheme;
+  Widget _buildProgress(BuildContext context) {
+    final c = context.calm;
     final readOrder = history?.chapterOrder ?? 0;
     final total = follow.detectedChapterCount;
     final progress = followReadProgress(
@@ -559,45 +581,50 @@ class _FollowCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(3),
-          child: LinearProgressIndicator(
-            value: total > 0 ? progress : null,
-            minHeight: 4,
-            backgroundColor: scheme.surfaceContainerHighest,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              hasUnreadUpdate ? scheme.primary : scheme.outline,
-            ),
-          ),
+        CalmProgressBar(
+          value: total > 0 ? progress : null,
+          height: 4,
+          color: hasUnreadUpdate ? c.accent : c.borderStrong,
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: scheme.onSurfaceVariant,
+          textHeightBehavior: kCalmTextHeightBehavior,
+          strutStyle: calmStrut(10.5),
+          style: TextStyle(
+            fontSize: 10.5,
+            color: c.text3,
+            height: 1.2,
+            leadingDistribution: TextLeadingDistribution.even,
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildLatestLine(BuildContext context, ThemeData theme) {
-    final scheme = theme.colorScheme;
+  Widget _buildLatestLine(BuildContext context) {
+    final c = context.calm;
     if (follow.lastCheckFailed) {
       return GestureDetector(
         onTap: () => _retry(context),
         child: Row(
           children: [
-            Icon(Icons.error_outline, size: 14, color: scheme.error),
+            Icon(Icons.error_outline_rounded, size: 13, color: c.danger),
             const SizedBox(width: 4),
             Expanded(
               child: Text(
                 t.comicFollow.checkFailedTapRetry,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.error,
+                textHeightBehavior: kCalmTextHeightBehavior,
+                strutStyle: calmStrut(11),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: c.danger,
                   fontWeight: FontWeight.w600,
+                  height: 1.2,
+                  leadingDistribution: TextLeadingDistribution.even,
                 ),
               ),
             ),
@@ -617,9 +644,9 @@ class _FollowCard extends StatelessWidget {
         Icon(
           hasUnreadUpdate
               ? Icons.fiber_new_outlined
-              : Icons.check_circle_outline,
-          size: 14,
-          color: hasUnreadUpdate ? scheme.primary : scheme.outline,
+              : Icons.check_circle_outline_rounded,
+          size: 13,
+          color: hasUnreadUpdate ? c.accent : c.text3,
         ),
         const SizedBox(width: 4),
         Expanded(
@@ -627,11 +654,15 @@ class _FollowCard extends StatelessWidget {
             latest,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: hasUnreadUpdate
-                  ? scheme.onSurface
-                  : scheme.onSurfaceVariant,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(11),
+            style: TextStyle(
+              fontSize: 11,
+              color: hasUnreadUpdate ? c.text : c.text2,
               fontWeight: hasUnreadUpdate ? FontWeight.w600 : FontWeight.normal,
+              height: 1.2,
+              leadingDistribution: TextLeadingDistribution.even,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ),
@@ -639,23 +670,28 @@ class _FollowCard extends StatelessWidget {
     );
   }
 
-  Widget _buildReadingLine(ThemeData theme) {
-    final scheme = theme.colorScheme;
+  Widget _buildReadingLine(BuildContext context) {
+    final c = context.calm;
     final chapter = history?.chapterTitle.trim() ?? '';
     final label = chapter.isEmpty
         ? t.comicFollow.notRead
         : t.comicFollow.lastReadChapter(chapter: chapter);
     return Row(
       children: [
-        Icon(Icons.history_outlined, size: 14, color: scheme.outline),
+        Icon(Icons.history_rounded, size: 13, color: c.text3),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(11),
+            style: TextStyle(
+              fontSize: 11,
+              color: c.text2,
+              height: 1.2,
+              leadingDistribution: TextLeadingDistribution.even,
             ),
           ),
         ),
@@ -665,8 +701,8 @@ class _FollowCard extends StatelessWidget {
 
   /// 底行：相对更新时间 + 相对上次阅读；失败时重试按钮。
   /// 需要 context 触发 cubit 单项检测：旧 _retry 是无 context 的空实现。
-  Widget _buildBottomRow(BuildContext context, ThemeData theme) {
-    final scheme = theme.colorScheme;
+  Widget _buildBottomRow(BuildContext context) {
+    final c = context.calm;
     return Row(
       children: [
         Expanded(
@@ -674,8 +710,14 @@ class _FollowCard extends StatelessWidget {
             _relativeUpdate(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(10.5),
+            style: TextStyle(
+              fontSize: 10.5,
+              color: c.text3,
+              height: 1.2,
+              leadingDistribution: TextLeadingDistribution.even,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ),
@@ -684,13 +726,25 @@ class _FollowCard extends StatelessWidget {
             _relativeRead(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(10.5),
+            style: TextStyle(
+              fontSize: 10.5,
+              color: c.text3,
+              height: 1.2,
+              leadingDistribution: TextLeadingDistribution.even,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         if (follow.lastCheckFailed) ...[
-          const SizedBox(width: 4),
-          _RetryChip(onTap: () => _retry(context)),
+          const SizedBox(width: 6),
+          CalmButton(
+            label: t.comicFollow.retry,
+            icon: Icons.refresh_rounded,
+            size: CalmButtonSize.xs,
+            variant: CalmButtonVariant.tonal,
+            onPressed: () => _retry(context),
+          ),
         ],
       ],
     );
@@ -749,22 +803,31 @@ class _FollowCard extends StatelessWidget {
   }
 
   Future<bool?> _askUnfollow(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(t.comicFollow.unfollow),
-        content: Text(t.comicFollow.unfollowConfirm(title: follow.title)),
-        actions: [
-          TextButton(
-            onPressed: () => dialogContext.pop(false),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () => dialogContext.pop(true),
-            child: Text(t.common.ok),
-          ),
-        ],
+    return showCalmDialog<bool>(
+      context,
+      title: t.comicFollow.unfollow,
+      icon: Icons.delete_outline_rounded,
+      tone: CalmTone.danger,
+      bodyBuilder: (dialogContext) => Text(
+        t.comicFollow.unfollowConfirm(title: follow.title),
+        style: TextStyle(
+          fontSize: 12.5,
+          color: dialogContext.calm.text2,
+          height: 1.5,
+        ),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
   }
 
@@ -774,63 +837,5 @@ class _FollowCard extends StatelessWidget {
       follow.comicId,
     );
     showSuccessToast(t.comicFollow.unfollowed);
-  }
-}
-
-class _UnreadPill extends StatelessWidget {
-  const _UnreadPill({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: scheme.primary,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        t.comicFollow.newChaptersShort(diff: count),
-        style: Theme.of(context).textTheme.labelSmall
-            ?.copyWith(color: scheme.onPrimary, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
-class _RetryChip extends StatelessWidget {
-  const _RetryChip({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: scheme.errorContainer,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.refresh, size: 13, color: scheme.onErrorContainer),
-            const SizedBox(width: 2),
-            Text(
-              t.comicFollow.retry,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: scheme.onErrorContainer,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

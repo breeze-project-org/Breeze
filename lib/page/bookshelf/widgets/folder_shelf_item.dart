@@ -2,12 +2,17 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/object_box/model.dart';
 import 'package:zephyr/type/pipe.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry.dart'
     show kComicCardBorderRadius;
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_info.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/cover.dart';
 
+/// 书架里的文件夹条目（CalmUI 版）。
+///
+/// 网格态：轻盈浮空卡片（`c.surface` + `shadowSm`）拼封面 + 底部信息条，
+/// 选中时用 `c.accent` 描边与勾选圆标；详情态：与漫画详情行同高的紧凑横行。
 class FolderShelfItem extends StatelessWidget {
   const FolderShelfItem({
     super.key,
@@ -29,10 +34,10 @@ class FolderShelfItem extends StatelessWidget {
   final bool selectionMode;
   final bool isSelected;
 
-  /// 详情模式：横行样式，对齐漫画详情行（圆角 8、底色、小图标+标题+数量）。
+  /// 详情模式：横行样式，对齐漫画详情行（同高、同底色、小图标 + 标题 + 数量）。
   final bool detailed;
 
-  /// 文件夹直属漫画数；null 时不显示数量行。
+  /// 文件夹直属漫画数；null 时不显示数量徽章。
   final int? comicCount;
 
   /// 文件夹封面用的漫画；null 时回退到文件夹图标。
@@ -55,199 +60,190 @@ class FolderShelfItem extends StatelessWidget {
     );
   }
 
-  /// 网格卡片：固定宽高比，宽 = 列宽、高 = 宽 / 0.75。
+  /// 网格卡片：固定宽高比（宽 = 列宽、高 = 宽 / 0.75），封面 + 底部信息条。
   Widget _buildGridCard(BuildContext context, double width) {
+    final c = context.calm;
     final height = width / 0.75;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final radius = BorderRadius.circular(kComicCardBorderRadius);
+    final count = comicCount;
 
     return SizedBox(
       width: width,
       height: height,
-      child: Card(
-        margin: EdgeInsets.zero,
-        elevation: isSelected ? 4 : 2,
-        shadowColor: Colors.black.withValues(alpha: 0.12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kComicCardBorderRadius),
-          side: isSelected
-              ? BorderSide(color: colorScheme.primary, width: 2.5)
-              : BorderSide(
-                  color: colorScheme.outline.withValues(alpha: 0.12),
-                  width: 1,
-                ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: radius,
+          boxShadow: isSelected ? c.shadowMd : c.shadowSm,
         ),
+        // 描边用 foregroundDecoration：普通 decoration 的边框会被封面盖住。
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(kComicCardBorderRadius),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                isSelected
-                    ? colorScheme.primaryContainer
-                    : colorScheme.surfaceContainerHighest.withValues(
-                        alpha: 0.7,
-                      ),
-                colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              ],
+          foregroundDecoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(
+              color: isSelected ? c.accent : c.border,
+              width: isSelected ? 2 : 1,
             ),
           ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // 有封面就用封面，否则回退文件夹图标
-              if (coverInfo != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(kComicCardBorderRadius),
-                  child: CoverWidget(
-                    key: ValueKey(
-                      'folder-cover-${folder.syncId}-'
-                      '${coverInfo!.from}:${coverInfo!.id}:${coverInfo!.path}',
-                    ),
-                    fileServer: coverInfo!.fileServer,
-                    path: coverInfo!.path,
-                    id: coverInfo!.id,
-                    pictureType: coverInfo!.pictureType,
-                    from: coverInfo!.from,
-                    roundedCorner: false,
-                    width: width,
-                    height: height,
-                  ),
-                )
-              else
-                Center(
-                  child: Icon(
-                    Icons.folder_rounded,
-                    size: width * 0.42,
-                    color: colorScheme.primary.withValues(alpha: 0.72),
-                  ),
-                ),
-              // 封面模式下左上角保留小文件夹标记，避免和漫画卡片混淆。
-              if (coverInfo != null)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.folder_rounded,
-                      size: 14,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              // 底部标题渐变遮罩
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.68),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0.0, 0.75],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(kComicCardBorderRadius),
-                      bottomRight: Radius.circular(kComicCardBorderRadius),
-                    ),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(8, 24, 8, 8),
-                  child: Text(
-                    folder.name.let(convertChineseForDisplay),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(0, 1),
-                          blurRadius: 3,
-                          color: Colors.black54,
-                        ),
-                      ],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.start,
-                  ),
-                ),
-              ),
-              // 选择指示器：常驻 + 缩放淡入，进入多选模式时不凭空弹出。
-              Positioned(
-                top: 8,
-                right: 8,
-                child: AnimatedScale(
-                  scale: selectionMode ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
-                  child: AnimatedOpacity(
-                    opacity: selectionMode ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? colorScheme.primary
-                            : colorScheme.surface,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: colorScheme.surface,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+          child: ClipRRect(
+            borderRadius: radius,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  // 封面区实际尺寸由信息条高度反推，交给 LayoutBuilder 精确下发：
+                  // 传大尺寸会让封面按错误目标框解码并被裁掉一截。
+                  child: LayoutBuilder(
+                    builder: (context, coverConstraints) {
+                      final coverWidth = coverConstraints.maxWidth;
+                      final coverHeight = coverConstraints.maxHeight;
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // 有封面就用封面，否则回退柔和的文件夹图标底。
+                          if (coverInfo != null)
+                            CoverWidget(
+                              key: ValueKey(
+                                'folder-cover-${folder.syncId}-'
+                                '${coverInfo!.from}:${coverInfo!.id}:${coverInfo!.path}',
+                              ),
+                              fileServer: coverInfo!.fileServer,
+                              path: coverInfo!.path,
+                              id: coverInfo!.id,
+                              pictureType: coverInfo!.pictureType,
+                              from: coverInfo!.from,
+                              roundedCorner: false,
+                              width: coverWidth,
+                              height: coverHeight,
+                            )
+                          else
+                            Container(
+                              color: isSelected ? c.accentSoft : c.surface2,
+                              alignment: Alignment.center,
+                              child: Icon(
+                                Icons.folder_rounded,
+                                size: coverWidth * 0.34,
+                                color: isSelected ? c.accent : c.text3,
+                              ),
+                            ),
+                          // 封面模式下左上角保留小文件夹标记，避免和漫画卡片混淆。
+                          if (coverInfo != null)
+                            Positioned(
+                              top: 6,
+                              left: 6,
+                              child: Container(
+                                width: 22,
+                                height: 22,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: c.surface.withValues(alpha: 0.92),
+                                  borderRadius: BorderRadius.circular(7),
+                                  boxShadow: c.shadowSm,
+                                ),
+                                child: Icon(
+                                  Icons.folder_rounded,
+                                  size: 13,
+                                  color: c.accent,
+                                ),
+                              ),
+                            ),
+                          // 选择指示器：常驻 + 缩放淡入，进入多选模式时不凭空弹出。
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: AnimatedScale(
+                              scale: selectionMode ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 180),
+                              curve: Curves.easeOutCubic,
+                              child: AnimatedOpacity(
+                                opacity: selectionMode ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOutCubic,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  width: 26,
+                                  height: 26,
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? c.accent : c.surface,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: c.surface,
+                                      width: 2,
+                                    ),
+                                    boxShadow: c.shadowSm,
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 180),
+                                    child: Icon(
+                                      isSelected
+                                          ? Icons.check_rounded
+                                          : Icons
+                                                .radio_button_unchecked_rounded,
+                                      key: ValueKey(isSelected),
+                                      color: isSelected ? c.accentFg : c.text3,
+                                      size: 17,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 180),
-                        child: Icon(
-                          isSelected
-                              ? Icons.check_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          key: ValueKey(isSelected),
-                          color: isSelected
-                              ? colorScheme.onPrimary
-                              : colorScheme.onSurfaceVariant,
-                          size: 18,
-                        ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
-              ),
-            ],
+                // 信息条：不叠在封面上，直接用不透明的 surface 承接文字，
+                // 保证浅色 / 深色和任意封面下都有稳定对比度。
+                Container(
+                  color: c.surface,
+                  padding: const EdgeInsets.fromLTRB(7, 5, 7, 6),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        folder.name.let(convertChineseForDisplay),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textHeightBehavior: kCalmTextHeightBehavior,
+                        strutStyle: calmStrut(11.5),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: c.text,
+                          height: 1.2,
+                          leadingDistribution: TextLeadingDistribution.even,
+                        ),
+                      ),
+                      if (count != null) ...[
+                        const SizedBox(height: 3),
+                        CalmBadge(
+                          label: t.bookshelf.folderComicCount(count: count),
+                          tone: CalmBadgeTone.neutral,
+                          icon: Icons.menu_book_rounded,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// 详情横行：固定高度 76，与漫画行同高；超宽居中限 720。
+  /// 详情横行：固定高度 64，与漫画行同高；超宽居中限 720。
   ///
-  /// 样式对齐 `_DetailedRowBody`（同圆角 8、同底色、同标题字号），
   /// 左侧用文件夹小图标代替封面，避免单列下大卡片被拉成巨型方块。
   Widget _buildDetailedRow(BuildContext context, double width) {
-    final scheme = Theme.of(context).colorScheme;
-    final primary = scheme.primary;
+    final c = context.calm;
     final count = comicCount;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: Tooltip(
@@ -262,46 +258,47 @@ class FolderShelfItem extends StatelessWidget {
               duration: const Duration(milliseconds: 160),
               curve: Curves.easeOutCubic,
               decoration: BoxDecoration(
-                color: scheme.surfaceContainerLow.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(8),
+                color: isSelected && selectionMode ? c.accentSoft : c.surface,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: c.shadowSm,
               ),
+              // 同样用 foregroundDecoration 画选中描边：不能被左侧封面盖住。
               foregroundDecoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isSelected && selectionMode
-                      ? primary
-                      : Colors.transparent,
-                  width: 2,
+                  color: isSelected && selectionMode ? c.accent : c.border,
+                  width: isSelected && selectionMode ? 2 : 1,
                 ),
-                borderRadius: BorderRadius.circular(8),
               ),
               child: SizedBox(
                 height: 64,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 48,
-                      height: 64,
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(
-                        color: scheme.primaryContainer.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: SizedBox(
+                        width: 48,
+                        height: 64,
+                        child: coverInfo == null
+                            ? ColoredBox(
+                                color: c.surface2,
+                                child: Icon(
+                                  Icons.folder_rounded,
+                                  size: 26,
+                                  color: c.accent,
+                                ),
+                              )
+                            : CoverWidget(
+                                fileServer: coverInfo!.fileServer,
+                                path: coverInfo!.path,
+                                id: coverInfo!.id,
+                                pictureType: coverInfo!.pictureType,
+                                from: coverInfo!.from,
+                                width: 48,
+                                height: 64,
+                              ),
                       ),
-                      child: coverInfo == null
-                          ? Icon(
-                              Icons.folder_rounded,
-                              size: 28,
-                              color: scheme.primary,
-                            )
-                          : CoverWidget(
-                              fileServer: coverInfo!.fileServer,
-                              path: coverInfo!.path,
-                              id: coverInfo!.id,
-                              pictureType: coverInfo!.pictureType,
-                              from: coverInfo!.from,
-                              width: 48,
-                              height: 64,
-                            ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -311,23 +308,34 @@ class FolderShelfItem extends StatelessWidget {
                         children: [
                           Text(
                             folder.name.let(convertChineseForDisplay),
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.3,
-                                ),
+                            textHeightBehavior: kCalmTextHeightBehavior,
+                            strutStyle: calmStrut(12.5),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: c.text,
+                              height: 1.2,
+                              leadingDistribution: TextLeadingDistribution.even,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (count != null) ...[
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 5),
                             Text(
                               t.bookshelf.folderComicCount(count: count),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: scheme.onSurfaceVariant,
-                                    height: 1.4,
-                                  ),
+                              textHeightBehavior: kCalmTextHeightBehavior,
+                              strutStyle: calmStrut(11),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: c.text3,
+                                height: 1.2,
+                                leadingDistribution:
+                                    TextLeadingDistribution.even,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -372,15 +380,15 @@ class FolderShelfItem extends StatelessWidget {
                                 key: const ValueKey('badge'),
                                 duration: const Duration(milliseconds: 160),
                                 curve: Curves.easeOutCubic,
-                                width: 30,
-                                height: 30,
+                                width: 28,
+                                height: 28,
                                 decoration: BoxDecoration(
-                                  color: isSelected ? primary : scheme.surface,
+                                  color: isSelected ? c.accent : c.surface,
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: isSelected
-                                        ? primary
-                                        : scheme.outline.withValues(alpha: 0.4),
+                                        ? c.accent
+                                        : c.borderStrong,
                                     width: 2,
                                   ),
                                 ),
@@ -388,25 +396,22 @@ class FolderShelfItem extends StatelessWidget {
                                   duration: const Duration(milliseconds: 160),
                                   child: Icon(
                                     isSelected
-                                        ? Icons.check
-                                        : Icons.radio_button_unchecked,
+                                        ? Icons.check_rounded
+                                        : Icons.radio_button_unchecked_rounded,
                                     key: ValueKey(isSelected),
-                                    color: isSelected
-                                        ? scheme.onPrimary
-                                        : scheme.onSurfaceVariant,
-                                    size: 20,
+                                    color: isSelected ? c.accentFg : c.text3,
+                                    size: 18,
                                   ),
                                 ),
                               )
                             : Icon(
                                 key: const ValueKey('arrow'),
                                 Icons.chevron_right_rounded,
-                                color: scheme.onSurfaceVariant.withValues(
-                                  alpha: 0.6,
-                                ),
+                                color: c.text3,
                               ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                   ],
                 ),
               ),

@@ -15,7 +15,7 @@ import 'package:zephyr/cubit/plugin_registry_cubit.dart';
 import 'package:zephyr/src/rust/api/simple.dart';
 import 'package:zephyr/type/enum.dart';
 import 'package:zephyr/type/pipe.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/storage/get_path.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/widgets/picture_bloc/models/picture_info.dart';
@@ -65,11 +65,14 @@ class ComicParticularsWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Align(
-                  child: Cover(
-                    pictureInfo: pictureInfo,
-                    height: 220,
-                    borderRadius: 14,
-                    onTap: onCoverTap,
+                  child: _framedCover(
+                    context,
+                    Cover(
+                      pictureInfo: pictureInfo,
+                      height: 220,
+                      borderRadius: 16,
+                      onTap: onCoverTap,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -81,11 +84,14 @@ class ComicParticularsWidget extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Cover(
-                pictureInfo: pictureInfo,
-                height: 230,
-                borderRadius: 14,
-                onTap: onCoverTap,
+              _framedCover(
+                context,
+                Cover(
+                  pictureInfo: pictureInfo,
+                  height: 230,
+                  borderRadius: 16,
+                  onTap: onCoverTap,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(child: info),
@@ -93,6 +99,17 @@ class ComicParticularsWidget extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  /// 封面外框：柔和弥散投影，让封面从画布上“浮”起来一格。
+  Widget _framedCover(BuildContext context, Widget cover) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: context.calm.shadowMd,
+      ),
+      child: cover,
     );
   }
 }
@@ -231,72 +248,29 @@ class _InfoColumnState extends State<_InfoColumn> {
     final displaySource = context.select<PluginRegistryCubit, String>(
       (cubit) => cubit.state.pluginName(_normalizePluginId(widget.from)),
     );
-    final titleStyle = context.theme.textTheme.headlineSmall?.copyWith(
-      fontWeight: FontWeight.w800,
-      height: 1.15,
-      color: context.textColor,
+    final c = context.calm;
+    final titleStyle = TextStyle(
+      fontSize: 19,
+      fontWeight: FontWeight.w600,
+      height: 1.25,
+      letterSpacing: -0.2,
+      color: c.text,
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: context.theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: context.theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.3,
-                  ),
-                ),
+            _InfoPill(icon: Icons.extension_outlined, label: displaySource),
+            if (_storageSize != null)
+              _InfoPill(
+                icon: Icons.storage_rounded,
+                label: _formatFileSize(_storageSize!),
               ),
-              child: Text(
-                displaySource,
-                style: context.theme.textTheme.labelMedium?.copyWith(
-                  letterSpacing: 0.8,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            if (_storageSize != null) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: context.theme.colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: context.theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.3,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.storage_rounded,
-                      size: 14,
-                      color: context.textColor.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatFileSize(_storageSize!),
-                      style: context.theme.textTheme.labelMedium?.copyWith(
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
         const SizedBox(height: 12),
@@ -339,92 +313,102 @@ class _ContinueReadingBanner extends StatelessWidget {
         if (stringSelectDate.isEmpty) {
           return const SizedBox.shrink();
         }
-
+        final c = context.calm;
         return Padding(
           padding: const EdgeInsets.only(top: 14),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
+          child: MouseRegion(
+            cursor: onContinueRead != null
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: onContinueRead,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
+              child: SizedBox(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: context.theme.colorScheme.primary.withValues(
-                    alpha: 0.10,
+                child: CalmCard(
+                  radius: 14,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: context.theme.colorScheme.primary.withValues(
-                      alpha: 0.30,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: context.theme.colorScheme.primary.withValues(
-                          alpha: 0.14,
+                  color: c.accentSoft,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: c.surface.withValues(alpha: 0.72),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        borderRadius: BorderRadius.circular(9),
+                        child: Icon(
+                          Icons.history_rounded,
+                          size: 17,
+                          color: c.accent,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.history_rounded,
-                        size: 18,
-                        color: context.theme.colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            t.comicInfo.readHistory,
-                            style: context.theme.textTheme.labelMedium
-                                ?.copyWith(
-                                  color: context.theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
-                                ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            stringSelectDate,
-                            style: context.theme.textTheme.bodyMedium?.copyWith(
-                              color: context.textColor,
-                              fontWeight: FontWeight.w700,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              t.comicInfo.readHistory,
+                              textHeightBehavior: kCalmTextHeightBehavior,
+                              strutStyle: calmStrut(10.5),
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: c.accent,
+                                height: 1.2,
+                                leadingDistribution:
+                                    TextLeadingDistribution.even,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (onContinueRead != null) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        t.comicInfo.continueRead,
-                        style: context.theme.textTheme.labelLarge?.copyWith(
-                          color: context.theme.colorScheme.primary,
-                          fontWeight: FontWeight.w800,
+                            const SizedBox(height: 2),
+                            Text(
+                              stringSelectDate,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textHeightBehavior: kCalmTextHeightBehavior,
+                              strutStyle: calmStrut(12),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: c.text,
+                                height: 1.2,
+                                leadingDistribution:
+                                    TextLeadingDistribution.even,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.play_arrow_rounded,
-                        size: 20,
-                        color: context.theme.colorScheme.primary,
-                      ),
+                      if (onContinueRead != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          t.comicInfo.continueRead,
+                          textHeightBehavior: kCalmTextHeightBehavior,
+                          strutStyle: calmStrut(11.5),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.accent,
+                            height: 1.2,
+                            leadingDistribution: TextLeadingDistribution.even,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.play_arrow_rounded,
+                          size: 18,
+                          color: c.accent,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -442,37 +426,32 @@ class _MetaPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pill = ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 38),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: context.theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: context.theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.32,
-                  ),
-                ),
-              ),
-            ),
+    final c = context.calm;
+    final pill = Container(
+      constraints: const BoxConstraints(minHeight: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: c.surface2,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Center(
+        widthFactor: 1.0,
+        heightFactor: 1.0,
+        child: Text(
+          item.name.let(convertChineseForDisplay),
+          textAlign: TextAlign.center,
+          softWrap: true,
+          textHeightBehavior: kCalmTextHeightBehavior,
+          strutStyle: calmStrut(11.5),
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w500,
+            color: c.text2,
+            height: 1.2,
+            leadingDistribution: TextLeadingDistribution.even,
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            child: Text(
-              item.name.let(convertChineseForDisplay),
-              textAlign: TextAlign.center,
-              softWrap: true,
-              style: context.theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                height: 1.15,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -487,6 +466,50 @@ class _MetaPill extends StatelessWidget {
         );
       },
       child: pill,
+    );
+  }
+}
+
+/// 头部信息胶囊：插件来源 / 本地占用，柔底无硬边框。
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    return Container(
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 9),
+      decoration: BoxDecoration(
+        color: c.surface2,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 12, color: c.text3),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(11),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: c.text2,
+              height: 1.2,
+              leadingDistribution: TextLeadingDistribution.even,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

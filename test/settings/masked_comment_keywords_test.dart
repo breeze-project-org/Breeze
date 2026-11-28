@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/setting/global/content_network_setting_page.dart';
+import 'package:zephyr/ui/ui.dart';
 
 class _TestGlobalSettingCubit extends GlobalSettingCubit {
   @override
@@ -40,15 +41,19 @@ void main() {
       '广告',
     );
     await tester.tap(
-      find.descendant(of: dialog, matching: find.byIcon(Icons.add)),
+      find.descendant(of: dialog, matching: find.byIcon(Icons.add_rounded)),
     );
     await tester.pump();
 
     expect(cubit.state.maskedCommentKeywords, <String>['广告']);
     expect(cubit.state.maskedKeywords, isEmpty);
 
+    // 弹窗右上角的关闭按钮也是 close_rounded，这里必须精确点到「广告」标签上的删除键。
     await tester.tap(
-      find.descendant(of: dialog, matching: find.byIcon(Icons.close)),
+      find.descendant(
+        of: find.widgetWithText(CalmInputChip, '广告'),
+        matching: find.byIcon(Icons.close_rounded),
+      ),
     );
     await tester.pump();
     expect(cubit.state.maskedCommentKeywords, isEmpty);

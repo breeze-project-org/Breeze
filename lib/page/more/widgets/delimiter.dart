@@ -1,21 +1,15 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 
+/// 旧版内容分隔线（保留类名向后兼容），改为 CalmUI 的柔和细分割线。
 class Delimiter extends StatelessWidget {
   const Delimiter({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.center,
-      child: SizedBox(
-        width: context.screenWidth * (48 / 50), // 设置宽度
-        child: Divider(
-          color: context.theme.colorScheme.secondaryFixedDim,
-          thickness: 1,
-          height: 15,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: const CalmDivider(),
     );
   }
 }

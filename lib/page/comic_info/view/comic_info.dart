@@ -23,7 +23,7 @@ import 'package:zephyr/page/download/models/download_chapter.dart';
 import 'package:zephyr/service/reader/comic_read_chapter_repository.dart';
 import 'package:zephyr/type/enum.dart';
 import 'package:zephyr/type/pipe.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/error/error_filter.dart';
 import 'package:zephyr/util/storage/get_path.dart';
 import 'package:zephyr/util/json/json_value.dart';
@@ -31,7 +31,6 @@ import 'package:zephyr/util/system/permission.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/widgets/comic_entry/models/models.dart';
 import 'package:zephyr/widgets/error_view.dart';
-import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 enum MenuOption { export, follow, edit }
@@ -210,160 +209,100 @@ class _ComicInfoState extends State<_ComicInfo>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final c = context.calm;
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          const SizedBox(width: 50),
-          IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () => popToRoot(context),
-          ),
-          Expanded(child: Container()),
-          BlocSelector<ComicFollowCubit, ComicFollowState, bool>(
-            selector: (state) => state.isFollowing(widget.from, _comicId),
-            builder: (context, isFollowing) {
-              return IconButton(
-                icon: Icon(
-                  isFollowing
-                      ? Icons.notifications_active
-                      : Icons.notifications_none,
-                ),
-                tooltip: isFollowing
-                    ? t.comicInfo.unfollow
-                    : t.comicInfo.follow,
-                onPressed: () => _toggleFollow(isFollowing),
-              );
-            },
-          ),
-          FluentPopupMenuButton<MenuOption>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (MenuOption item) {
-              switch (item) {
-                case MenuOption.export:
-                  _handleExport();
-                  break;
-                case MenuOption.edit:
-                  _handleEdit();
-                  break;
-                case MenuOption.follow:
-                  _toggleFollow(
-                    context.read<ComicFollowCubit>().isFollowing(
-                      widget.from,
-                      _comicId,
-                    ),
-                  );
-                  break;
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              final isFollowing = context.read<ComicFollowCubit>().isFollowing(
-                widget.from,
-                _comicId,
-              );
-              final menuItems = <FluentPopupMenuItem<MenuOption>>[
-                FluentPopupMenuItem<MenuOption>(
-                  value: MenuOption.follow,
-                  leading: Icon(
-                    isFollowing
-                        ? Icons.notifications_off
-                        : Icons.notifications_active,
-                  ),
-                  title: Text(
-                    isFollowing ? t.comicInfo.unfollow : t.comicInfo.follow,
-                  ),
-                ),
-              ];
-
-              if (_type == ComicEntryType.download) {
-                menuItems.add(
-                  FluentPopupMenuItem<MenuOption>(
-                    value: MenuOption.edit,
-                    leading: const Icon(Icons.edit_outlined),
-                    title: Text(t.comicEdit.title),
-                  ),
-                );
-                menuItems.add(
-                  FluentPopupMenuItem<MenuOption>(
-                    value: MenuOption.export,
-                    leading: const Icon(Icons.save_alt),
-                    title: Text(t.comicInfo.exportComic),
-                  ),
-                );
-              }
-
-              return menuItems;
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          BlocBuilder<GetComicInfoBloc, GetComicInfoState>(
-            builder: (context, state) {
-              switch (state.status) {
-                case GetComicInfoStatus.initial:
-                  return Center(child: CircularProgressIndicator());
-                case GetComicInfoStatus.failure:
-                  if (state.result.contains("under review") &&
-                      state.result.contains("1014")) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            t.comicInfo.discontinued,
-                            style: const TextStyle(fontSize: 20),
-                          ),
-                          SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () => context.pop(),
-                            child: Text(t.comicInfo.back),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return ErrorView(
-                    errorMessage: t.comicInfo.loadFailedWithError(
-                      error: state.result.toString(),
-                    ),
-                    onRetry: () {
-                      context.read<GetComicInfoBloc>().add(
-                        GetComicInfoEvent(
-                          comicId: _comicId,
-                          from: widget.from,
-                          type: _type,
-                          extern: widget.extern,
-                        ),
-                      );
+      backgroundColor: c.bg,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _buildTopBar(context),
+            Expanded(
+              child: Stack(
+                children: [
+                  BlocBuilder<GetComicInfoBloc, GetComicInfoState>(
+                    builder: (context, state) {
+                      switch (state.status) {
+                        case GetComicInfoStatus.initial:
+                          return const Center(child: CalmLoading());
+                        case GetComicInfoStatus.failure:
+                          if (state.result.contains("under review") &&
+                              state.result.contains("1014")) {
+                            return Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 420,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                  ),
+                                  child: CalmEmptyState(
+                                    icon: Icons.block_rounded,
+                                    title: t.comicInfo.discontinued,
+                                    subtitle: state.result.toString(),
+                                    action: CalmButton(
+                                      label: t.comicInfo.back,
+                                      icon: Icons.arrow_back_rounded,
+                                      variant: CalmButtonVariant.tonal,
+                                      onPressed: () => context.pop(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          return ErrorView(
+                            errorMessage: t.comicInfo.loadFailedWithError(
+                              error: state.result.toString(),
+                            ),
+                            onRetry: () {
+                              context.read<GetComicInfoBloc>().add(
+                                GetComicInfoEvent(
+                                  comicId: _comicId,
+                                  from: widget.from,
+                                  type: _type,
+                                  extern: widget.extern,
+                                ),
+                              );
+                            },
+                          );
+                        case GetComicInfoStatus.success:
+                          comicInfoDyn = state.comicInfo;
+                          _currentInfo = state.allInfo;
+                          _comicId = state.comicId ?? _comicId;
+                          // 已读集合与历史摘要随详情返回；这里只同步，不再异步查库。
+                          _readChapterIds = state.readChapterIds;
+                          _syncFollowFromOnlineDetail(
+                            state.comicInfo,
+                            state.allInfo!,
+                          );
+                          return _infoView(
+                            state.allInfo!,
+                            state.localCollected,
+                          );
+                      }
                     },
-                  );
-                case GetComicInfoStatus.success:
-                  comicInfoDyn = state.comicInfo;
-                  _currentInfo = state.allInfo;
-                  _comicId = state.comicId ?? _comicId;
-                  // 已读集合与历史摘要随详情返回；这里只同步，不再异步查库。
-                  _readChapterIds = state.readChapterIds;
-                  _syncFollowFromOnlineDetail(state.comicInfo, state.allInfo!);
-                  return _infoView(state.allInfo!, state.localCollected);
-              }
-            },
-          ),
-          BlocBuilder<EpisodeDownloadStatusCubit, EpisodeDownloadStatusState>(
-            bloc: _dlController.statusCubit,
-            builder: (context, _) => BlocBuilder<EpisodeSelectionCubit, int>(
-              bloc: _dlController.selectionCubit,
-              builder: (context, _) => _SelectionActionBar(
-                controller: _dlController,
-                isDownloadType: _type == ComicEntryType.download,
+                  ),
+                  BlocBuilder<
+                    EpisodeDownloadStatusCubit,
+                    EpisodeDownloadStatusState
+                  >(
+                    bloc: _dlController.statusCubit,
+                    builder: (context, _) =>
+                        BlocBuilder<EpisodeSelectionCubit, int>(
+                          bloc: _dlController.selectionCubit,
+                          builder: (context, _) => _SelectionActionBar(
+                            controller: _dlController,
+                            isDownloadType: _type == ComicEntryType.download,
+                          ),
+                        ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButtonLocation:
           context.watch<GlobalSettingCubit>().state.leftHandModeEnabled
@@ -394,6 +333,101 @@ class _ComicInfoState extends State<_ComicInfo>
         },
       ),
     );
+  }
+
+  /// 轻盈顶栏：返回 / 回首页 / 追更 / 更多菜单，黑边框与阴影全部去掉。
+  Widget _buildTopBar(BuildContext context) {
+    final c = context.calm;
+    return CalmAppBar(
+      title: _title,
+      onBack: () => context.pop(),
+      actions: [
+        CalmIconButton(
+          icon: Icons.home_rounded,
+          tooltip: t.navigation.home,
+          size: 32,
+          iconSize: 17,
+          onPressed: () => popToRoot(context),
+        ),
+        BlocSelector<ComicFollowCubit, ComicFollowState, bool>(
+          selector: (state) => state.isFollowing(widget.from, _comicId),
+          builder: (context, isFollowing) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CalmIconButton(
+                  icon: isFollowing
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_none_rounded,
+                  tooltip: isFollowing
+                      ? t.comicInfo.unfollow
+                      : t.comicInfo.follow,
+                  selected: isFollowing,
+                  size: 32,
+                  iconSize: 17,
+                  onPressed: () => _toggleFollow(isFollowing),
+                ),
+                const SizedBox(width: 6),
+                CalmPopupMenuButton<MenuOption>(
+                  onSelected: (MenuOption item) {
+                    switch (item) {
+                      case MenuOption.export:
+                        _handleExport();
+                        break;
+                      case MenuOption.edit:
+                        _handleEdit();
+                        break;
+                      case MenuOption.follow:
+                        _toggleFollow(isFollowing);
+                        break;
+                    }
+                  },
+                  entries: _buildMenuEntries(isFollowing),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: c.surface2,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 17,
+                      color: c.text2,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  List<CalmPopupMenuEntry<MenuOption>> _buildMenuEntries(bool isFollowing) {
+    return [
+      CalmPopupMenuEntry<MenuOption>.item(
+        value: MenuOption.follow,
+        label: isFollowing ? t.comicInfo.unfollow : t.comicInfo.follow,
+        icon: isFollowing
+            ? Icons.notifications_off_rounded
+            : Icons.notifications_active_rounded,
+      ),
+      if (_type == ComicEntryType.download) ...[
+        CalmPopupMenuEntry<MenuOption>.item(
+          value: MenuOption.edit,
+          label: t.comicEdit.title,
+          icon: Icons.edit_outlined,
+        ),
+        CalmPopupMenuEntry<MenuOption>.item(
+          value: MenuOption.export,
+          label: t.comicInfo.exportComic,
+          icon: Icons.save_alt_rounded,
+        ),
+      ],
+    ];
   }
 
   Widget _infoView(NormalComicAllInfo normalComicAllInfo, bool localCollected) {
@@ -492,7 +526,7 @@ class _ComicInfoState extends State<_ComicInfo>
                               : null,
                         ),
                         if (showOperationActions) ...[
-                          _buildDivider(context),
+                          _buildDivider(),
                           ComicOperationWidget(
                             normalInfo: normalComicAllInfo,
                             from: widget.from,
@@ -504,7 +538,7 @@ class _ComicInfoState extends State<_ComicInfo>
                         ],
                         if (comicInfo.metadata.isNotEmpty ||
                             comicInfo.description.trim().isNotEmpty) ...[
-                          _buildDivider(context),
+                          _buildDivider(),
                           _SectionCard(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -529,7 +563,7 @@ class _ComicInfoState extends State<_ComicInfo>
                         ],
                         if (comicInfo.creator.name.trim().isNotEmpty ||
                             comicInfo.creator.avatar.url.trim().isNotEmpty) ...[
-                          _buildDivider(context),
+                          _buildDivider(),
                           _SectionCard(
                             child: Align(
                               alignment: Alignment.centerLeft,
@@ -556,14 +590,14 @@ class _ComicInfoState extends State<_ComicInfo>
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
-                      _buildDivider(context),
+                      _buildDivider(),
                       _EpisodeHeader(
                         title: t.comicInfo.chapterList,
-                        trailing: _EpisodeHeaderBadge(
-                          label: _chapterCountLabel(displayEps),
-                          icon: _isReversed ? Icons.south : Icons.north,
-                          onTap: _toggleOrder,
-                        ),
+                        countText: _chapterCountLabel(displayEps),
+                        icon: _isReversed
+                            ? Icons.south_rounded
+                            : Icons.north_rounded,
+                        onToggleOrder: _toggleOrder,
                       ),
                     ],
                   ),
@@ -586,7 +620,7 @@ class _ComicInfoState extends State<_ComicInfo>
                   SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        _buildDivider(context),
+                        _buildDivider(),
                         _SectionCard(
                           title: t.comicInfo.related,
                           child: RecommendWidget(
@@ -653,14 +687,10 @@ class _ComicInfoState extends State<_ComicInfo>
     );
   }
 
-  Widget _buildDivider(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Divider(
-        height: 1,
-        thickness: 0.5,
-        color: context.theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-      ),
+  Widget _buildDivider() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 10),
+      child: CalmDivider(),
     );
   }
 
@@ -673,28 +703,31 @@ class _ComicInfoState extends State<_ComicInfo>
   Future<ExportType?> _pickExportType() async {
     if (Platform.isIOS || isOhos) return ExportType.zip;
 
-    return showDialog<ExportType>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(t.comicInfo.exportTitle),
-          content: Text(t.comicInfo.exportSubtitle),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: Text(t.common.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(ExportType.folder),
-              child: Text(t.comicInfo.folder),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(ExportType.zip),
-              child: Text(t.comicInfo.zip),
-            ),
-          ],
-        );
-      },
+    return showCalmDialog<ExportType>(
+      context,
+      title: t.comicInfo.exportTitle,
+      subtitle: t.comicInfo.exportSubtitle,
+      icon: Icons.save_alt_rounded,
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+        CalmButton(
+          label: t.comicInfo.folder,
+          icon: Icons.folder_outlined,
+          variant: CalmButtonVariant.tonal,
+          onPressed: () => Navigator.of(dialogContext).pop(ExportType.folder),
+        ),
+        CalmButton(
+          label: t.comicInfo.zip,
+          icon: Icons.folder_zip_outlined,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(dialogContext).pop(ExportType.zip),
+        ),
+      ],
+      bodyBuilder: (dialogContext) => const SizedBox.shrink(),
     );
   }
 
@@ -892,22 +925,31 @@ class _ComicInfoState extends State<_ComicInfo>
   }
 
   Future<void> _confirmAndRemoveFollow(String title) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(t.comicInfo.confirmUnfollowTitle),
-        content: Text(t.comicInfo.confirmUnfollowContent(title: title)),
-        actions: [
-          TextButton(
-            onPressed: () => dialogContext.pop(false),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () => dialogContext.pop(true),
-            child: Text(t.common.ok),
-          ),
-        ],
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: t.comicInfo.confirmUnfollowTitle,
+      icon: Icons.notifications_off_rounded,
+      tone: CalmTone.warning,
+      bodyBuilder: (dialogContext) => Text(
+        t.comicInfo.confirmUnfollowContent(title: title),
+        style: TextStyle(
+          fontSize: 12.5,
+          color: dialogContext.calm.text2,
+          height: 1.5,
+        ),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
     if (confirmed != true) {
       return;
@@ -1066,12 +1108,11 @@ class _ComicInfoState extends State<_ComicInfo>
       return [
         _constrainedSliver(
           SliverToBoxAdapter(
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 18),
-              child: Text(
-                t.comicInfo.noChapters,
-                style: context.theme.textTheme.bodyMedium,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: CalmEmptyState(
+                icon: Icons.menu_book_outlined,
+                title: t.comicInfo.noChapters,
               ),
             ),
           ),
@@ -1361,73 +1402,21 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (title != null) ...[
-            Text(
-              title!,
-              style: context.theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _EpisodeHeaderBadge extends StatelessWidget {
-  const _EpisodeHeaderBadge({
-    required this.label,
-    required this.icon,
-    this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: context.theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: context.theme.colorScheme.outlineVariant.withValues(
-                alpha: 0.3,
-              ),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: SizedBox(
+        width: double.infinity,
+        child: CalmCard(
+          radius: 16,
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                icon,
-                size: 18,
-                color: context.textColor.withValues(alpha: 0.75),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: context.theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: context.textColor.withValues(alpha: 0.82),
-                ),
-              ),
+              if (title != null) ...[
+                CalmSectionHeader(title: title!),
+                const SizedBox(height: 10),
+              ],
+              child,
             ],
           ),
         ),
@@ -1446,46 +1435,23 @@ class _DescriptionCard extends StatefulWidget {
 }
 
 class _DescriptionCardState extends State<_DescriptionCard> {
-  bool _expanded = false;
-
   @override
   Widget build(BuildContext context) {
-    final descriptionStyle = context.theme.textTheme.bodyMedium?.copyWith(
-      height: 1.65,
-      color: context.textColor.withValues(alpha: 0.9),
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            t.comicInfo.description,
-            style: context.theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
-          SelectableText(
-            widget.description,
-            style: descriptionStyle,
-            maxLines: _expanded ? null : 5,
-            scrollPhysics: const NeverScrollableScrollPhysics(),
-          ),
-          if (widget.description.length > 90) ...[
-            const SizedBox(height: 10),
-            TextButton.icon(
-              onPressed: () => setState(() => _expanded = !_expanded),
-              icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-              label: Text(
-                _expanded ? t.comicInfo.collapse : t.comicInfo.expandFullText,
-              ),
-            ),
-          ],
-        ],
-      ),
+    final c = context.calm;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        CalmSectionHeader(title: t.comicInfo.description),
+        const SizedBox(height: 8),
+        CalmExpandableText(
+          text: widget.description,
+          maxLines: 5,
+          expandLabel: t.comicInfo.expandFullText,
+          collapseLabel: t.comicInfo.collapse,
+          style: TextStyle(fontSize: 12.5, color: c.text2, height: 1.65),
+        ),
+      ],
     );
   }
 }
@@ -1495,32 +1461,34 @@ class _DescriptionCardState extends State<_DescriptionCard> {
 double _constrainedHorizontalPadding(double crossAxisExtent) =>
     ((crossAxisExtent - 1120) / 2).clamp(20.0, double.infinity).toDouble();
 
-/// 章节列表头（标题 + 计数/倒序 badge），与 _SectionCard 的标题区同样式，
-/// 虚拟化后作为独立 sliver，列表本体是下面的 _EpisodeBoard。
+/// 章节列表头：轻盈分组头 + 计数 + 倒序切换。
 class _EpisodeHeader extends StatelessWidget {
-  const _EpisodeHeader({required this.title, this.trailing});
+  const _EpisodeHeader({
+    required this.title,
+    required this.countText,
+    required this.icon,
+    required this.onToggleOrder,
+  });
 
   final String title;
-  final Widget? trailing;
+  final String countText;
+  final IconData icon;
+  final VoidCallback onToggleOrder;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: context.theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          if (trailing != null) ...[const SizedBox(width: 10), trailing!],
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 6),
+      child: CalmSectionHeader(
+        title: title,
+        countText: countText,
+        trailing: CalmIconButton(
+          icon: icon,
+          tooltip: t.bookshelf.sort,
+          size: 28,
+          iconSize: 15,
+          onPressed: onToggleOrder,
+        ),
       ),
     );
   }
@@ -1557,9 +1525,10 @@ class _ChapterGroupHeaderBar extends StatelessWidget {
   Widget build(BuildContext context) {
     // 与章节内容区同一套居中：全宽 Container 下 Center + 最大内容宽约束，
     // 窄屏下左右 20，宽屏下与章节行左右对齐。吸顶时整条背景不断层。
+    final c = context.calm;
     final viewportWidth = MediaQuery.sizeOf(context).width;
     return Container(
-      color: context.theme.scaffoldBackgroundColor,
+      color: c.bg,
       padding: const EdgeInsets.only(bottom: 8),
       child: Center(
         child: ConstrainedBox(
@@ -1569,52 +1538,63 @@ class _ChapterGroupHeaderBar extends StatelessWidget {
               double.infinity,
             ),
           ),
-          // 整行可点展开/折叠；下载按钮自己拦截手势，不冒泡。
-          child: InkWell(
-            onTap: onToggle,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  expanded
-                      ? Icons.expand_less_rounded
-                      : Icons.expand_more_rounded,
-                  size: 20,
-                  color: context.textColor.withValues(alpha: 0.6),
+          // 整条胶囊可点展开/折叠；下载按钮自己拦截手势，不冒泡。
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onToggle,
+              child: Container(
+                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: c.surface2,
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: title,
-                          style: context.theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        TextSpan(
-                          text: ' · $countLabel',
-                          style: context.theme.textTheme.bodyMedium?.copyWith(
-                            color: context.textColor.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    AnimatedRotation(
+                      turns: expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 160),
+                      curve: Curves.easeOutCubic,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 17,
+                        color: c.text2,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textHeightBehavior: kCalmTextHeightBehavior,
+                        strutStyle: calmStrut(12.5),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: c.text,
+                          height: 1.2,
+                          leadingDistribution: TextLeadingDistribution.even,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    CalmBadge(label: countLabel, tone: CalmBadgeTone.neutral),
+                    const Spacer(),
+                    if (onDownloadGroup != null)
+                      CalmIconButton(
+                        icon: Icons.download_outlined,
+                        tooltip: t.comicInfo.downloadGroup,
+                        size: 28,
+                        iconSize: 15,
+                        onPressed: onDownloadGroup,
+                      ),
+                  ],
                 ),
-                if (onDownloadGroup != null) ...[
-                  const SizedBox(width: 8),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: t.comicInfo.downloadGroup,
-                    onPressed: onDownloadGroup,
-                    icon: const Icon(Icons.download_outlined, size: 20),
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
         ),
@@ -1659,88 +1639,63 @@ class _SelectionActionBar extends StatelessWidget {
             opacity: inSelection ? 1 : 0,
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Material(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 6,
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: CalmBatchActionBar(
+                  selectedCount: controller.selectedIds.length,
+                  onClose: controller.exitSelection,
+                  actions: [
+                    CalmButton(
+                      label: allSelected
+                          ? t.bookshelf.deselectAll
+                          : t.common.selectAll,
+                      icon: allSelected
+                          ? Icons.deselect_rounded
+                          : Icons.select_all_rounded,
+                      variant: CalmButtonVariant.ghost,
+                      size: CalmButtonSize.xs,
+                      onPressed: chapters.isEmpty
+                          ? null
+                          : () {
+                              if (allSelected) {
+                                controller.clearSelection();
+                              } else {
+                                controller.selectAll(chapters.map((c) => c.id));
+                              }
+                            },
                     ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      reverse: true,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: t.common.cancel,
-                            onPressed: controller.exitSelection,
-                            icon: const Icon(Icons.close),
-                          ),
-                          Text(
-                            t.bookshelf.selectedCount(
-                              count: controller.selectedIds.length,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: allSelected
-                                ? t.bookshelf.deselectAll
-                                : t.common.selectAll,
-                            onPressed: chapters.isEmpty
-                                ? null
-                                : () {
-                                    if (allSelected) {
-                                      controller.clearSelection();
-                                    } else {
-                                      controller.selectAll(
-                                        chapters.map((c) => c.id),
-                                      );
-                                    }
-                                  },
-                            icon: Icon(
-                              allSelected ? Icons.deselect : Icons.select_all,
-                            ),
-                          ),
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: t.comicInfo.download,
-                            onPressed: downloadable.isEmpty
-                                ? null
-                                : () async {
-                                    await controller.downloadChapters(
-                                      context,
-                                      selected,
-                                    );
-                                  },
-                            icon: const Icon(Icons.download_outlined),
-                          ),
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: t.common.delete,
-                            onPressed: deletable.isEmpty
-                                ? null
-                                : () async {
-                                    final wholeDeleted = await controller
-                                        .deleteChapters(context, selected);
-                                    if (wholeDeleted) {
-                                      controller.exitSelection();
-                                      if (isDownloadType && context.mounted) {
-                                        context.pop();
-                                      }
-                                    }
-                                  },
-                            icon: const Icon(Icons.delete_outline),
-                          ),
-                        ],
-                      ),
+                    CalmButton(
+                      label: t.comicInfo.download,
+                      icon: Icons.download_outlined,
+                      variant: CalmButtonVariant.primary,
+                      size: CalmButtonSize.xs,
+                      onPressed: downloadable.isEmpty
+                          ? null
+                          : () async {
+                              await controller.downloadChapters(
+                                context,
+                                selected,
+                              );
+                            },
                     ),
-                  ),
+                    CalmButton(
+                      label: t.common.delete,
+                      icon: Icons.delete_outline_rounded,
+                      variant: CalmButtonVariant.danger,
+                      size: CalmButtonSize.xs,
+                      onPressed: deletable.isEmpty
+                          ? null
+                          : () async {
+                              final wholeDeleted = await controller
+                                  .deleteChapters(context, selected);
+                              if (wholeDeleted) {
+                                controller.exitSelection();
+                                if (isDownloadType && context.mounted) {
+                                  context.pop();
+                                }
+                              }
+                            },
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1759,19 +1714,14 @@ class _ReadActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      // 禁用 Hero 动画：详情页从带 FAB 的页面（发现页/书架历史等）push 进来时，
-      // 路由过渡收集期新旧路由的默认 FAB tag 会撞车（全库默认 tag 共享同一对象）。
-      heroTag: null,
+    // 轻盈浮空胶囊：不用 FloatingActionButton，也就没有 Hero tag 撞车问题
+    // （从带 FAB 的页面 push 进来时旧路由共享默认 tag 会抛错）。
+    return CalmButton(
+      label: hasHistory ? t.comicInfo.continueRead : t.comicInfo.startRead,
+      icon: hasHistory ? Icons.history_rounded : Icons.menu_book_rounded,
+      variant: CalmButtonVariant.primary,
+      size: CalmButtonSize.md,
       onPressed: onPressed,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      icon: Icon(
-        hasHistory ? Icons.history_rounded : Icons.menu_book_rounded,
-        size: 18,
-      ),
-      label: Text(
-        hasHistory ? t.comicInfo.continueRead : t.comicInfo.startRead,
-      ),
     );
   }
 }

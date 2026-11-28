@@ -3,16 +3,22 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/cubit/plugin_registry_cubit.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
+import 'package:zephyr/ui/ui.dart';
 
+/// 自定义插件顺序：拖拽排序后保存，逻辑与原实现保持一致。
 Future<void> showPluginOrderDialog(BuildContext context) async {
-  await showDialog<void>(
-    context: context,
-    builder: (_) => PluginOrderDialog(
+  await showCalmDialog<void>(
+    context,
+    title: t.discover.customOrder,
+    subtitle: t.discover.pluginManagement,
+    icon: Icons.reorder_rounded,
+    bodyBuilder: (_) => PluginOrderDialog(
       initialPlugins: PluginRegistryService.I.orderedPlugins(),
     ),
   );
 }
 
+/// 排序编辑区（弹窗外壳由 [showCalmDialog] 提供）。
 class PluginOrderDialog extends StatefulWidget {
   const PluginOrderDialog({super.key, required this.initialPlugins});
 
@@ -28,54 +34,68 @@ class _PluginOrderDialogState extends State<PluginOrderDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final maxHeight = (MediaQuery.sizeOf(context).height - 220)
-        .clamp(220.0, 560.0)
+    final maxHeight = (MediaQuery.sizeOf(context).height - 300)
+        .clamp(200.0, 520.0)
         .toDouble();
 
-    return AlertDialog(
-      title: Text(t.discover.customOrder),
-      content: SizedBox(
-        width: 420,
-        height: maxHeight,
-        child: ReorderableListView.builder(
-          buildDefaultDragHandles: false,
-          itemCount: _plugins.length,
-          itemBuilder: (context, index) {
-            final plugin = _plugins[index];
-            return _PluginOrderRow(
-              key: ValueKey(plugin.uuid),
-              plugin: plugin,
-              index: index,
-            );
-          },
-          onReorderItem: (oldIndex, newIndex) {
-            setState(() {
-              final plugin = _plugins.removeAt(oldIndex);
-              _plugins.insert(newIndex, plugin);
-            });
-          },
-        ),
+    return SizedBox(
+      height: maxHeight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: ReorderableListView.builder(
+              buildDefaultDragHandles: false,
+              padding: EdgeInsets.zero,
+              itemCount: _plugins.length,
+              itemBuilder: (context, index) {
+                final plugin = _plugins[index];
+                return _PluginOrderRow(
+                  key: ValueKey(plugin.uuid),
+                  plugin: plugin,
+                  index: index,
+                );
+              },
+              onReorderItem: (oldIndex, newIndex) {
+                setState(() {
+                  final plugin = _plugins.removeAt(oldIndex);
+                  _plugins.insert(newIndex, plugin);
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              CalmButton(
+                label: t.discover.resetOrder,
+                variant: CalmButtonVariant.ghost,
+                size: CalmButtonSize.xs,
+                onPressed: _saving ? null : _reset,
+              ),
+              CalmButton(
+                label: t.common.cancel,
+                variant: CalmButtonVariant.secondary,
+                size: CalmButtonSize.xs,
+                onPressed: _saving
+                    ? null
+                    : () => Navigator.of(context).maybePop(),
+              ),
+              CalmButton(
+                label: t.common.apply,
+                variant: CalmButtonVariant.primary,
+                size: CalmButtonSize.xs,
+                loading: _saving,
+                onPressed: _saving ? null : _save,
+              ),
+            ],
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : _reset,
-          child: Text(t.discover.resetOrder),
-        ),
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(t.common.apply),
-        ),
-      ],
     );
   }
 
@@ -111,15 +131,46 @@ class _PluginOrderRow extends StatelessWidget {
     final name = context.select<PluginRegistryCubit, String>(
       (cubit) => cubit.state.pluginName(plugin.uuid),
     );
-    return ListTile(
-      title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: plugin.isActive ? null : Text(t.discover.disabled),
-      trailing: ReorderableDragStartListener(
-        index: index,
-        child: const Padding(
-          padding: EdgeInsets.all(8),
-          child: Icon(Icons.drag_handle),
-        ),
+    final c = context.calm;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: c.surface2.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: CalmListTile(
+              title: name,
+              subtitle: plugin.isActive ? null : t.discover.disabled,
+              leading: Icon(
+                plugin.isActive
+                    ? Icons.extension_rounded
+                    : Icons.extension_off_outlined,
+                size: 16,
+                color: plugin.isActive ? c.accent : c.text3,
+              ),
+            ),
+          ),
+          ReorderableDragStartListener(
+            index: index,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.grab,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
+                child: Icon(
+                  Icons.drag_indicator_rounded,
+                  size: 16,
+                  color: c.text3,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

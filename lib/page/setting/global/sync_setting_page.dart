@@ -1,6 +1,5 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
@@ -38,42 +37,49 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
     return SettingPageShell(
       title: t.settings.sync,
       child: ListView(
+        padding: kSettingPagePadding,
         children: [
           settingSectionTitle(
             context,
             t.settings.sync,
             icon: Icons.sync_outlined,
           ),
-          _syncServiceType(state, cubit),
-          _encryptionKey(state, cubit),
-          webdavSync(context, state.syncSetting.syncServiceType),
-          if (configuredSync) _autoSync(state, cubit),
-          if (configuredSync && state.syncSetting.autoSync)
-            _syncInterval(state, cubit),
-          if (configuredSync && state.syncSetting.autoSync)
-            _syncNotify(state, cubit),
-          if (configuredSync) _syncSettings(state, cubit),
-          if (configuredSync) _syncPlugins(state, cubit),
+          settingCardGroup([
+            _syncServiceType(state, cubit),
+            _encryptionKey(state, cubit),
+            webdavSync(context, state.syncSetting.syncServiceType),
+            if (configuredSync) _autoSync(state, cubit),
+            if (configuredSync && state.syncSetting.autoSync)
+              _syncInterval(state, cubit),
+            if (configuredSync && state.syncSetting.autoSync)
+              _syncNotify(state, cubit),
+            if (configuredSync) _syncSettings(state, cubit),
+            if (configuredSync) _syncPlugins(state, cubit),
+          ]),
           if (configuredSync) ...[
-            const SizedBox(height: 8),
-            const Divider(height: 1, thickness: 0.3),
-            settingSectionTitle(context, t.settings.manualSyncSection),
-            _buildManualSyncTile(
-              icon: Icons.upload_outlined,
-              title: t.settings.uploadToCloud,
-              subtitle: t.settings.uploadToCloudSubtitle,
-              actionLabel: t.settings.manualUpload,
-              busy: _uploading,
-              onPressed: _manualUpload,
+            settingSectionTitle(
+              context,
+              t.settings.manualSyncSection,
+              icon: Icons.cloud_upload_outlined,
             ),
-            _buildManualSyncTile(
-              icon: Icons.download_outlined,
-              title: t.settings.downloadFromCloud,
-              subtitle: t.settings.downloadFromCloudSubtitle,
-              actionLabel: t.settings.manualDownload,
-              busy: _downloading,
-              onPressed: _manualDownload,
-            ),
+            settingCardGroup([
+              _buildManualSyncTile(
+                icon: Icons.upload_outlined,
+                title: t.settings.uploadToCloud,
+                subtitle: t.settings.uploadToCloudSubtitle,
+                actionLabel: t.settings.manualUpload,
+                busy: _uploading,
+                onPressed: _manualUpload,
+              ),
+              _buildManualSyncTile(
+                icon: Icons.download_outlined,
+                title: t.settings.downloadFromCloud,
+                subtitle: t.settings.downloadFromCloudSubtitle,
+                actionLabel: t.settings.manualDownload,
+                busy: _downloading,
+                onPressed: _manualDownload,
+              ),
+            ]),
           ],
           const SizedBox(height: 32),
         ],
@@ -122,22 +128,27 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
   }
 
   Future<bool?> _confirmOverwriteCloud() {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.settings.syncKeyErrorTitle),
-        content: Text(t.settings.syncKeyOverwriteConfirm),
-        actions: [
-          TextButton(
-            child: Text(t.common.cancel),
-            onPressed: () => Navigator.pop(context, false),
-          ),
-          TextButton(
-            child: Text(t.settings.syncKeyContinueUpload),
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
+    return showCalmDialog<bool>(
+      context,
+      title: t.settings.syncKeyErrorTitle,
+      icon: Icons.key_off_outlined,
+      tone: CalmTone.warning,
+      bodyBuilder: (dialogContext) => Text(
+        t.settings.syncKeyOverwriteConfirm,
+        style: TextStyle(fontSize: 12, color: dialogContext.calm.text2),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.settings.syncKeyContinueUpload,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
   }
 
@@ -176,31 +187,28 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
     required bool busy,
     required VoidCallback onPressed,
   }) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: busy
-          ? const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : FilledButton.tonal(onPressed: onPressed, child: Text(actionLabel)),
+    return CalmListTile(
+      leading: settingTileIcon(icon),
+      title: title,
+      subtitle: subtitle,
+      trailing: CalmButton(
+        label: actionLabel,
+        variant: CalmButtonVariant.tonal,
+        size: CalmButtonSize.xs,
+        loading: busy,
+        onPressed: busy ? null : onPressed,
+      ),
     );
   }
 
   Widget _encryptionKey(GlobalSettingState state, GlobalSettingCubit cubit) {
     final key = state.syncSetting.encryptionKey;
-    return ListTile(
-      leading: const Icon(Icons.key_outlined),
-      title: Text(t.settings.customEncryptionKey),
-      subtitle: Text(
-        key.isEmpty
-            ? t.settings.customEncryptionKeyDefault
-            : t.settings.customEncryptionKeySet,
-      ),
-      trailing: const Icon(Icons.chevron_right),
+    return settingActionTile(
+      icon: Icons.key_outlined,
+      title: t.settings.customEncryptionKey,
+      subtitle: key.isEmpty
+          ? t.settings.customEncryptionKeyDefault
+          : t.settings.customEncryptionKeySet,
       onTap: () => _editEncryptionKey(state.syncSetting, cubit),
     );
   }
@@ -209,67 +217,65 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
     SyncSettingState syncSetting,
     GlobalSettingCubit cubit,
   ) async {
-    var input = syncSetting.encryptionKey;
-    final formKey = GlobalKey<FormState>();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.settings.customEncryptionKey),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Form(
-              key: formKey,
-              child: TextFormField(
-                initialValue: input,
-                autofocus: true,
-                enableSuggestions: false,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  labelText: t.settings.customEncryptionKeyHint,
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: (value) => input = value,
-                validator: (value) {
-                  final raw = value ?? '';
-                  // 旧密钥可能不满足新规则；原样不改时直接放行。
-                  if (raw == syncSetting.encryptionKey) return null;
-                  if (raw.isEmpty) return null;
-                  if (raw.contains(RegExp(r'\s'))) {
-                    return t.settings.customEncryptionKeyNoSpaces;
-                  }
-                  if (raw.length < _syncKeyMinLength) {
-                    return t.settings.customEncryptionKeyTooShort(
-                      min: _syncKeyMinLength,
-                    );
-                  }
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              t.settings.customEncryptionKeySubtitle,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+    final controller = TextEditingController(text: syncSetting.encryptionKey);
+    final error = ValueNotifier<String?>(null);
+
+    final result = await showCalmDialog<String>(
+      context,
+      title: t.settings.customEncryptionKey,
+      subtitle: t.settings.customEncryptionKeySubtitle,
+      icon: Icons.key_outlined,
+      bodyBuilder: (dialogContext) => ValueListenableBuilder<String?>(
+        valueListenable: error,
+        builder: (context, errorText, _) => CalmTextField(
+          controller: controller,
+          hintText: t.settings.customEncryptionKeyHint,
+          prefixIcon: Icons.vpn_key_outlined,
+          obscureText: true,
+          errorText: errorText,
+          onChanged: (_) {
+            if (error.value != null) error.value = null;
+          },
         ),
-        actions: [
-          TextButton(
-            child: Text(t.common.cancel),
-            onPressed: () => Navigator.pop(context),
-          ),
-          TextButton(
-            child: Text(t.common.ok),
-            onPressed: () {
-              if (formKey.currentState?.validate() != true) return;
-              Navigator.pop(context, input);
-            },
-          ),
-        ],
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () {
+            final raw = controller.text;
+            // 旧密钥可能不满足新规则；原样不改时直接放行。
+            if (raw == syncSetting.encryptionKey) {
+              Navigator.of(dialogContext).pop(raw);
+              return;
+            }
+            if (raw.isEmpty) {
+              Navigator.of(dialogContext).pop(raw);
+              return;
+            }
+            if (raw.contains(RegExp(r'\s'))) {
+              error.value = t.settings.customEncryptionKeyNoSpaces;
+              return;
+            }
+            if (raw.length < _syncKeyMinLength) {
+              error.value = t.settings.customEncryptionKeyTooShort(
+                min: _syncKeyMinLength,
+              );
+              return;
+            }
+            Navigator.of(dialogContext).pop(raw);
+          },
+        ),
+      ],
     );
+    controller.dispose();
+    error.dispose();
+
     if (result == null || result == syncSetting.encryptionKey) {
       return;
     }
@@ -286,10 +292,10 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
       SyncServiceType.s3: t.settings.syncServiceS3,
     };
 
-    return ListTile(
-      leading: const Icon(Icons.storage_outlined),
-      title: Text(t.settings.syncService),
-      subtitle: Text(t.settings.syncServiceSubtitle),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.storage_outlined),
+      title: t.settings.syncService,
+      subtitle: t.settings.syncServiceSubtitle,
       trailing: FluentDropdown<SyncServiceType>(
         value: state.syncSetting.syncServiceType,
         displayValue: syncServiceItems[state.syncSetting.syncServiceType]!,
@@ -310,11 +316,10 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
   }
 
   Widget _autoSync(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.cloud_sync_outlined),
-      title: Text(t.settings.autoSync),
-      subtitle: Text(t.settings.autoSyncSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.cloud_sync_outlined,
+      title: t.settings.autoSync,
+      subtitle: t.settings.autoSyncSubtitle,
       value: state.syncSetting.autoSync,
       onChanged: (bool value) {
         cubit.updateSyncSetting((current) => current.copyWith(autoSync: value));
@@ -327,20 +332,24 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
 
   Widget _syncInterval(GlobalSettingState state, GlobalSettingCubit cubit) {
     final syncSetting = state.syncSetting;
-    return ListTile(
-      leading: const Icon(Icons.timer_outlined),
-      title: Text(t.settings.syncInterval),
-      subtitle: Text(t.settings.syncIntervalSubtitle),
+    return settingActionTile(
+      icon: Icons.timer_outlined,
+      title: t.settings.syncInterval,
+      subtitle: t.settings.syncIntervalSubtitle,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '${syncSetting.syncInterval} ${syncSetting.syncIntervalUnit.label}',
-            style: Theme.of(context).textTheme.titleMedium
-                ?.copyWith(fontSize: 18, fontWeight: FontWeight.w500),
+          CalmBadge(
+            label:
+                '${syncSetting.syncInterval} ${syncSetting.syncIntervalUnit.label}',
+            tone: CalmBadgeTone.tonal,
           ),
-          const SizedBox(width: 4),
-          const Icon(Icons.chevron_right),
+          const SizedBox(width: 6),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: context.calm.text3,
+          ),
         ],
       ),
       onTap: () => _editSyncInterval(syncSetting, cubit),
@@ -351,77 +360,85 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
     SyncSettingState syncSetting,
     GlobalSettingCubit cubit,
   ) async {
-    var input = syncSetting.syncInterval.toString();
+    final controller = TextEditingController(
+      text: syncSetting.syncInterval.toString(),
+    );
+    final error = ValueNotifier<String?>(null);
     var unit = syncSetting.syncIntervalUnit;
-    String? errorText;
 
-    final result = await showDialog<({int value, SyncIntervalUnit unit})>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(t.settings.syncInterval),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                initialValue: input,
-                autofocus: true,
+    final result = await showCalmDialog<({int value, SyncIntervalUnit unit})>(
+      context,
+      title: t.settings.syncInterval,
+      subtitle: t.settings.syncIntervalSubtitle,
+      icon: Icons.timer_outlined,
+      bodyBuilder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ValueListenableBuilder<String?>(
+              valueListenable: error,
+              builder: (context, errorText, _) => CalmTextField(
+                controller: controller,
+                hintText: t.settings.syncIntervalValue,
+                prefixIcon: Icons.timer_outlined,
+                errorText: errorText,
                 keyboardType: TextInputType.number,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                onChanged: (value) => input = value.trim(),
-                decoration: InputDecoration(
-                  labelText: t.settings.syncIntervalValue,
-                  errorText: errorText,
-                  border: const OutlineInputBorder(),
-                ),
+                onChanged: (_) {
+                  if (error.value != null) error.value = null;
+                },
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text(t.settings.syncIntervalUnitLabel),
-                  const Spacer(),
-                  FluentDropdown<SyncIntervalUnit>(
-                    value: unit,
-                    displayValue: unit.label,
-                    items: <SyncIntervalUnit, String>{
-                      SyncIntervalUnit.second:
-                          t.settings.syncIntervalUnitSecond,
-                      SyncIntervalUnit.minute:
-                          t.settings.syncIntervalUnitMinute,
-                      SyncIntervalUnit.hour: t.settings.syncIntervalUnitHour,
-                    },
-                    onChanged: (value) {
-                      setDialogState(() => unit = value);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: Text(t.common.cancel),
-              onPressed: () => Navigator.pop(context),
             ),
-            TextButton(
-              child: Text(t.common.ok),
-              onPressed: () {
-                final value = int.tryParse(input);
-                if (value == null || value <= 0) {
-                  setDialogState(
-                    () => errorText = t.settings.syncIntervalInvalid,
-                  );
-                  return;
-                }
-                Navigator.pop(context, (value: value, unit: unit));
-              },
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Text(
+                  t.settings.syncIntervalUnitLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: dialogContext.calm.text2,
+                  ),
+                ),
+                const Spacer(),
+                FluentDropdown<SyncIntervalUnit>(
+                  value: unit,
+                  displayValue: unit.label,
+                  items: <SyncIntervalUnit, String>{
+                    SyncIntervalUnit.second: t.settings.syncIntervalUnitSecond,
+                    SyncIntervalUnit.minute: t.settings.syncIntervalUnitMinute,
+                    SyncIntervalUnit.hour: t.settings.syncIntervalUnitHour,
+                  },
+                  onChanged: (value) {
+                    setDialogState(() => unit = value);
+                  },
+                ),
+              ],
             ),
           ],
         ),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () {
+            final value = int.tryParse(controller.text.trim());
+            if (value == null || value <= 0) {
+              error.value = t.settings.syncIntervalInvalid;
+              return;
+            }
+            Navigator.of(dialogContext).pop((value: value, unit: unit));
+          },
+        ),
+      ],
     );
+    controller.dispose();
+    error.dispose();
 
     if (result == null) {
       return;
@@ -440,11 +457,10 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
   }
 
   Widget _syncNotify(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.notifications_active_outlined),
-      title: Text(t.settings.syncNotify),
-      subtitle: Text(t.settings.syncNotifySubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.notifications_active_outlined,
+      title: t.settings.syncNotify,
+      subtitle: t.settings.syncNotifySubtitle,
       value: state.syncSetting.syncNotify,
       onChanged: (bool value) {
         cubit.updateSyncSetting(
@@ -455,11 +471,10 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
   }
 
   Widget _syncSettings(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.tune_outlined),
-      title: Text(t.settings.syncSettings),
-      subtitle: Text(t.settings.syncSettingsSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.tune_outlined,
+      title: t.settings.syncSettings,
+      subtitle: t.settings.syncSettingsSubtitle,
       value: state.syncSetting.syncSettings,
       onChanged: (bool value) {
         cubit.updateSyncSetting(
@@ -470,11 +485,10 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
   }
 
   Widget _syncPlugins(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.extension_outlined),
-      title: Text(t.settings.syncPlugins),
-      subtitle: Text(t.settings.syncPluginsSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.extension_outlined,
+      title: t.settings.syncPlugins,
+      subtitle: t.settings.syncPluginsSubtitle,
       value: state.syncSetting.syncPlugins,
       onChanged: (bool value) {
         cubit.updateSyncSetting(

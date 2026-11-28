@@ -21,65 +21,68 @@ class ContentNetworkSettingPage extends StatelessWidget {
     return SettingPageShell(
       title: t.settings.contentAndNetwork,
       child: ListView(
+        padding: kSettingPagePadding,
         children: [
           settingSectionTitle(
             context,
             t.settings.content,
             icon: Icons.filter_alt_outlined,
           ),
-          editMaskedKeywords(context),
-          editMaskedCommentKeywords(context),
-          if (state.showSearchBookmark) _searchBookmarkProbePages(state, cubit),
-          _chineseConvertMode(state, cubit),
-          const SizedBox(height: 8),
-          const Divider(height: 1, thickness: 0.3),
+          settingCardGroup([
+            editMaskedKeywords(context),
+            editMaskedCommentKeywords(context),
+            if (state.showSearchBookmark)
+              _searchBookmarkProbePages(state, cubit),
+            _chineseConvertMode(state, cubit),
+          ]),
           settingSectionTitle(
             context,
             t.settings.network,
             icon: Icons.wifi_outlined,
           ),
-          proxyToggle(
-            context,
-            enabled: state.proxySetting.enabled,
-            type: state.proxySetting.type,
-            currentProxy: state.proxySetting.address,
-          ),
-          settingCategoryTile(
-            icon: Icons.dns_outlined,
-            title: t.settings.doh,
-            subtitle: state.dohSetting.enabled
-                ? t.settings.dohProviderCount(
-                    count: state.dohSetting.providers.length,
-                  )
-                : t.common.disabled,
-            onTap: () => context.pushRoute(const DohSettingRoute()),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.lan_outlined),
-            title: Text(t.settings.blockPrivateNetwork),
-            subtitle: Text(t.settings.blockPrivateNetworkSubtitle),
-            thumbIcon: kSettingSwitchThumbIcon,
-            value: state.blockPrivateNetwork,
-            onChanged: (value) {
-              cubit.updateState(
-                (current) => current.copyWith(blockPrivateNetwork: value),
-              );
-              // 立刻生效：配置变更会同步到已加载的插件。
-              applyPrivateNetworkPolicy(blockPrivateNetwork: value);
-            },
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.download_outlined),
-            title: Text(t.settings.retryDownloadUntilSuccess),
-            subtitle: Text(t.settings.retryDownloadUntilSuccessSubtitle),
-            thumbIcon: kSettingSwitchThumbIcon,
-            value: state.retryDownloadUntilSuccess,
-            onChanged: (value) {
-              cubit.updateState(
-                (current) => current.copyWith(retryDownloadUntilSuccess: value),
-              );
-            },
-          ),
+          settingCardGroup([
+            proxyToggle(
+              context,
+              enabled: state.proxySetting.enabled,
+              type: state.proxySetting.type,
+              currentProxy: state.proxySetting.address,
+            ),
+            settingCategoryTile(
+              icon: Icons.dns_outlined,
+              title: t.settings.doh,
+              subtitle: state.dohSetting.enabled
+                  ? t.settings.dohProviderCount(
+                      count: state.dohSetting.providers.length,
+                    )
+                  : t.common.disabled,
+              onTap: () => context.pushRoute(const DohSettingRoute()),
+            ),
+            settingSwitchTile(
+              icon: Icons.lan_outlined,
+              title: t.settings.blockPrivateNetwork,
+              subtitle: t.settings.blockPrivateNetworkSubtitle,
+              value: state.blockPrivateNetwork,
+              onChanged: (value) {
+                cubit.updateState(
+                  (current) => current.copyWith(blockPrivateNetwork: value),
+                );
+                // 立刻生效：配置变更会同步到已加载的插件。
+                applyPrivateNetworkPolicy(blockPrivateNetwork: value);
+              },
+            ),
+            settingSwitchTile(
+              icon: Icons.download_outlined,
+              title: t.settings.retryDownloadUntilSuccess,
+              subtitle: t.settings.retryDownloadUntilSuccessSubtitle,
+              value: state.retryDownloadUntilSuccess,
+              onChanged: (value) {
+                cubit.updateState(
+                  (current) =>
+                      current.copyWith(retryDownloadUntilSuccess: value),
+                );
+              },
+            ),
+          ]),
           // _updateAccelerate(state, cubit),
           const SizedBox(height: 32),
         ],
@@ -95,10 +98,10 @@ class ContentNetworkSettingPage extends StatelessWidget {
     final current = options.contains(state.searchBookmarkProbePages)
         ? state.searchBookmarkProbePages
         : 3;
-    return ListTile(
-      leading: const Icon(Icons.manage_search_outlined),
-      title: Text(t.searchBookmark.probePages),
-      subtitle: Text(t.searchBookmark.probePagesSubtitle),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.manage_search_outlined),
+      title: t.searchBookmark.probePages,
+      subtitle: t.searchBookmark.probePagesSubtitle,
       trailing: FluentDropdown<int>(
         value: current,
         displayValue: '$current',
@@ -122,10 +125,10 @@ class ContentNetworkSettingPage extends StatelessWidget {
       ChineseConvertMode.traditional: t.settings.chineseConvertTraditional,
     };
 
-    return ListTile(
-      leading: const Icon(Icons.translate_outlined),
-      title: Text(t.settings.chineseConvert),
-      subtitle: Text(t.settings.chineseConvertSubtitle),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.translate_outlined),
+      title: t.settings.chineseConvert,
+      subtitle: t.settings.chineseConvertSubtitle,
       trailing: FluentDropdown<ChineseConvertMode>(
         value: state.chineseConvertMode,
         displayValue: chineseConvertItems[state.chineseConvertMode]!,
@@ -141,11 +144,10 @@ class ContentNetworkSettingPage extends StatelessWidget {
   }
 
   // Widget _updateAccelerate(GlobalSettingState state, GlobalSettingCubit cubit) {
-  //   return SwitchListTile(
-  //     secondary: const Icon(Icons.rocket_launch_outlined),
-  //     title: Text(t.settings.updateAccelerate),
-  //     subtitle: Text(t.settings.updateAccelerateSubtitle),
-  //     thumbIcon: kSettingSwitchThumbIcon,
+  //   return settingSwitchTile(
+  //     icon: Icons.rocket_launch_outlined,
+  //     title: t.settings.updateAccelerate,
+  //     subtitle: t.settings.updateAccelerateSubtitle,
   //     value: state.updateAccelerate,
   //     onChanged: (bool value) {
   //       cubit.updateState(

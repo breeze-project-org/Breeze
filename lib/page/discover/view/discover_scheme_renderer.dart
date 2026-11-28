@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/type/pipe.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/device/responsive.dart';
 import 'package:zephyr/util/json/json_value.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
@@ -44,21 +44,14 @@ class DiscoverSchemeRenderer {
     final children = <Widget>[content];
     if (isLoadingMore) {
       children.add(
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Center(child: CircularProgressIndicator()),
-        ),
+        const CalmBottomLoader(status: CalmBottomLoaderStatus.loading),
       );
     } else if (showLoadMoreRetry) {
       children.add(
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Center(
-            child: ElevatedButton(
-              onPressed: onRetryLoadMore,
-              child: Text(t.searchResult.retry),
-            ),
-          ),
+        CalmBottomLoader(
+          status: CalmBottomLoaderStatus.error,
+          errorText: t.searchResult.retry,
+          onRetry: onRetryLoadMore,
         ),
       );
     }
@@ -145,27 +138,15 @@ class DiscoverSchemeRenderer {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
       child: Wrap(
-        spacing: 10,
-        runSpacing: 5,
+        spacing: 6,
+        runSpacing: 6,
         children: items.map((item) {
           final label = item['label']?.toString() ?? '';
-          return GestureDetector(
+          return CalmInputChip(
+            label: label.let(convertChineseForDisplay),
             onTap: () => onAction(asJsonMap(item['action'])),
-            child: Chip(
-              backgroundColor: context.backgroundColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              label: Text(
-                label.let(convertChineseForDisplay),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: context.theme.colorScheme.primary,
-                ),
-              ),
-            ),
           );
         }).toList(),
       ),
@@ -209,7 +190,7 @@ class DiscoverSchemeRenderer {
               AspectRatio(
                 aspectRatio: 1,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                   child: LayoutBuilder(
                     builder: (context, constraints) => CoverWidget(
                       fileServer: coverUrl,
@@ -229,7 +210,12 @@ class DiscoverSchemeRenderer {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: context.textColor, fontSize: 14),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: context.calm.text2,
+                  height: 1.3,
+                ),
               ),
             ],
           ),

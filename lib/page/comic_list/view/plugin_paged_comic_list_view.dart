@@ -5,6 +5,7 @@ import 'package:zephyr/page/comic_list/cubit/plugin_paged_comic_list_state.dart'
 import 'package:zephyr/page/comic_list/view/plugin_comic_grid_sliver.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_mapper.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/error_view.dart';
 
 export 'package:zephyr/page/comic_list/cubit/plugin_paged_comic_list_cubit.dart';
@@ -111,7 +112,7 @@ class _PluginPagedComicListBodyState extends State<_PluginPagedComicListBody>
                 slivers: [
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: CalmLoading(size: 22)),
                   ),
                 ],
               );
@@ -151,9 +152,15 @@ class _PluginPagedComicListBodyState extends State<_PluginPagedComicListBody>
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
-              child: Text(
-                t.comicList.nothingHere,
-                style: const TextStyle(fontSize: 20.0),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: CalmEmptyState(
+                    icon: Icons.inbox_rounded,
+                    title: t.comicList.nothingHere,
+                  ),
+                ),
               ),
             ),
           ),

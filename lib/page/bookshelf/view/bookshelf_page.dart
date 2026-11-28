@@ -8,8 +8,9 @@ import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/bookshelf/bookshelf.dart';
 import 'package:zephyr/page/search/widget/search_input_dialog.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/async/debouncer.dart';
+import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
 class BookshelfPage extends StatelessWidget {
@@ -183,17 +184,36 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
               _hideFoldersOf(_currentMode(), previous) !=
               _hideFoldersOf(_currentMode(), current),
           builder: (context, settingState) {
-            final colorScheme = context.theme.colorScheme;
-            return IconButton(
-              tooltip: t.bookshelf.filter,
-              icon: _hasActiveFilter(searchState, settingState)
-                  ? Badge(
-                      smallSize: 8,
-                      backgroundColor: colorScheme.primary,
-                      child: Icon(Icons.tune, color: colorScheme.primary),
-                    )
-                  : const Icon(Icons.tune),
-              onPressed: onPressed,
+            final c = context.calm;
+            final hasActiveFilter = _hasActiveFilter(searchState, settingState);
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CalmIconButton(
+                  icon: Icons.tune_rounded,
+                  tooltip: t.bookshelf.filter,
+                  selected: hasActiveFilter,
+                  iconSize: 17,
+                  onPressed: onPressed,
+                ),
+                // 筛选生效时右上角挂个小圆点：收起弹窗后仍能一眼看到状态。
+                if (hasActiveFilter)
+                  Positioned(
+                    right: 2,
+                    top: 2,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: c.accent,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: c.surface, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             );
           },
         );
@@ -285,12 +305,15 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
     if (_isSearchExpanded) {
       return Row(
         children: [
-          IconButton(
+          CalmIconButton(
+            icon: Icons.arrow_back_rounded,
             tooltip: t.common.back,
-            icon: const Icon(Icons.arrow_back),
+            iconSize: 17,
             onPressed: _exitSearch,
           ),
+          const SizedBox(width: 4),
           Expanded(child: _buildShelfSearchField(autoExpand: true)),
+          const SizedBox(width: 4),
           _buildFilterButton(onPressed: _openFilterFromSearch),
         ],
       );
@@ -300,60 +323,28 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
       children: [
         _buildSleekTabs(),
         const Spacer(),
-        IconButton(icon: const Icon(Icons.search), onPressed: _expandSearch),
+        CalmIconButton(
+          icon: Icons.search_rounded,
+          tooltip: t.common.search,
+          iconSize: 17,
+          onPressed: _expandSearch,
+        ),
+        const SizedBox(width: 6),
         _buildFilterButton(onPressed: _openFilter),
       ],
     );
   }
 
+  /// 顶栏胶囊分段切换器：`c.surface2` 轨道 + `c.surface` 浮起选中段。
   Widget _buildSleekTabs() {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.5,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(_labels.length, (index) {
-          final isSelected = _currentIndex == index;
-          return GestureDetector(
-            onTap: () => _onTabChanged(index),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? context.theme.colorScheme.surface
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Text(
-                _labels[index],
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  fontSize: 14,
-                  color: isSelected
-                      ? context.textColor
-                      : context.textColor.withValues(alpha: 0.6),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
+    final options = <({int value, String label, IconData? icon})>[
+      for (var i = 0; i < _labels.length; i++)
+        (value: i, label: _labels[i], icon: null),
+    ];
+    return CalmSegmentedControl<int>(
+      options: options,
+      value: _currentIndex,
+      onChanged: _onTabChanged,
     );
   }
 
@@ -491,8 +482,7 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
         .toList();
 
     if (availableSources.isEmpty && currentMode == ShelfPageMode.history) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(t.bookshelf.noFilterSource)));
+      showInfoToast(t.bookshelf.noFilterSource);
       return;
     }
 

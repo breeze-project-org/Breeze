@@ -2,8 +2,9 @@ import 'package:auto_route/annotations.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as path;
-import 'package:zephyr/util/font/font_profile.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/page/setting/common/setting_ui.dart';
+import 'package:zephyr/util/font/font_profile.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
@@ -15,43 +16,55 @@ class FontSettingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          t.fontSetting.title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+    return SettingPageShell(
+      title: t.fontSetting.title,
+      actions: [
+        CalmIconButton(
+          icon: Icons.restart_alt_rounded,
+          tooltip: t.fontSetting.clear,
+          onPressed: _clearAll,
         ),
-        actions: [
-          IconButton(
-            tooltip: t.fontSetting.clear,
-            onPressed: _clearAll,
-            icon: const Icon(Icons.restart_alt_outlined),
-          ),
-        ],
-      ),
-      body: AnimatedBuilder(
+      ],
+      child: AnimatedBuilder(
         animation: FontProfileController.instance,
         builder: (context, _) {
           final controller = FontProfileController.instance;
           return ListView(
+            padding: kSettingPagePadding,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(t.fontSetting.hint),
+              CalmStatusBanner(title: t.fontSetting.hint),
+              settingSectionTitle(
+                context,
+                t.fontSetting.title,
+                icon: Icons.font_download_outlined,
               ),
-              ..._weights.map((weight) {
-                final filePath = controller.pathForWeight(weight) ?? '';
-                return _FontWeightTile(
-                  weight: weight,
-                  label: fontWeightLabels[weight]!,
-                  filePath: filePath,
-                  sampleText: _sampleText,
-                  onPick: () => _pickWeight(weight),
-                  onClear: filePath.isEmpty
-                      ? null
-                      : () => _saveWeight(weight, ''),
-                );
-              }),
+              CalmCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (var i = 0; i < _weights.length; i++) ...[
+                      _FontWeightTile(
+                        weight: _weights[i],
+                        label: fontWeightLabels[_weights[i]]!,
+                        filePath:
+                            controller.pathForWeight(_weights[i]) ?? '',
+                        sampleText: _sampleText,
+                        onPick: () => _pickWeight(_weights[i]),
+                        onClear:
+                            (controller.pathForWeight(_weights[i]) ?? '')
+                                    .isEmpty
+                                ? null
+                                : () => _saveWeight(_weights[i], ''),
+                      ),
+                      if (i != _weights.length - 1)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: CalmDivider(),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
             ],
           );
@@ -88,6 +101,7 @@ class FontSettingPage extends StatelessWidget {
   }
 }
 
+/// 单个字重行：左侧 w100–w900 徽章 + 文件名/实时预览 + 选文件/清除图标按钮。
 class _FontWeightTile extends StatelessWidget {
   const _FontWeightTile({
     required this.weight,
@@ -107,59 +121,89 @@ class _FontWeightTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.calm;
     final fontWeight = _toFontWeight(weight);
+    // 实时预览：直接用当前字重加载的自定义字体渲染示例文本。
     final previewStyle = FontProfileController.instance.applyStyleForWeight(
-      TextStyle(fontWeight: fontWeight, fontSize: 16),
+      TextStyle(fontWeight: fontWeight, fontSize: 13.5, color: c.text),
       weight,
     );
 
-    return ListTile(
-      leading: SizedBox(
-        width: 86,
-        child: Text(
-          'w$weight\n$label',
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      title: Text(
-        filePath.isEmpty
-            ? t.fontSetting.noFileSelected
-            : path.basename(filePath),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (filePath.isNotEmpty)
-              Text(
-                filePath,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall,
-              ),
-            Text(sampleText, style: previewStyle),
-          ],
-        ),
-      ),
-      trailing: Wrap(
-        spacing: 4,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: c.rowVPadding),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          SizedBox(
+            width: 44,
+            child: Center(child: CalmBadge(label: 'w$weight')),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        filePath.isEmpty
+                            ? t.fontSetting.noFileSelected
+                            : path.basename(filePath),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                          color: c.text,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      label,
+                      style: TextStyle(fontSize: 10.5, color: c.text3),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  sampleText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: previewStyle,
+                ),
+                if (filePath.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    filePath,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10, color: c.text3),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
           if (onClear != null)
-            IconButton(
+            CalmIconButton(
+              icon: Icons.close_rounded,
               tooltip: t.fontSetting.clearFile,
               onPressed: onClear,
-              icon: const Icon(Icons.close_outlined),
+              size: 28,
+              iconSize: 14,
             ),
-          IconButton(
+          const SizedBox(width: 4),
+          CalmIconButton(
+            icon: Icons.folder_open_rounded,
             tooltip: t.fontSetting.selectFile,
+            selected: filePath.isNotEmpty,
             onPressed: onPick,
-            icon: const Icon(Icons.folder_open_outlined),
+            size: 28,
+            iconSize: 15,
           ),
         ],
       ),

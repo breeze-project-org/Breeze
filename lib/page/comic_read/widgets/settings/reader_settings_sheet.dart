@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/ohos/platform.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/cubit/comic_read_preference_cubit.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
 import 'package:zephyr/widgets/fluent_dropdown.dart';
 
 part 'reader_settings_gesture_tab.dart';
@@ -128,25 +128,26 @@ class _ReaderSettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
+    final c = context.calm;
 
     final perComicAvailable =
         source.trim().isNotEmpty && comicId.trim().isNotEmpty;
     final tabLength = perComicAvailable ? 4 : 3;
 
-    return Material(
-      color: colorScheme.surface.withValues(alpha: 0.96),
-      elevation: 16,
-      shadowColor: Colors.black.withValues(alpha: 0.24),
-      borderRadius: BorderRadius.circular(24),
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: c.border),
+        boxShadow: c.shadowMd,
+      ),
       clipBehavior: Clip.antiAlias,
       child: DefaultTabController(
         length: tabLength,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _ReaderSettingsHeader(showPerComicTab: perComicAvailable),
-            const SizedBox(height: 8),
             Expanded(
               child: TabBarView(
                 children: [
@@ -178,7 +179,7 @@ class _ReaderSettingsCard extends StatelessWidget {
   }
 }
 
-/// 设置页头部：把手 + TabBar（阅读页入口多一个“本漫”tab）。
+/// 设置页头部：抓手 + 标题行 + 轻盈 TabBar（阅读页入口多一个“本漫”tab）。
 class _ReaderSettingsHeader extends StatelessWidget {
   final bool showPerComicTab;
 
@@ -186,10 +187,10 @@ class _ReaderSettingsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
+    final c = context.calm;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -198,19 +199,47 @@ class _ReaderSettingsHeader extends StatelessWidget {
             onTap: () => Navigator.of(context).maybePop(),
             child: Center(
               child: Container(
-                width: 40,
+                width: 38,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: colorScheme.outlineVariant,
+                  color: c.borderStrong,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          Text(
+            t.reader.settings,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: c.text,
+            ),
+          ),
+          const SizedBox(height: 2),
           TabBar(
-            dividerColor: Colors.transparent,
-            labelStyle: context.theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            padding: EdgeInsets.zero,
+            dividerHeight: 0,
+            indicatorColor: c.accent,
+            indicatorSize: TabBarIndicatorSize.label,
+            indicatorWeight: 2,
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: const WidgetStatePropertyAll<Color>(
+              Colors.transparent,
+            ),
+            labelColor: c.text,
+            unselectedLabelColor: c.text3,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+            labelStyle: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
             ),
             tabs: [
               Tab(text: t.reader.settings),
@@ -227,29 +256,15 @@ class _ReaderSettingsHeader extends StatelessWidget {
 
 class _SettingsNoticeCard extends StatelessWidget {
   final String text;
+  final CalmTone tone;
 
-  const _SettingsNoticeCard({required this.text});
+  const _SettingsNoticeCard({required this.text, this.tone = CalmTone.info});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
-        ),
-      ),
-      child: Text(
-        text,
-        style: context.theme.textTheme.bodySmall?.copyWith(
-          color: colorScheme.onSecondaryContainer,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+      child: CalmStatusBanner(title: text, tone: tone),
     );
   }
 }
@@ -262,7 +277,7 @@ class _SettingsTabContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       child: child,
     );
   }
@@ -321,6 +336,10 @@ class _PerComicScope extends InheritedWidget {
   }
 }
 
+/// 一个设置分组：轻盈分组头 + 一张零内边距圆角卡片，行间用柔和细线分隔。
+///
+/// 卡内不再套卡：开关行 / 下拉行 / 滑块行都直接铺在卡片上，
+/// 芯片组与提示条作为带内边距的整块参与分隔。
 class _SettingsSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -336,28 +355,53 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
+    final rows = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      rows.add(children[i]);
+      if (i != children.length - 1) {
+        rows.add(
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: CalmDivider(),
+          ),
+        );
+      }
+    }
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: context.theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            ...?trailing != null ? [trailing!] : null,
-          ],
+        CalmSectionHeader(title: title, trailing: trailing),
+        const SizedBox(height: 8),
+        // 抽屉本身就是一张 surface 卡片，分组再用 surface 会变成“卡套卡”；
+        // 这里用画布色（bg）做柔和分组块，分割线 / 悬停 / 胶囊芯片都还能分层。
+        CalmCard(
+          color: c.bg,
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: rows,
+          ),
         ),
-        const SizedBox(height: 10),
-        for (int i = 0; i < children.length; i++) ...[
-          children[i],
-          if (i != children.length - 1) const SizedBox(height: 10),
-        ],
       ],
+    );
+  }
+}
+
+/// 分组内的一排胶囊芯片（阅读模式 / 主题 / 背景 / 位置等单选）。
+class _SettingsChipRow extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SettingsChipRow(this.children);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+      child: Wrap(spacing: 8, runSpacing: 8, children: children),
     );
   }
 }
@@ -375,42 +419,15 @@ class _SettingsChoiceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
-
-    return ChoiceChip(
-      label: Text(title),
+    return CalmFilterChip(
+      label: title,
       selected: selected,
-      showCheckmark: false,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: VisualDensity.compact,
-      backgroundColor: colorScheme.surfaceContainerHighest.withValues(
-        alpha: 0.45,
-      ),
-      selectedColor: colorScheme.primaryContainer.withValues(alpha: 0.92),
-      side: BorderSide(
-        color: selected
-            ? colorScheme.primary
-            : colorScheme.outlineVariant.withValues(alpha: 0.7),
-        width: selected ? 1.4 : 1,
-      ),
-      labelStyle: context.theme.textTheme.bodyMedium?.copyWith(
-        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-        color: selected
-            ? colorScheme.onPrimaryContainer
-            : colorScheme.onSurface,
-      ),
       onSelected: (_) => onTap(),
     );
   }
 }
 
 class _SettingsSwitchTile extends StatelessWidget {
-  static const WidgetStateProperty<Icon> _thumbIcon =
-      WidgetStateProperty<Icon>.fromMap(<WidgetStatesConstraint, Icon>{
-        WidgetState.selected: Icon(Icons.check),
-        WidgetState.any: Icon(Icons.close),
-      });
-
   final String title;
   final String subtitle;
   final bool value;
@@ -425,33 +442,11 @@ class _SettingsSwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.7),
-        ),
-      ),
-      child: ListTile(
-        dense: true,
-        visualDensity: VisualDensity.compact,
-        contentPadding: const EdgeInsets.only(left: 12, right: 8),
-        title: Text(title),
-        subtitle: Text(
-          subtitle,
-          style: context.theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        trailing: Switch.adaptive(
-          thumbIcon: _thumbIcon,
-          value: value,
-          onChanged: onChanged,
-        ),
-      ),
+    return CalmListTile(
+      title: title,
+      subtitle: subtitle,
+      onTap: () => onChanged(!value),
+      trailing: CalmSwitch(value: value, onChanged: onChanged),
     );
   }
 }
@@ -473,33 +468,14 @@ class _SettingsDropdownTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.7),
-        ),
-      ),
-      child: ListTile(
-        dense: true,
-        visualDensity: VisualDensity.compact,
-        contentPadding: const EdgeInsets.only(left: 12, right: 8),
-        title: Text(title),
-        subtitle: Text(
-          subtitle,
-          style: context.theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        trailing: FluentDropdown<int>(
-          value: value,
-          displayValue: value.toString(),
-          items: {for (final option in values) option: option.toString()},
-          onChanged: onChanged,
-        ),
+    return CalmListTile(
+      title: title,
+      subtitle: subtitle,
+      trailing: FluentDropdown<int>(
+        value: value,
+        displayValue: value.toString(),
+        items: {for (final option in values) option: option.toString()},
+        onChanged: onChanged,
       ),
     );
   }
@@ -528,54 +504,27 @@ class _SettingsSliderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
+    final slider = CalmSlider(
+      label: title,
+      valueText: '$value $suffix',
+      value: value.clamp(min, max).toDouble(),
+      min: min.toDouble(),
+      max: max.toDouble(),
+      divisions: divisions,
+      onChanged: (newValue) {
+        final nextValue = newValue.round().clamp(min, max);
+        if (nextValue != value) {
+          HapticFeedback.selectionClick();
+          onChanged(nextValue);
+        }
+      },
+    );
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(
-          alpha: enabled ? 0.45 : 0.28,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.7),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(title, style: context.theme.textTheme.bodyMedium),
-              const Spacer(),
-              Text(
-                '$value $suffix',
-                style: context.theme.textTheme.bodyMedium?.copyWith(
-                  color: enabled
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          Slider(
-            min: min.toDouble(),
-            max: max.toDouble(),
-            divisions: divisions,
-            value: value.clamp(min, max).toDouble(),
-            label: '$value$suffix',
-            onChanged: !enabled
-                ? null
-                : (newValue) {
-                    final nextValue = newValue.round().clamp(min, max);
-                    if (nextValue != value) {
-                      HapticFeedback.selectionClick();
-                      onChanged(nextValue);
-                    }
-                  },
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: enabled
+          ? slider
+          : IgnorePointer(child: Opacity(opacity: 0.45, child: slider)),
     );
   }
 }

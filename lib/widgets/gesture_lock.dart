@@ -4,17 +4,26 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 
 Future<List<int>?> showGesturePasswordSetupDialog(
   BuildContext context, {
   required String title,
   required String confirmTitle,
 }) {
-  return showDialog<List<int>>(
-    context: context,
+  return showCalmDialog<List<int>>(
+    context,
+    title: title,
+    icon: Icons.gesture_rounded,
+    bodyBuilder: (_) => _GesturePatternSetupBody(confirmTitle: confirmTitle),
+    actionsBuilder: (dialogContext) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(dialogContext).pop(),
+      ),
+    ],
     barrierDismissible: false,
-    builder: (context) =>
-        _GesturePasswordSetupDialog(title: title, confirmTitle: confirmTitle),
   );
 }
 
@@ -25,15 +34,23 @@ Future<GestureUnlockResult?> showGestureUnlockDialog(
   String hint = '',
   bool showForgotPassword = false,
 }) {
-  return showDialog<GestureUnlockResult>(
-    context: context,
+  return showCalmDialog<GestureUnlockResult>(
+    context,
+    title: title.isEmpty ? t.gestureLock.gestureTitle : title,
+    icon: Icons.lock_outline_rounded,
+    bodyBuilder: (_) =>
+        _GestureUnlockBody(expectedHash: expectedHash, hint: hint),
+    actionsBuilder: (dialogContext) => [
+      if (showForgotPassword)
+        CalmButton(
+          label: t.gestureLock.forgotPassword,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () =>
+              Navigator.of(dialogContext)
+                  .pop(GestureUnlockResult.forgotPassword),
+        ),
+    ],
     barrierDismissible: false,
-    builder: (context) => _GestureUnlockDialog(
-      expectedHash: expectedHash,
-      title: title,
-      hint: hint,
-      showForgotPassword: showForgotPassword,
-    ),
   );
 }
 
@@ -50,11 +67,25 @@ Future<String?> showPinCodeSetupDialog(
   required String title,
   required String confirmTitle,
 }) {
-  return showDialog<String>(
-    context: context,
+  final bodyKey = GlobalKey<_PinSetupBodyState>();
+  return showCalmDialog<String>(
+    context,
+    title: title,
+    icon: Icons.pin_outlined,
+    bodyBuilder: (_) => _PinSetupBody(key: bodyKey, confirmTitle: confirmTitle),
+    actionsBuilder: (dialogContext) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(dialogContext).pop(),
+      ),
+      CalmButton(
+        label: t.common.ok,
+        variant: CalmButtonVariant.primary,
+        onPressed: () => bodyKey.currentState?.submit(),
+      ),
+    ],
     barrierDismissible: false,
-    builder: (context) =>
-        _PinCodeSetupDialog(title: title, confirmTitle: confirmTitle),
   );
 }
 
@@ -64,20 +95,43 @@ Future<bool?> showPinVerifyDialog(
   String title = '',
   String hint = '',
 }) {
-  return showDialog<bool>(
-    context: context,
+  final bodyKey = GlobalKey<_PinVerifyBodyState>();
+  return showCalmDialog<bool>(
+    context,
+    title: title.isEmpty ? t.gestureLock.pinTitle : title,
+    icon: Icons.password_rounded,
+    bodyBuilder: (_) =>
+        _PinVerifyBody(key: bodyKey, expectedHash: expectedHash, hint: hint),
+    actionsBuilder: (dialogContext) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(dialogContext).pop(false),
+      ),
+      CalmButton(
+        label: t.common.ok,
+        variant: CalmButtonVariant.primary,
+        onPressed: () => bodyKey.currentState?.submit(),
+      ),
+    ],
     barrierDismissible: false,
-    builder: (context) =>
-        _PinVerifyDialog(expectedHash: expectedHash, title: title, hint: hint),
   );
 }
 
 enum GestureUnlockResult { success, forgotPassword }
 
+/// 九宫格手势板：完整保留旧版轨迹采样、去重与完成回调逻辑。
 class AppGesturePatternBoard extends StatefulWidget {
-  const AppGesturePatternBoard({super.key, required this.onCompleted});
+  const AppGesturePatternBoard({
+    super.key,
+    required this.onCompleted,
+    this.error = false,
+  });
 
   final ValueChanged<List<int>> onCompleted;
+
+  /// 校验失败时把圆点与连线染成危险色，给一次即时反馈。
+  final bool error;
 
   @override
   State<AppGesturePatternBoard> createState() => _AppGesturePatternBoardState();
@@ -90,7 +144,7 @@ class _AppGesturePatternBoardState extends State<AppGesturePatternBoard> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final c = context.calm;
     return GestureDetector(
       onPanStart: (details) {
         _selected.clear();
@@ -115,8 +169,8 @@ class _AppGesturePatternBoardState extends State<AppGesturePatternBoard> {
           child: CustomPaint(
             painter: _GesturePatternPainter(
               selected: List<int>.from(_selected),
-              activeColor: colorScheme.primary,
-              inactiveColor: colorScheme.outlineVariant,
+              activeColor: widget.error ? c.danger : c.accent,
+              inactiveColor: c.borderStrong,
             ),
           ),
         ),
@@ -158,61 +212,70 @@ class _AppGesturePatternBoardState extends State<AppGesturePatternBoard> {
   }
 }
 
-class _GesturePasswordSetupDialog extends StatefulWidget {
-  const _GesturePasswordSetupDialog({
-    required this.title,
-    required this.confirmTitle,
-  });
+// --- 手势设置 ---
 
-  final String title;
+class _GesturePatternSetupBody extends StatefulWidget {
+  const _GesturePatternSetupBody({required this.confirmTitle});
+
   final String confirmTitle;
 
   @override
-  State<_GesturePasswordSetupDialog> createState() =>
-      _GesturePasswordSetupDialogState();
+  State<_GesturePatternSetupBody> createState() =>
+      _GesturePatternSetupBodyState();
 }
 
-class _GesturePasswordSetupDialogState
-    extends State<_GesturePasswordSetupDialog> {
+class _GesturePatternSetupBodyState extends State<_GesturePatternSetupBody> {
   List<int>? _firstPattern;
   String _errorText = '';
 
   @override
   Widget build(BuildContext context) {
-    final title = _firstPattern == null ? widget.title : widget.confirmTitle;
-    final hint = _firstPattern == null
-        ? t.gestureLock.setupHintFirst
-        : t.gestureLock.setupHintConfirm;
+    final c = context.calm;
+    final confirming = _firstPattern != null;
+    final hint = confirming
+        ? t.gestureLock.setupHintConfirm
+        : t.gestureLock.setupHintFirst;
 
-    return AlertDialog(
-      title: Text(title),
-      content: SizedBox(
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(hint, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 16),
-            AppGesturePatternBoard(onCompleted: _handleCompleted),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 20,
+            Expanded(
               child: Text(
-                _errorText,
+                hint,
+                textHeightBehavior: kCalmTextHeightBehavior,
+                strutStyle: calmStrut(11.5),
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 13,
+                  fontSize: 11.5,
+                  color: c.text2,
+                  height: 1.35,
+                  leadingDistribution: TextLeadingDistribution.even,
                 ),
               ),
             ),
+            if (confirming) ...[
+              const SizedBox(width: 8),
+              CalmBadge(label: widget.confirmTitle, tone: CalmBadgeTone.tonal),
+            ],
           ],
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(t.common.cancel),
+        const SizedBox(height: 12),
+        Center(
+          child: CalmCard(
+            padding: const EdgeInsets.all(8),
+            radius: 18,
+            color: c.surface2,
+            child: AppGesturePatternBoard(
+              onCompleted: _handleCompleted,
+              error: _errorText.isNotEmpty,
+            ),
+          ),
         ),
+        const SizedBox(height: 10),
+        _GestureErrorLine(text: _errorText),
       ],
     );
   }
@@ -234,7 +297,7 @@ class _GesturePasswordSetupDialogState
     }
 
     if (listEquals(_firstPattern, pattern)) {
-      Navigator.pop(context, pattern);
+      Navigator.of(context).pop(pattern);
       return;
     }
 
@@ -245,67 +308,61 @@ class _GesturePasswordSetupDialogState
   }
 }
 
-class _GestureUnlockDialog extends StatefulWidget {
-  const _GestureUnlockDialog({
-    required this.expectedHash,
-    required this.title,
-    required this.hint,
-    required this.showForgotPassword,
-  });
+// --- 手势解锁 ---
+
+class _GestureUnlockBody extends StatefulWidget {
+  const _GestureUnlockBody({required this.expectedHash, required this.hint});
 
   final String expectedHash;
-  final String title;
   final String hint;
-  final bool showForgotPassword;
 
   @override
-  State<_GestureUnlockDialog> createState() => _GestureUnlockDialogState();
+  State<_GestureUnlockBody> createState() => _GestureUnlockBodyState();
 }
 
-class _GestureUnlockDialogState extends State<_GestureUnlockDialog> {
+class _GestureUnlockBodyState extends State<_GestureUnlockBody> {
   String _errorText = '';
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: SizedBox(
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(widget.hint, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 16),
-            AppGesturePatternBoard(onCompleted: _handleCompleted),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 20,
-              child: Text(
-                _errorText,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 13,
-                ),
-              ),
+    final c = context.calm;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.hint.isNotEmpty)
+          Text(
+            widget.hint,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(11.5),
+            style: TextStyle(
+              fontSize: 11.5,
+              color: c.text2,
+              height: 1.35,
+              leadingDistribution: TextLeadingDistribution.even,
             ),
-          ],
-        ),
-      ),
-      actions: [
-        if (widget.showForgotPassword)
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context, GestureUnlockResult.forgotPassword);
-            },
-            child: Text(t.gestureLock.forgotPassword),
           ),
+        const SizedBox(height: 12),
+        Center(
+          child: CalmCard(
+            padding: const EdgeInsets.all(8),
+            radius: 18,
+            color: c.surface2,
+            child: AppGesturePatternBoard(
+              onCompleted: _handleCompleted,
+              error: _errorText.isNotEmpty,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _GestureErrorLine(text: _errorText),
       ],
     );
   }
 
   void _handleCompleted(List<int> pattern) {
     if (hashGesturePattern(pattern) == widget.expectedHash) {
-      Navigator.pop(context, GestureUnlockResult.success);
+      Navigator.of(context).pop(GestureUnlockResult.success);
       return;
     }
     setState(() {
@@ -314,21 +371,21 @@ class _GestureUnlockDialogState extends State<_GestureUnlockDialog> {
   }
 }
 
-class _PinCodeSetupDialog extends StatefulWidget {
-  const _PinCodeSetupDialog({required this.title, required this.confirmTitle});
+// --- PIN 设置 / 校验 ---
 
-  final String title;
+class _PinSetupBody extends StatefulWidget {
+  const _PinSetupBody({super.key, required this.confirmTitle});
+
   final String confirmTitle;
 
   @override
-  State<_PinCodeSetupDialog> createState() => _PinCodeSetupDialogState();
+  State<_PinSetupBody> createState() => _PinSetupBodyState();
 }
 
-class _PinCodeSetupDialogState extends State<_PinCodeSetupDialog> {
+class _PinSetupBodyState extends State<_PinSetupBody> {
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
   String _errorText = '';
-  bool _obscureText = true;
 
   @override
   void dispose() {
@@ -339,75 +396,45 @@ class _PinCodeSetupDialogState extends State<_PinCodeSetupDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: SizedBox(
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _controller,
-              autofocus: true,
-              obscureText: _obscureText,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: t.gestureLock.resetPin,
-                hintText: t.gestureLock.pinHintMinDigits,
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _obscureText = !_obscureText;
-                    });
-                  },
-                  icon: Icon(
-                    _obscureText ? Icons.visibility_off : Icons.visibility,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _confirmController,
-              obscureText: _obscureText,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: widget.confirmTitle,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              t.gestureLock.pinDescription,
-              softWrap: true,
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 20,
-              child: Text(
-                _errorText,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          ],
+    final c = context.calm;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _pinFieldLabel(context, t.gestureLock.resetPin),
+        const SizedBox(height: 6),
+        CalmTextField(
+          controller: _controller,
+          hintText: t.gestureLock.pinHintMinDigits,
+          prefixIcon: Icons.pin_outlined,
+          obscureText: true,
+          clearable: false,
+          keyboardType: TextInputType.number,
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(t.common.cancel),
+        const SizedBox(height: 12),
+        _pinFieldLabel(context, widget.confirmTitle),
+        const SizedBox(height: 6),
+        CalmTextField(
+          controller: _confirmController,
+          hintText: t.gestureLock.pinHintMinDigits,
+          prefixIcon: Icons.check_circle_outline_rounded,
+          obscureText: true,
+          clearable: false,
+          keyboardType: TextInputType.number,
+          onSubmitted: (_) => submit(),
         ),
-        TextButton(onPressed: _submit, child: Text(t.common.ok)),
+        const SizedBox(height: 10),
+        Text(
+          t.gestureLock.pinDescription,
+          style: TextStyle(fontSize: 11, color: c.text3, height: 1.45),
+        ),
+        const SizedBox(height: 8),
+        _GestureErrorLine(text: _errorText),
       ],
     );
   }
 
-  void _submit() {
+  void submit() {
     final pin = _controller.text.trim();
     final confirmPin = _confirmController.text.trim();
     if (!RegExp(r'^\d{4,}$').hasMatch(pin)) {
@@ -422,29 +449,27 @@ class _PinCodeSetupDialogState extends State<_PinCodeSetupDialog> {
       });
       return;
     }
-    Navigator.pop(context, pin);
+    Navigator.of(context).pop(pin);
   }
 }
 
-class _PinVerifyDialog extends StatefulWidget {
-  const _PinVerifyDialog({
+class _PinVerifyBody extends StatefulWidget {
+  const _PinVerifyBody({
+    super.key,
     required this.expectedHash,
-    required this.title,
     required this.hint,
   });
 
   final String expectedHash;
-  final String title;
   final String hint;
 
   @override
-  State<_PinVerifyDialog> createState() => _PinVerifyDialogState();
+  State<_PinVerifyBody> createState() => _PinVerifyBodyState();
 }
 
-class _PinVerifyDialogState extends State<_PinVerifyDialog> {
+class _PinVerifyBodyState extends State<_PinVerifyBody> {
   final TextEditingController _controller = TextEditingController();
   String _errorText = '';
-  bool _obscureText = true;
 
   @override
   void dispose() {
@@ -454,69 +479,98 @@ class _PinVerifyDialogState extends State<_PinVerifyDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: SizedBox(
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(widget.hint, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _controller,
-              autofocus: true,
-              obscureText: _obscureText,
-              keyboardType: TextInputType.number,
-              onSubmitted: (_) => _submit(),
-              decoration: InputDecoration(
-                labelText: t.gestureLock.pin,
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _obscureText = !_obscureText;
-                    });
-                  },
-                  icon: Icon(
-                    _obscureText ? Icons.visibility_off : Icons.visibility,
-                  ),
-                ),
-              ),
+    final c = context.calm;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.hint.isNotEmpty)
+          Text(
+            widget.hint,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(11.5),
+            style: TextStyle(
+              fontSize: 11.5,
+              color: c.text2,
+              height: 1.35,
+              leadingDistribution: TextLeadingDistribution.even,
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 20,
-              child: Text(
-                _errorText,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          ],
+          ),
+        const SizedBox(height: 10),
+        _pinFieldLabel(context, t.gestureLock.pin),
+        const SizedBox(height: 6),
+        CalmTextField(
+          controller: _controller,
+          hintText: t.gestureLock.pinHintMinDigits,
+          prefixIcon: Icons.password_rounded,
+          obscureText: true,
+          clearable: false,
+          keyboardType: TextInputType.number,
+          onSubmitted: (_) => submit(),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(t.common.cancel),
-        ),
-        TextButton(onPressed: _submit, child: Text(t.common.ok)),
+        const SizedBox(height: 8),
+        _GestureErrorLine(text: _errorText),
       ],
     );
   }
 
-  void _submit() {
+  void submit() {
     final pin = _controller.text.trim();
     if (hashPinCode(pin) == widget.expectedHash) {
-      Navigator.pop(context, true);
+      Navigator.of(context).pop(true);
       return;
     }
     setState(() {
       _errorText = t.gestureLock.pinIncorrect;
     });
+  }
+}
+
+Widget _pinFieldLabel(BuildContext context, String text) {
+  final c = context.calm;
+  return Text(
+    text,
+    textHeightBehavior: kCalmTextHeightBehavior,
+    strutStyle: calmStrut(11.5),
+    style: TextStyle(
+      fontSize: 11.5,
+      fontWeight: FontWeight.w500,
+      color: c.text2,
+      height: 1.2,
+      leadingDistribution: TextLeadingDistribution.even,
+    ),
+  );
+}
+
+/// 弹窗内的固定高度错误行：避免错误文案出现/消失时弹窗高度跳动。
+class _GestureErrorLine extends StatelessWidget {
+  const _GestureErrorLine({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    return SizedBox(
+      height: 18,
+      child: Center(
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          textHeightBehavior: kCalmTextHeightBehavior,
+          strutStyle: calmStrut(11.5),
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w500,
+            color: c.danger,
+            height: 1.2,
+            leadingDistribution: TextLeadingDistribution.even,
+          ),
+        ),
+      ),
+    );
   }
 }
 

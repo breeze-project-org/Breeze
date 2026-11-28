@@ -4,6 +4,7 @@ import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/search/method/filter_search_history.dart';
 import 'package:zephyr/page/search/method/on_search.dart';
+import 'package:zephyr/ui/ui.dart';
 
 class HistoryWidget extends StatefulWidget {
   const HistoryWidget({
@@ -49,8 +50,6 @@ class _HistoryWidgetState extends State<HistoryWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
     final globalSettingState = context.watch<GlobalSettingCubit>().state;
     final history = globalSettingState.searchHistory;
     final normalizedHistory = _normalizedHistoryFor(history);
@@ -67,26 +66,26 @@ class _HistoryWidgetState extends State<HistoryWidget> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+          padding: const EdgeInsets.fromLTRB(16, 10, 8, 0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                t.search.history,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: CalmSectionHeader(
+                  title: t.search.history,
+                  countText: history.isEmpty ? null : '${history.length}',
                 ),
               ),
-              const Spacer(),
-
-              // 排序按钮
+              // 排序 + 一键清空
               if (globalSettingState.searchHistory.isNotEmpty) ...[
                 _buildSortButton(),
-
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  tooltip: t.search.clearHistory,
-                  color: colorScheme.outline,
-                  onPressed: _resetHistory,
+                const SizedBox(width: 2),
+                CalmButton(
+                  label: t.search.clearHistory,
+                  icon: Icons.delete_outline_rounded,
+                  size: CalmButtonSize.xs,
+                  variant: CalmButtonVariant.ghost,
+                  onPressed: _confirmResetHistory,
                 ),
               ],
             ],
@@ -106,24 +105,13 @@ class _HistoryWidgetState extends State<HistoryWidget> {
   }
 
   Widget _buildSortButton() {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Tooltip(
       message: _isNewestFirst ? t.search.newestFirst : t.search.oldestFirst,
-      child: TextButton.icon(
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          minimumSize: const Size(0, 36),
-        ),
-        icon: Icon(
-          _isNewestFirst ? Icons.history : Icons.history_toggle_off, // 图标随状态变
-          size: 18,
-          color: colorScheme.primary,
-        ),
-        label: Text(
-          _isNewestFirst ? t.search.descending : t.search.ascending,
-          style: TextStyle(fontSize: 12, color: colorScheme.primary),
-        ),
+      child: CalmButton(
+        label: _isNewestFirst ? t.search.descending : t.search.ascending,
+        icon: _isNewestFirst ? Icons.history_rounded : Icons.history_toggle_off,
+        size: CalmButtonSize.xs,
+        variant: CalmButtonVariant.ghost,
         onPressed: () {
           setState(() {
             _isNewestFirst = !_isNewestFirst;
@@ -135,89 +123,56 @@ class _HistoryWidgetState extends State<HistoryWidget> {
 
   Widget _buildEmpty() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.manage_search,
-            size: 64,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            t.search.noHistory,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: CalmEmptyState(
+          icon: Icons.manage_search_rounded,
+          title: t.search.noHistory,
+        ),
       ),
     );
   }
 
   Widget _buildNoMatch() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search_off,
-            size: 64,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            t.search.noMatchingHistory,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: CalmEmptyState(
+          icon: Icons.search_off_rounded,
+          title: t.search.noMatchingHistory,
+        ),
       ),
     );
   }
 
   Widget _buildHistoryList(List<String> historyList) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: SizedBox(
         width: double.infinity,
         child: Wrap(
-          spacing: 12.0,
-          runSpacing: 12.0,
+          spacing: 8,
+          runSpacing: 8,
           alignment: WrapAlignment.start,
-          children: historyList.map((historyItem) {
-            return GestureDetector(
-              onLongPress: () => _deleteSingle(historyItem),
-              child: InputChip(
-                label: Text(historyItem),
-                labelStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
+          children: [
+            for (final historyItem in historyList)
+              GestureDetector(
+                // 长按删除单条（CalmInputChip 自身只处理点按）。
+                onLongPress: () => _deleteSingle(historyItem),
+                child: CalmInputChip(
+                  label: historyItem,
+                  icon: Icons.history_rounded,
+                  onTap: () {
+                    HistoryWidget.cancelPendingKeywordSync();
+                    onSearch(
+                      context,
+                      historyItem,
+                      aggregateMode: widget.aggregateMode,
+                    );
+                  },
                 ),
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerLow,
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  width: 1.0,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
-                onPressed: () {
-                  HistoryWidget.cancelPendingKeywordSync();
-                  onSearch(
-                    context,
-                    historyItem,
-                    aggregateMode: widget.aggregateMode,
-                  );
-                },
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-            );
-          }).toList(),
+          ],
         ),
       ),
     );
@@ -232,6 +187,37 @@ class _HistoryWidgetState extends State<HistoryWidget> {
     globalSettingCubit.updateState(
       (current) => current.copyWith(searchHistory: newHistory),
     );
+  }
+
+  /// 一键清空是批量破坏性操作：先经统一确认弹窗再执行。
+  Future<void> _confirmResetHistory() async {
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: t.search.clearHistory,
+      subtitle: t.search.history,
+      icon: Icons.delete_sweep_rounded,
+      tone: CalmTone.danger,
+      bodyBuilder: (_) => Text(
+        '${t.search.clearHistory}？',
+        style: TextStyle(fontSize: 12, color: context.calm.text2, height: 1.5),
+      ),
+      actionsBuilder: (ctx) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(ctx).pop(false),
+        ),
+        CalmButton(
+          label: t.common.confirm,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(ctx).pop(true),
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    _resetHistory();
   }
 
   void _resetHistory() {

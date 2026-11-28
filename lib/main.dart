@@ -47,6 +47,7 @@ import 'package:zephyr/service/startup_database_snapshot_service.dart';
 import 'package:zephyr/src/rust/api/qjs.dart';
 import 'package:zephyr/src/rust/api/simple.dart';
 import 'package:zephyr/src/rust/api/system.dart' as rust_system;
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/device/responsive.dart';
 import 'package:zephyr/util/error/error_filter.dart';
 import 'package:zephyr/util/error/uncaught_error_log.dart';
@@ -611,6 +612,9 @@ Future<void> addArchitectureTagsToSentry() async {
   }
 }
 
+/// 桌面关闭确认框的两个出口；取消用 null 表示。
+enum _CloseConfirmAction { hide, close }
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -756,69 +760,52 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         await _forceExit();
         return;
       }
-      showDialog(
-        context: dialogContext,
-        builder: (context) {
-          var rememberChoice = false;
-          return StatefulBuilder(
-            builder: (context, setDialogState) {
-              return AlertDialog(
-                title: const Text('提示'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('隐藏到托盘或关闭程序'),
-                    const SizedBox(height: 8),
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: const Text('记住我的选择'),
-                      value: rememberChoice,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          rememberChoice = value ?? false;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    child: const Text('取消'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  TextButton(
-                    child: const Text('关闭'),
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                      if (rememberChoice) {
-                        await WindowLogic.saveCloseBehavior(
-                          DesktopCloseBehavior.close,
-                        );
-                      }
-                      await _forceExit();
-                    },
-                  ),
-                  TextButton(
-                    child: const Text('隐藏'),
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                      if (rememberChoice) {
-                        await WindowLogic.saveCloseBehavior(
-                          DesktopCloseBehavior.hide,
-                        );
-                      }
-                      await _hideWindow();
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        },
+      var rememberChoice = false;
+      final choice = await showCalmDialog<_CloseConfirmAction>(
+        dialogContext,
+        title: '提示',
+        subtitle: '隐藏到托盘或关闭程序',
+        icon: Icons.power_settings_new_rounded,
+        tone: CalmTone.warning,
+        bodyBuilder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => CalmCheckboxTile(
+            label: '记住我的选择',
+            value: rememberChoice,
+            onChanged: (value) => setDialogState(() => rememberChoice = value),
+          ),
+        ),
+        actionsBuilder: (ctx) => [
+          CalmButton(
+            label: '取消',
+            variant: CalmButtonVariant.ghost,
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          CalmButton(
+            label: '隐藏',
+            variant: CalmButtonVariant.tonal,
+            onPressed: () => Navigator.of(ctx).pop(_CloseConfirmAction.hide),
+          ),
+          CalmButton(
+            label: '关闭',
+            variant: CalmButtonVariant.danger,
+            onPressed: () => Navigator.of(ctx).pop(_CloseConfirmAction.close),
+          ),
+        ],
       );
+      switch (choice) {
+        case _CloseConfirmAction.hide:
+          if (rememberChoice) {
+            await WindowLogic.saveCloseBehavior(DesktopCloseBehavior.hide);
+          }
+          await _hideWindow();
+        case _CloseConfirmAction.close:
+          if (rememberChoice) {
+            await WindowLogic.saveCloseBehavior(DesktopCloseBehavior.close);
+          }
+          await _forceExit();
+        case null:
+          break;
+      }
     } finally {
       _handlingCloseRequest = false;
     }
@@ -844,52 +831,24 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
           return _buildDynamicColor(
             builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-              ColorScheme lightColorScheme;
-              ColorScheme darkColorScheme;
+              // 动态取色可用时直接用系统主色，否则回退到用户自定义主题色。
+              final lightSeed =
+                  (globalSettingState.dynamicColor &&
+                      !isOhos &&
+                      lightDynamic != null)
+                  ? lightDynamic.primary
+                  : globalSettingState.seedColor;
+              final darkSeed =
+                  (globalSettingState.dynamicColor &&
+                      !isOhos &&
+                      darkDynamic != null)
+                  ? darkDynamic.primary
+                  : globalSettingState.seedColor;
 
-              if (globalSettingState.dynamicColor && !isOhos) {
-                lightColorScheme =
-                    lightDynamic ??
-                    ColorScheme.fromSeed(
-                      seedColor: globalSettingState.seedColor,
-                      brightness: Brightness.light,
-                    );
-                darkColorScheme =
-                    darkDynamic ??
-                    ColorScheme.fromSeed(
-                      seedColor: globalSettingState.seedColor,
-                      brightness: Brightness.dark,
-                    );
-              } else {
-                final primary = globalSettingState.seedColor;
-
-                lightColorScheme = ColorScheme.fromSeed(
-                  seedColor: primary,
-                  brightness: Brightness.light,
-                );
-                darkColorScheme = ColorScheme.fromSeed(
-                  seedColor: primary,
-                  brightness: Brightness.dark,
-                );
-              }
-
-              final isLinuxDesktop = !kIsWeb && Platform.isLinux;
-              const linuxFontFamily = 'Noto Sans CJK SC';
-              const linuxFontFamilyFallback = <String>[
-                'WenQuanYi Micro Hei',
-                'Droid Sans Fallback',
-              ];
-
-              TextTheme withConfiguredFonts(TextTheme base) {
-                var themed = base;
-                if (isLinuxDesktop) {
-                  themed = themed.apply(
-                    fontFamily: linuxFontFamily,
-                    fontFamilyFallback: linuxFontFamilyFallback,
-                  );
-                }
-                return FontProfileController.instance.applyToTextTheme(themed);
-              }
+              // CalmTheme 自己按平台注入中文字体（含 Linux Noto Sans CJK SC），
+              // 这里只负责挂载用户在 FontProfileController 选的自定义字体。
+              TextTheme withConfiguredFonts(TextTheme base) =>
+                  FontProfileController.instance.applyToTextTheme(base);
 
               return MaterialApp.router(
                 routerConfig: appRouter.config(
@@ -960,43 +919,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 themeMode: globalSettingState.themeMode,
                 supportedLocales: AppLocaleUtils.supportedLocales,
                 localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                theme: ThemeData.light().copyWith(
-                  // 墨水屏：水波纹是一圈纯装饰动画，在 EPD 上只会糊成残影。
-                  // 传 null 走 copyWith 的保留语义，非墨水屏时不改默认 SplashFactory。
-                  splashFactory: globalSettingState.eInkSetting.enabled
-                      ? NoSplash.splashFactory
-                      : null,
-                  primaryColor: lightColorScheme.primary,
-                  colorScheme: lightColorScheme,
-                  scaffoldBackgroundColor: lightColorScheme.surface,
-                  cardColor: lightColorScheme.surfaceContainer,
-                  chipTheme: ChipThemeData(
-                    backgroundColor: lightColorScheme.surface,
-                  ),
-                  canvasColor: lightColorScheme.surfaceContainer,
-                  dialogTheme: DialogThemeData(
-                    backgroundColor: lightColorScheme.surfaceContainer,
-                  ),
-                  textTheme: withConfiguredFonts(ThemeData.light().textTheme),
-                  primaryTextTheme: withConfiguredFonts(
-                    ThemeData.light().primaryTextTheme,
-                  ),
+                theme: CalmTheme.build(
+                  brightness: Brightness.light,
+                  seedColor: lightSeed,
+                  textThemeTransform: withConfiguredFonts,
                 ),
-                darkTheme: ThemeData.dark().copyWith(
-                  splashFactory: globalSettingState.eInkSetting.enabled
-                      ? NoSplash.splashFactory
-                      : null,
-                  scaffoldBackgroundColor: globalSettingState.isAMOLED
-                      ? Colors.black
-                      : darkColorScheme.surface,
-                  tabBarTheme: const TabBarThemeData(
-                    dividerColor: Colors.transparent,
-                  ),
-                  colorScheme: darkColorScheme,
-                  textTheme: withConfiguredFonts(ThemeData.dark().textTheme),
-                  primaryTextTheme: withConfiguredFonts(
-                    ThemeData.dark().primaryTextTheme,
-                  ),
+                // 墨水屏：CalmTheme 默认已是 NoSplash，不会在 EPD 上留残影。
+                darkTheme: CalmTheme.build(
+                  brightness: Brightness.dark,
+                  seedColor: darkSeed,
+                  isAmoled: globalSettingState.isAMOLED,
+                  textThemeTransform: withConfiguredFonts,
                 ),
               );
             },

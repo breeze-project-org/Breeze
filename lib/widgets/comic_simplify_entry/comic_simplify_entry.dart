@@ -9,11 +9,13 @@ import 'package:zephyr/widgets/toast.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/network/http/picture/picture.dart';
 import 'package:zephyr/config/router/router.gr.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_info.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/cover.dart';
 
-const double kComicCardBorderRadius = 5.0;
+/// 漫画封面卡片统一圆角：轻盈柔和，与 CalmCard 的 14/18 同族。
+const double kComicCardBorderRadius = 10.0;
 
 class ComicFixedSizeHorizontalList extends StatelessWidget {
   final List<ComicSimplifyEntryInfo> entries;
@@ -86,6 +88,7 @@ class ComicFixedSizeHorizontalList extends StatelessWidget {
     Key coverKey,
   ) {
     final circular = roundedCorner ? kComicCardBorderRadius : 0.0;
+    final titleText = info.title.let(convertChineseForDisplay);
     return Stack(
       children: [
         // 1. 底层封面图
@@ -108,32 +111,34 @@ class ComicFixedSizeHorizontalList extends StatelessWidget {
           bottom: 0,
           child: Container(
             decoration: BoxDecoration(
+              // 封面图上的文字遮罩：从透明平滑过渡到深底，克制不透黑。
               gradient: LinearGradient(
                 colors: [
                   Colors.transparent,
-                  Colors.black.withValues(alpha: 0.7),
+                  Colors.black.withValues(alpha: 0.62),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: const [0.0, 0.7],
+                stops: const [0.0, 0.85],
               ),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(circular),
                 bottomRight: Radius.circular(circular),
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(5.0, 20.0, 5.0, 5.0),
+            padding: const EdgeInsets.fromLTRB(6.0, 22.0, 6.0, 6.0),
             child: Text(
-              info.title.let(convertChineseForDisplay),
-              style: TextStyle(
+              titleText,
+              style: const TextStyle(
                 color: Colors.white,
-                fontSize: 12.0,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w500,
+                height: 1.3,
                 shadows: [
                   Shadow(
-                    offset: const Offset(0, 1),
+                    offset: Offset(0, 1),
                     blurRadius: 2,
-                    color: Colors.black.withValues(alpha: 0.5),
+                    color: Color(0x80000000),
                   ),
                 ],
               ),
@@ -275,8 +280,11 @@ class ComicSimplifyEntry extends StatelessWidget {
     double width,
     double height,
   ) {
+    final c = context.calm;
     final circular = roundedCorner ? kComicCardBorderRadius : 0.0;
-    final primary = Theme.of(context).colorScheme.primary;
+    final selected = (isSelected && selectionMode) || isHighlighted;
+    final badgeVisible = selectionMode || isHighlighted;
+    final titleText = info.title.let(convertChineseForDisplay);
     return ClipRRect(
       borderRadius: BorderRadius.circular(circular),
       // 选中边框常驻（透明/主色切换）+ 隐式动画：进入多选模式时边框层
@@ -286,10 +294,8 @@ class ComicSimplifyEntry extends StatelessWidget {
         curve: Curves.easeOutCubic,
         foregroundDecoration: BoxDecoration(
           border: Border.all(
-            color: (isSelected && selectionMode) || isHighlighted
-                ? primary
-                : Colors.transparent,
-            width: 4,
+            color: selected ? c.accent : Colors.transparent,
+            width: 3,
           ),
           borderRadius: BorderRadius.circular(circular),
         ),
@@ -320,32 +326,34 @@ class ComicSimplifyEntry extends StatelessWidget {
               bottom: 0,
               child: Container(
                 decoration: BoxDecoration(
+                  // 底部标题遮罩：平滑克制，不把整张封面压成黑块。
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.7),
+                      Colors.black.withValues(alpha: 0.62),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    stops: [0.0, 0.7],
+                    stops: const [0.0, 0.85],
                   ),
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(circular),
                     bottomRight: Radius.circular(circular),
                   ),
                 ),
-                padding: const EdgeInsets.fromLTRB(5.0, 20.0, 5.0, 5.0),
+                padding: const EdgeInsets.fromLTRB(6.0, 22.0, 6.0, 6.0),
                 child: Text(
-                  info.title.let(convertChineseForDisplay),
-                  style: TextStyle(
+                  titleText,
+                  style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 12.0,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w500,
+                    height: 1.3,
                     shadows: [
                       Shadow(
-                        offset: const Offset(0, 1),
+                        offset: Offset(0, 1),
                         blurRadius: 2,
-                        color: Colors.black.withValues(alpha: 0.5),
+                        color: Color(0x80000000),
                       ),
                     ],
                   ),
@@ -362,43 +370,38 @@ class ComicSimplifyEntry extends StatelessWidget {
               top: 8,
               right: 8,
               child: AnimatedScale(
-                scale: selectionMode || isHighlighted ? 1.0 : 0.0,
+                scale: badgeVisible ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 160),
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
-                  opacity: selectionMode || isHighlighted ? 1.0 : 0.0,
+                  opacity: badgeVisible ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 160),
                   curve: Curves.easeOutCubic,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
                     curve: Curves.easeOutCubic,
-                    width: 30,
-                    height: 30,
+                    width: 28,
+                    height: 28,
                     decoration: BoxDecoration(
-                      color: isSelected || isHighlighted
-                          ? primary
-                          : Colors.white,
+                      color: selected
+                          ? c.accent
+                          : c.surface.withValues(alpha: 0.92),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2.5),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black87,
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+                      border: Border.all(
+                        color: selected ? c.surface : c.border,
+                        width: 1.5,
+                      ),
+                      boxShadow: c.shadowSm,
                     ),
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 160),
                       child: Icon(
-                        isSelected || isHighlighted
-                            ? Icons.check
+                        selected
+                            ? Icons.check_rounded
                             : Icons.radio_button_unchecked,
                         key: ValueKey(isSelected),
-                        color: isSelected || isHighlighted
-                            ? Colors.white
-                            : Colors.black54,
-                        size: 20,
+                        color: selected ? c.accentFg : c.text3,
+                        size: 17,
                       ),
                     ),
                   ),
@@ -428,27 +431,38 @@ class ComicSimplifyEntry extends StatelessWidget {
 
   Future<void> _showDeleteDialog(BuildContext context) async {
     final (title, content) = _getDialogContent();
+    if (title.isEmpty) {
+      return;
+    }
 
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              context.router.pop();
-              _handleDeleteAction(context);
-            },
-            child: Text(t.common.confirm),
-          ),
-        ],
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: title,
+      icon: Icons.delete_outline_rounded,
+      tone: CalmTone.danger,
+      bodyBuilder: (dialogContext) => Text(
+        content,
+        style: TextStyle(
+          fontSize: 12.5,
+          color: dialogContext.calm.text2,
+          height: 1.5,
+        ),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.confirm,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
+    if (confirmed != true || !context.mounted) return;
+    await _handleDeleteAction(context);
   }
 
   (String, String) _getDialogContent() {
@@ -549,12 +563,8 @@ class _DetailedRowBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final primary = scheme.primary;
-    final titleStyle = Theme.of(context).textTheme.titleSmall
-        ?.copyWith(fontWeight: FontWeight.w700, height: 1.3);
-    final subtitleStyle = Theme.of(context).textTheme.bodySmall
-        ?.copyWith(color: scheme.onSurfaceVariant, height: 1.4);
+    final c = context.calm;
+    final selected = (isSelected && selectionMode) || isHighlighted;
     // Venera 式简洁风：透明底、无边框；hover 只给一层极淡底色。
     final pills = info.metadata
         .map((e) => e.trim())
@@ -570,27 +580,26 @@ class _DetailedRowBody extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerLow.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(8),
+            color: c.surface,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: c.shadowSm,
           ),
           // 选中边框常驻（透明/主色切换）+ 隐式动画：进入多选模式时
           // 边框层本来就存在，只是颜色从透明变过来，不闪。
           // 书签揭示的高亮走同一层（网格模式同逻辑）。
           foregroundDecoration: BoxDecoration(
             border: Border.all(
-              color: (isSelected && selectionMode) || isHighlighted
-                  ? primary
-                  : Colors.transparent,
+              color: selected ? c.accent : Colors.transparent,
               width: 2,
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(14),
           ),
           padding: const EdgeInsets.all(6),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
                 child: CoverWidget(
                   fileServer: info.fileServer,
                   path: info.path,
@@ -609,7 +618,12 @@ class _DetailedRowBody extends StatelessWidget {
                   children: [
                     Text(
                       info.title.let(convertChineseForDisplay),
-                      style: titleStyle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: c.text,
+                        height: 1.3,
+                      ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -617,7 +631,11 @@ class _DetailedRowBody extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         info.author.let(convertChineseForDisplay),
-                        style: subtitleStyle,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: c.text2,
+                          height: 1.4,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -643,7 +661,7 @@ class _DetailedRowBody extends StatelessWidget {
   }
 }
 
-/// 状态/分类小胶囊：淡底 + 主色文字，Venera 式。
+/// 状态/分类小胶囊：柔和底色 + 次级文字色，轻盈不抢镜。
 class _DetailPill extends StatelessWidget {
   const _DetailPill({required this.label});
 
@@ -651,19 +669,26 @@ class _DetailPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final c = context.calm;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: scheme.secondaryContainer.withValues(alpha: 0.55),
+        color: c.surface2,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label.let(convertChineseForDisplay),
-        style: Theme.of(context).textTheme.labelSmall
-            ?.copyWith(color: scheme.onSecondaryContainer, height: 1.4),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
+        textHeightBehavior: kCalmTextHeightBehavior,
+        strutStyle: calmStrut(10.5),
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w500,
+          color: c.text2,
+          height: 1.2,
+          leadingDistribution: TextLeadingDistribution.even,
+        ),
       ),
     );
   }

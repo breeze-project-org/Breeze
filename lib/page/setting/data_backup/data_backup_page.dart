@@ -30,62 +30,48 @@ class _DataBackupPageState extends State<DataBackupPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          t.dataBackup.title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        centerTitle: false,
-        scrolledUnderElevation: 0,
-      ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 768),
-          child: ListView(
-            children: [
-              _buildSectionTitle(
-                context,
-                t.dataBackup.exportSection,
-                Icons.file_upload_outlined,
-              ),
-              SwitchListTile(
-                secondary: const Icon(Icons.folder_outlined),
-                title: Text(t.dataBackup.includeDownloads),
-                subtitle: Text(t.dataBackup.includeDownloadsSubtitle),
-                thumbIcon: kSettingSwitchThumbIcon,
-                value: _includeDownloads,
-                onChanged: _busy
-                    ? null
-                    : (value) => setState(() => _includeDownloads = value),
-              ),
-              const Divider(height: 1, thickness: 0.3),
-              ListTile(
-                leading: const Icon(Icons.archive_outlined),
-                title: Text(t.dataBackup.exportData),
-                subtitle: Text(t.dataBackup.exportDataSubtitle),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _busy ? null : _exportData,
-              ),
-              const SizedBox(height: 8),
-              const Divider(height: 1, thickness: 0.3),
-              _buildSectionTitle(
-                context,
-                t.dataBackup.importSection,
-                Icons.file_download_outlined,
-              ),
-              ListTile(
-                leading: const Icon(Icons.unarchive_outlined),
-                title: Text(t.dataBackup.importData),
-                subtitle: Text(t.dataBackup.importDataSubtitle),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _busy ? null : _importData,
-              ),
-              const SizedBox(height: 32),
-            ],
+    return SettingPageShell(
+      title: t.dataBackup.title,
+      child: ListView(
+        padding: kSettingPagePadding,
+        children: [
+          settingSectionTitle(
+            context,
+            t.dataBackup.exportSection,
+            icon: Icons.file_upload_outlined,
           ),
-        ),
+          settingCardGroup([
+            settingSwitchTile(
+              icon: Icons.folder_outlined,
+              title: t.dataBackup.includeDownloads,
+              subtitle: t.dataBackup.includeDownloadsSubtitle,
+              value: _includeDownloads,
+              onChanged: _busy
+                  ? null
+                  : (value) => setState(() => _includeDownloads = value),
+            ),
+            settingActionTile(
+              icon: Icons.archive_outlined,
+              title: t.dataBackup.exportData,
+              subtitle: t.dataBackup.exportDataSubtitle,
+              onTap: _busy ? null : _exportData,
+            ),
+          ]),
+          settingSectionTitle(
+            context,
+            t.dataBackup.importSection,
+            icon: Icons.file_download_outlined,
+          ),
+          settingCardGroup([
+            settingActionTile(
+              icon: Icons.unarchive_outlined,
+              title: t.dataBackup.importData,
+              subtitle: t.dataBackup.importDataSubtitle,
+              onTap: _busy ? null : _importData,
+            ),
+          ]),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }
@@ -244,27 +230,39 @@ class _DataBackupPageState extends State<DataBackupPage> {
     if (mounted) setState(() => _busy = value);
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.primary,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
+  /// 不可中断的加载弹窗：`barrierDismissible: false` + `preventPop: true`，
+  /// 避免用户返回键关掉弹窗后，调用处的 Navigator.pop() 误关真正的页面路由。
+  void _showLoadingDialog(String message) {
+    showCalmDialog<void>(
+      context,
+      title: message,
+      icon: Icons.hourglass_top_rounded,
+      barrierDismissible: false,
+      preventPop: true,
+      bodyBuilder: (dialogContext) => const CalmProgressBar(height: 5),
     );
   }
 
+  Future<void> _showResultDialog(String title, String message) async {
+    if (!mounted) return;
+    await showCalmDialog<void>(
+      context,
+      title: title,
+      icon: Icons.task_alt_rounded,
+      tone: CalmTone.success,
+      bodyBuilder: (dialogContext) => Text(
+        message,
+        style: TextStyle(fontSize: 12, color: dialogContext.calm.text2),
+      ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+      ],
+    );
+  }
   /// 选择要导入的 zip 备份文件。
   ///
   /// Android 上使用原生 MethodChannel 选择器，把文件直接拷贝到应用缓存，
@@ -299,46 +297,6 @@ class _DataBackupPageState extends State<DataBackupPage> {
     } catch (_) {}
   }
 
-  void _showLoadingDialog(String message) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          content: Row(
-            children: [
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              ),
-              const SizedBox(width: 20),
-              Expanded(child: Text(message)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showResultDialog(String title, String message) async {
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(t.common.ok),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<bool> _showImportConfirmDialog({
     required String exportedVersion,
     required String currentVersion,
@@ -347,48 +305,80 @@ class _DataBackupPageState extends State<DataBackupPage> {
     if (!mounted) return false;
     final versionMismatch = exportedVersion != currentVersion;
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.dataBackup.importTitle),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(t.dataBackup.importConfirm),
-              if (includeDownloads) ...[
-                const SizedBox(height: 12),
-                Text(t.dataBackup.includesDownloadsWarning),
-              ],
-              if (versionMismatch) ...[
-                const SizedBox(height: 12),
-                Text(
-                  t.dataBackup.versionMismatch,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(t.dataBackup.exportedVersion(version: exportedVersion)),
-                Text(t.dataBackup.currentVersion(version: currentVersion)),
-              ],
+    final result = await showCalmDialog<bool>(
+      context,
+      title: t.dataBackup.importTitle,
+      icon: Icons.unarchive_outlined,
+      tone: versionMismatch ? CalmTone.warning : CalmTone.info,
+      bodyBuilder: (dialogContext) {
+        final c = dialogContext.calm;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              t.dataBackup.importConfirm,
+              style: TextStyle(fontSize: 12, color: c.text2, height: 1.5),
+            ),
+            if (includeDownloads) ...[
+              const SizedBox(height: 12),
+              CalmStatusBanner(
+                title: t.dataBackup.includesDownloadsWarning,
+                tone: CalmTone.warning,
+              ),
             ],
-          ),
+            if (versionMismatch) ...[
+              const SizedBox(height: 12),
+              CalmStatusBanner(
+                title: t.dataBackup.versionMismatch,
+                tone: CalmTone.danger,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      t.dataBackup.exportedVersion(version: exportedVersion),
+                      style: TextStyle(fontSize: 11.5, color: c.text2),
+                    ),
+                  ),
+                  CalmBadge(
+                    label: exportedVersion,
+                    tone: CalmBadgeTone.neutral,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      t.dataBackup.currentVersion(version: currentVersion),
+                      style: TextStyle(fontSize: 11.5, color: c.text2),
+                    ),
+                  ),
+                  CalmBadge(
+                    label: currentVersion,
+                    tone: CalmBadgeTone.accent,
+                  ),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(t.dataBackup.kContinue),
-          ),
-        ],
-      ),
+        CalmButton(
+          label: t.dataBackup.kContinue,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
 
     return result == true;
@@ -396,18 +386,22 @@ class _DataBackupPageState extends State<DataBackupPage> {
 
   Future<void> _showRestartDialog() async {
     if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.dataBackup.importSuccess),
-        content: Text(t.dataBackup.restartPrompt),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(t.common.ok),
-          ),
-        ],
+    await showCalmDialog<void>(
+      context,
+      title: t.dataBackup.importSuccess,
+      icon: Icons.restart_alt_rounded,
+      tone: CalmTone.success,
+      bodyBuilder: (dialogContext) => Text(
+        t.dataBackup.restartPrompt,
+        style: TextStyle(fontSize: 12, color: dialogContext.calm.text2),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+      ],
     );
   }
 }

@@ -9,8 +9,10 @@ import 'package:zephyr/page/comic_info/comic_info.dart';
 import 'package:zephyr/page/download/adapters/download_chapter_adapter.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
 import 'package:zephyr/page/comic_read/method/jump_chapter.dart';
+import 'package:zephyr/page/comic_read/widgets/dialogs/button_dialog.dart';
 import 'package:zephyr/page/comic_read/widgets/settings/reader_settings_sheet.dart';
 import 'package:zephyr/type/enum.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.dart';
@@ -187,43 +189,71 @@ class _BottomWidgetState extends State<BottomWidget> {
   }
 
   Widget _buildControlButtons() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ChapterNavigationButton(
-          icon: Icons.skip_previous_rounded,
-          tooltip: t.reader.previousChapter,
-          isEnabled: jumpChapter.havePrev,
-          onTap: () => _jumpToChapter(true),
+    final c = context.calm;
+    Widget divider() => Container(
+      width: 1,
+      height: 18,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: c.borderStrong,
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: c.shadowMd,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: c.surface.withValues(alpha: 0.94),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: c.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ChapterNavigationButton(
+                  icon: Icons.skip_previous_rounded,
+                  tooltip: t.reader.previousChapter,
+                  isEnabled: jumpChapter.havePrev,
+                  onTap: () => _jumpToChapter(true),
+                ),
+                divider(),
+                FloatingActionIconButton(
+                  icon: Icons.home_rounded,
+                  tooltip: t.reader.backToHome,
+                  onPressed: () => popToRoot(context),
+                ),
+                const SizedBox(width: 2),
+                FloatingActionIconButton(
+                  icon: Icons.list_alt_rounded,
+                  tooltip: t.reader.selectChapter,
+                  isEnabled: chapterRefs.isNotEmpty,
+                  onPressed: _selectJumpChapter,
+                ),
+                const SizedBox(width: 2),
+                FloatingActionIconButton(
+                  icon: Icons.tune_rounded,
+                  tooltip: t.reader.settings,
+                  onPressed: _openSettingsPanel,
+                ),
+                divider(),
+                ChapterNavigationButton(
+                  icon: Icons.skip_next_rounded,
+                  tooltip: t.reader.nextChapter,
+                  isEnabled: jumpChapter.haveNext,
+                  onTap: () => _jumpToChapter(false),
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(width: 10),
-        FloatingActionIconButton(
-          icon: Icons.home_rounded,
-          tooltip: t.reader.backToHome,
-          onPressed: () => popToRoot(context),
-        ),
-        const SizedBox(width: 10),
-        FloatingActionIconButton(
-          icon: Icons.list_alt_rounded,
-          tooltip: t.reader.selectChapter,
-          isEnabled: chapterRefs.isNotEmpty,
-          onPressed: _selectJumpChapter,
-        ),
-        const SizedBox(width: 10),
-        FloatingActionIconButton(
-          icon: Icons.tune_rounded,
-          tooltip: t.reader.settings,
-          onPressed: _openSettingsPanel,
-        ),
-        const SizedBox(width: 10),
-        ChapterNavigationButton(
-          icon: Icons.skip_next_rounded,
-          tooltip: t.reader.nextChapter,
-          isEnabled: jumpChapter.haveNext,
-          onTap: () => _jumpToChapter(false),
-        ),
-      ],
+      ),
     );
   }
 
@@ -242,43 +272,11 @@ class _BottomWidgetState extends State<BottomWidget> {
     );
   }
 
-  Future<bool> _bottomButtonDialog(
-    BuildContext context,
-    String title,
-    String content,
-  ) async {
-    return await showDialog<bool>(
-          context: context,
-          barrierDismissible: false, // 不允许点击外部区域关闭对话框
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text(title),
-              content: Text(content),
-              actions: [
-                TextButton(
-                  child: Text(t.common.cancel),
-                  onPressed: () {
-                    Navigator.of(context).pop(false); // 返回 false
-                  },
-                ),
-                TextButton(
-                  child: Text(t.common.ok),
-                  onPressed: () {
-                    Navigator.of(context).pop(true); // 返回 true
-                  },
-                ),
-              ],
-            );
-          },
-        ) ??
-        false; // 处理返回值为空的情况
-  }
-
   Future<void> _jumpToChapter(bool isPrev) async {
     final dialogMessage = isPrev
         ? t.reader.previousChapter
         : t.reader.nextChapter;
-    final result = await _bottomButtonDialog(
+    final result = await buttonDialog(
       context,
       t.reader.jumpToChapterTitle,
       t.reader.jumpToChapterMessage(chapter: dialogMessage),
@@ -291,17 +289,23 @@ class _BottomWidgetState extends State<BottomWidget> {
   Future<void> _selectJumpChapter() async {
     final router = AutoRouter.of(context);
     final initialIndex = jumpChapter.currentChapterIndexIn(chapterRefs);
-    final result = await showDialog<UnifiedComicChapterRef?>(
-      context: context,
+    final result = await showCalmDialog<UnifiedComicChapterRef>(
+      context,
+      title: t.reader.selectChapter,
+      icon: Icons.list_alt_rounded,
       barrierDismissible: false, // 不允许点击外部区域关闭对话框
-      builder: (BuildContext context) {
-        return _ChapterPickerDialog(
-          refs: chapterRefs,
-          initialIndex: initialIndex,
-          onSelected: (ep) =>
-              Navigator.of(context, rootNavigator: false).pop(ep),
-        );
-      },
+      bodyBuilder: (dialogContext) => _ChapterPickerDialog(
+        refs: chapterRefs,
+        initialIndex: initialIndex,
+        onSelected: (ep) => Navigator.of(dialogContext).pop(ep),
+      ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+      ],
     );
     if (result != null && mounted) {
       final chapter = const DownloadChapterAdapter().fromChapterRef(result);
@@ -344,8 +348,8 @@ class _ChapterPickerDialog extends StatefulWidget {
 class _ChapterPickerDialogState extends State<_ChapterPickerDialog> {
   // 行高只是估算（章节名可能换行），用于对话框高度与首屏定位；
   // 精确定位靠 _targetKey + ensureVisible。
-  static const double _estimatedRowHeight = 52.0;
-  static const double _estimatedGroupHeaderHeight = 36.0;
+  static const double _estimatedRowHeight = 34.0;
+  static const double _estimatedGroupHeaderHeight = 30.0;
   static const int _maxRevealAttempts = 3;
 
   GlobalKey? _targetKey;
@@ -447,17 +451,11 @@ class _ChapterPickerDialogState extends State<_ChapterPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final highlightStyle = TextButton.styleFrom(
-      foregroundColor: colorScheme.onPrimaryContainer,
-      backgroundColor: colorScheme.primaryContainer,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    );
-    // 定高（按估算行高撑，封顶 60% 屏高）：ListView 高度有界，
+    final c = context.calm;
+    // 定高（按估算行高撑，封顶 50% 屏高）：ListView 高度有界，
     // 不用 shrinkWrap 也能懒加载，只建可视行。
     final screenSize = MediaQuery.sizeOf(context);
-    final maxHeight = screenSize.height * 0.6;
+    final maxHeight = screenSize.height * 0.5;
     final listHeight = (_estimatedOffsetForRow(_rows.length) + 16).clamp(
       120.0,
       maxHeight,
@@ -465,64 +463,45 @@ class _ChapterPickerDialogState extends State<_ChapterPickerDialog> {
     // 桌面端别撑满：最多 440，手机上占 90% 屏宽。
     final listWidth = (screenSize.width * 0.9).clamp(0.0, 440.0).toDouble();
 
-    return AlertDialog(
-      title: Text(t.reader.selectChapter),
-      content: SizedBox(
-        width: listWidth,
-        height: listHeight,
-        child: ListView.builder(
-          controller: _scrollController,
-          itemCount: _rows.length,
-          itemBuilder: (context, i) {
-            final row = _rows[i];
-            if (row is _PickerGroupRow) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
-                child: Text(
-                  chapterGroupDisplayTitle(
-                    row.title,
-                    t.comicInfo.untitledGroup,
-                  ),
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }
-            final chapterRow = row as _PickerChapterRow;
-            final ref = chapterRow.ref;
-            final isCurrent = i == _initialRow;
+    return SizedBox(
+      width: listWidth,
+      height: listHeight,
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: _rows.length,
+        itemBuilder: (context, i) {
+          final row = _rows[i];
+          if (row is _PickerGroupRow) {
             return Padding(
-              key: isCurrent ? _targetKey : null,
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: TextButton(
-                style: isCurrent ? highlightStyle : null,
-                onPressed: () => widget.onSelected(ref),
-                child: Row(
-                  children: [
-                    Expanded(child: Text(ref.name)),
-                    if (isCurrent)
-                      Icon(
-                        Icons.check_circle_rounded,
-                        size: 18,
-                        color: colorScheme.primary,
-                      ),
-                  ],
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+              child: CalmSectionHeader(
+                title: chapterGroupDisplayTitle(
+                  row.title,
+                  t.comicInfo.untitledGroup,
                 ),
               ),
             );
-          },
-        ),
+          }
+          final chapterRow = row as _PickerChapterRow;
+          final ref = chapterRow.ref;
+          final isCurrent = i == _initialRow;
+          return Container(
+            key: isCurrent ? _targetKey : null,
+            margin: const EdgeInsets.symmetric(vertical: 1),
+            decoration: BoxDecoration(
+              color: isCurrent ? c.accentSoft : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: CalmListTile(
+              title: ref.name,
+              onTap: () => widget.onSelected(ref),
+              trailing: isCurrent
+                  ? Icon(Icons.check_circle_rounded, size: 16, color: c.accent)
+                  : null,
+            ),
+          );
+        },
       ),
-      actions: [
-        TextButton(
-          child: Text(t.common.cancel),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ],
     );
   }
 }
@@ -562,18 +541,11 @@ class ChapterNavigationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
-
-    return _FrostedCircleIconButton(
+    return _CalmCircleIconButton(
       tooltip: tooltip,
       isEnabled: isEnabled,
       onPressed: onTap,
       icon: icon,
-      foregroundColor: colorScheme.onSecondaryContainer,
-      backgroundColor: colorScheme.secondaryContainer.withValues(alpha: 0.72),
-      disabledBackgroundColor: colorScheme.surfaceContainerHighest.withValues(
-        alpha: 0.38,
-      ),
     );
   }
 }
@@ -594,67 +566,86 @@ class FloatingActionIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
-    return _FrostedCircleIconButton(
+    return _CalmCircleIconButton(
       tooltip: tooltip,
       isEnabled: isEnabled,
       onPressed: onPressed,
       icon: icon,
-      foregroundColor: colorScheme.onPrimaryContainer,
-      backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.76),
-      disabledBackgroundColor: colorScheme.surfaceContainerHighest.withValues(
-        alpha: 0.38,
-      ),
     );
   }
 }
 
-class _FrostedCircleIconButton extends StatelessWidget {
+/// 阅读器操作栏上的轻盈透明图标按钮：静息态无底色，避免「胶囊套圆钮」的视觉拥挤；
+/// 悬停与按下时给出柔和圆底反馈，禁用态压暗。
+class _CalmCircleIconButton extends StatefulWidget {
   final String tooltip;
   final bool isEnabled;
   final VoidCallback onPressed;
   final IconData icon;
-  final Color foregroundColor;
-  final Color backgroundColor;
-  final Color disabledBackgroundColor;
 
-  const _FrostedCircleIconButton({
+  const _CalmCircleIconButton({
     required this.tooltip,
     required this.isEnabled,
     required this.onPressed,
     required this.icon,
-    required this.foregroundColor,
-    required this.backgroundColor,
-    required this.disabledBackgroundColor,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.theme.colorScheme;
+  State<_CalmCircleIconButton> createState() => _CalmCircleIconButtonState();
+}
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: IconButton(
-          tooltip: tooltip,
-          onPressed: isEnabled ? onPressed : null,
-          style: IconButton.styleFrom(
-            fixedSize: const Size(44, 44),
-            shape: const CircleBorder(),
-            foregroundColor: foregroundColor,
-            backgroundColor: backgroundColor,
-            disabledForegroundColor: colorScheme.onSurface.withValues(
-              alpha: 0.38,
-            ),
-            disabledBackgroundColor: disabledBackgroundColor,
-            side: BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-            ),
+class _CalmCircleIconButtonState extends State<_CalmCircleIconButton> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    final enabled = widget.isEnabled;
+    final bg = !enabled
+        ? Colors.transparent
+        : _pressed
+        ? c.accentSoft
+        : _hovered
+        ? c.surfaceHover
+        : Colors.transparent;
+    final fg = !enabled
+        ? c.text3.withValues(alpha: 0.45)
+        : (_hovered || _pressed)
+        ? c.accent
+        : c.text2;
+
+    Widget child = MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: enabled ? (_) => setState(() => _hovered = true) : null,
+      onExit: (_) => setState(() {
+        _hovered = false;
+        _pressed = false;
+      }),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled ? widget.onPressed : null,
+        onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedScale(
+          scale: _pressed ? 0.92 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            width: 38,
+            height: 36,
+            decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+            alignment: Alignment.center,
+            child: Icon(widget.icon, size: 19, color: fg),
           ),
-          icon: Icon(icon),
         ),
       ),
     );
+
+    if (widget.tooltip.isNotEmpty) {
+      child = Tooltip(message: widget.tooltip, child: child);
+    }
+    return child;
   }
 }

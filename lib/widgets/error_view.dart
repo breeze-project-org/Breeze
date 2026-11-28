@@ -1,8 +1,8 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 class ErrorView extends StatelessWidget {
@@ -24,56 +24,25 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final needLogin = loginPluginId.isNotEmpty;
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: SelectableText(
-                  errorMessage,
-                  maxLines: 5,
-                  style: TextStyle(fontSize: 20),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              IconButton(
-                tooltip: t.common.copy,
-                icon: const Icon(Icons.copy_outlined),
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: errorMessage));
-                  showSuccessToast(t.common.copy);
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          if (loginPluginId.isNotEmpty)
-            Wrap(
-              spacing: 12,
-              alignment: WrapAlignment.center,
-              children: [
-                FilledButton.icon(
-                  onPressed: () async {
-                    await context.pushRoute(LoginRoute(from: loginPluginId));
-                    onRetry();
-                  },
-                  icon: const Icon(Icons.login_outlined),
-                  label: Text(t.login.loginButton),
-                ),
-                OutlinedButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: Text(t.common.reload),
-                ),
-              ],
-            )
-          else
-            ElevatedButton(onPressed: onRetry, child: Text(t.common.reload)),
-        ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: CalmErrorState(
+          title: needLogin ? t.navigation.needLoginTitle : t.common.error,
+          errorDetail: errorMessage,
+          errorDetailMaxLines: 3,
+          primaryLabel: needLogin ? t.login.loginButton : null,
+          onPrimary: needLogin
+              ? () async {
+                  await context.pushRoute(LoginRoute(from: loginPluginId));
+                  onRetry();
+                }
+              : null,
+          onRetry: onRetry,
+          retryLabel: t.common.reload,
+          onCopied: () => showSuccessToast(t.common.copy),
+        ),
       ),
     );
   }

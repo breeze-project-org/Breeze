@@ -1,27 +1,25 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 
 Future<void> nothingDialog(BuildContext context) async {
-  return showDialog<void>(
-    context: context,
+  return showCalmDialog<void>(
+    context,
+    title: t.common.underConstruction,
+    icon: Icons.construction_rounded,
+    tone: CalmTone.warning,
     barrierDismissible: false, // user must tap button!
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(t.common.underConstruction),
-        content: SingleChildScrollView(
-          child: ListBody(children: <Widget>[Text(t.common.comingSoon)]),
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: Text(t.common.gotIt),
-            onPressed: () {
-              context.pop();
-            },
-          ),
-        ],
-      );
-    },
+    bodyBuilder: (ctx) => Text(
+      t.common.comingSoon,
+      style: TextStyle(fontSize: 12.5, color: ctx.calm.text2, height: 1.45),
+    ),
+    actionsBuilder: (ctx) => [
+      CalmButton(
+        label: t.common.gotIt,
+        variant: CalmButtonVariant.primary,
+        onPressed: () => Navigator.of(ctx).pop(),
+      ),
+    ],
   );
 }
 
@@ -32,30 +30,25 @@ Future<void> commonDialog(
   String title,
   String content,
 ) async {
-  return showDialog<void>(
-    context: context,
+  return showCalmDialog<void>(
+    context,
+    title: title,
     barrierDismissible: false, // user must tap button!
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: ListBody(children: <Widget>[SelectableText(content)]),
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: Text(t.common.cancel),
-            onPressed: () {
-              context.pop();
-            },
-          ),
-          TextButton(
-            child: Text(t.common.ok),
-            onPressed: () {
-              context.pop();
-            },
-          ),
-        ],
-      );
-    },
+    bodyBuilder: (ctx) => SelectableText(
+      content,
+      style: TextStyle(fontSize: 12.5, color: ctx.calm.text2, height: 1.45),
+    ),
+    actionsBuilder: (ctx) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(ctx).pop(),
+      ),
+      CalmButton(
+        label: t.common.ok,
+        variant: CalmButtonVariant.primary,
+        onPressed: () => Navigator.of(ctx).pop(),
+      ),
+    ],
   );
 }

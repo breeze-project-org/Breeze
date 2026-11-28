@@ -4,7 +4,7 @@ import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 
 // 视觉规格参考 WinUI 3 / Fluent UI 2 的 ComboBox：
 // - 菜单面板 8px 内边距 + 圆角，选项行高由内容决定（单行 40）；
@@ -514,20 +514,12 @@ class _MenuPanelState<T> extends State<_MenuPanel<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    // 深色主题下浮层要比页面底色亮一档，否则面板和背景糊成一片；
-    // 浅色主题保持 surface，避免发灰。
-    final panelColor =
-        widget.panelColor ??
-        (colorScheme.brightness == Brightness.dark
-            ? colorScheme.surfaceContainerHigh
-            : colorScheme.surface);
-    final selectedColor =
-        widget.selectedColor ??
-        colorScheme.primaryContainer.withValues(alpha: 0.5);
-    final hoverColor =
-        widget.hoverColor ??
-        colorScheme.primaryContainer.withValues(alpha: 0.35);
+    final c = context.calm;
+    // 浮层比页面亮一档（深色）/ 纯白（浅色），与 CalmUI 的浮空卡片一致，
+    // 避免面板和背景糊成一片。
+    final panelColor = widget.panelColor ?? c.surface;
+    final selectedColor = widget.selectedColor ?? c.accentSoft;
+    final hoverColor = widget.hoverColor ?? c.surface2;
 
     return Focus(
       focusNode: _focusNode,
@@ -541,17 +533,8 @@ class _MenuPanelState<T> extends State<_MenuPanel<T>> {
           decoration: BoxDecoration(
             color: panelColor,
             borderRadius: BorderRadius.circular(widget.panelBorderRadius),
-            border: Border.all(
-              color: colorScheme.outline.withValues(alpha: 0.25),
-              width: _kPanelBorderWidth,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withValues(alpha: 0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            border: Border.all(color: c.border, width: _kPanelBorderWidth),
+            boxShadow: c.shadowMd,
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(widget.panelBorderRadius),
@@ -564,13 +547,8 @@ class _MenuPanelState<T> extends State<_MenuPanel<T>> {
                 itemCount: widget.entries.length,
                 itemExtentBuilder: (index, dimensions) =>
                     widget.metrics.itemHeights[index],
-                itemBuilder: (context, index) => _buildItem(
-                  context,
-                  index,
-                  colorScheme,
-                  selectedColor,
-                  hoverColor,
-                ),
+                itemBuilder: (context, index) =>
+                    _buildItem(context, index, c, selectedColor, hoverColor),
               ),
             ),
           ),
@@ -582,7 +560,7 @@ class _MenuPanelState<T> extends State<_MenuPanel<T>> {
   Widget _buildItem(
     BuildContext context,
     int index,
-    ColorScheme colorScheme,
+    CalmColors c,
     Color selectedColor,
     Color hoverColor,
   ) {
@@ -594,8 +572,8 @@ class _MenuPanelState<T> extends State<_MenuPanel<T>> {
         : isActive
         ? hoverColor
         : Colors.transparent;
-    final disabledColor = colorScheme.onSurface.withValues(alpha: 0.38);
-    final iconColor = entry.enabled ? colorScheme.onSurface : disabledColor;
+    final disabledColor = c.text3;
+    final iconColor = entry.enabled ? c.text2 : disabledColor;
 
     return Semantics(
       button: true,
@@ -633,7 +611,7 @@ class _MenuPanelState<T> extends State<_MenuPanel<T>> {
                     Flexible(
                       child: DefaultTextStyle.merge(
                         style: TextStyle(
-                          color: entry.enabled ? null : disabledColor,
+                          color: entry.enabled ? c.text : disabledColor,
                         ),
                         child: entry.title,
                       ),
@@ -658,9 +636,7 @@ class _MenuPanelState<T> extends State<_MenuPanel<T>> {
                     curve: Curves.easeOut,
                     width: _kIndicatorWidth,
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? colorScheme.primary
-                          : Colors.transparent,
+                      color: isSelected ? c.accent : Colors.transparent,
                       borderRadius: BorderRadius.circular(_kIndicatorWidth),
                     ),
                   ),
@@ -1125,26 +1101,24 @@ class _FluentDropdownState<T> extends State<FluentDropdown<T>>
     });
   }
 
-  // Fluent 的控件底色是「比页面亮一档」的叠色：深色主题靠白色叠加提亮，
-  // 浅色主题靠黑色叠加压暗，两种主题都能看出控件边界。
-  Color _triggerFill(ColorScheme colorScheme) {
+  // CalmUI 触发器：与 CalmDropdown 一致的胶囊底，靠 surface2 / surfaceHover
+  // 区分静息与交互态，焦点/展开时用主色描边。
+  Color _triggerFill(CalmColors c) {
     if (!_enabled) return Colors.transparent;
-    if (_isPressed) return colorScheme.onSurface.withValues(alpha: 0.10);
-    if (_isHovered) return colorScheme.onSurface.withValues(alpha: 0.07);
-    return colorScheme.onSurface.withValues(alpha: 0.04);
+    if (_isPressed || _isHovered || _isOpen) return c.surfaceHover;
+    return c.surface2;
   }
 
-  Color _triggerBorder(ColorScheme colorScheme) {
-    if (!_enabled) return colorScheme.outline.withValues(alpha: 0.2);
-    if (_isFocused) return colorScheme.primary.withValues(alpha: 0.8);
-    if (_isHovered) return colorScheme.outline.withValues(alpha: 0.55);
-    return colorScheme.outline.withValues(alpha: 0.35);
+  Color _triggerBorder(CalmColors c) {
+    if (!_enabled) return c.border;
+    if (_isFocused || _isOpen) return c.accent;
+    if (_isHovered) return c.borderStrong;
+    return c.border;
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textColor = context.textColor;
+    final c = context.calm;
     final textStyle = Theme.of(context).textTheme.bodyMedium;
 
     return PopScope(
@@ -1190,11 +1164,11 @@ class _FluentDropdownState<T> extends State<FluentDropdown<T>>
               duration: _kItemAnimationDuration,
               curve: Curves.easeOut,
               constraints: const BoxConstraints(maxWidth: 180, minHeight: 36),
-              padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 8, 8),
+              padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 12, 8),
               decoration: BoxDecoration(
-                color: _triggerFill(colorScheme),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: _triggerBorder(colorScheme)),
+                color: _triggerFill(c),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: _triggerBorder(c)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1204,10 +1178,14 @@ class _FluentDropdownState<T> extends State<FluentDropdown<T>>
                       widget.displayValue,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      textHeightBehavior: kCalmTextHeightBehavior,
+                      strutStyle: calmStrut(12.5),
                       style: textStyle?.copyWith(
-                        color: textColor.withValues(
-                          alpha: _enabled ? 0.9 : 0.38,
-                        ),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: _enabled ? c.text : c.text3,
+                        height: 1.2,
+                        leadingDistribution: TextLeadingDistribution.even,
                       ),
                     ),
                   ),
@@ -1216,9 +1194,11 @@ class _FluentDropdownState<T> extends State<FluentDropdown<T>>
                     turns: _isOpen ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 18,
-                      color: textColor.withValues(alpha: _enabled ? 0.5 : 0.3),
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: _enabled
+                          ? c.text3
+                          : c.text3.withValues(alpha: 0.5),
                     ),
                   ),
                 ],

@@ -99,20 +99,18 @@ class _StorageSettingPageState extends State<StorageSettingPage> {
   Widget _customExportPath(GlobalSettingState state, GlobalSettingCubit cubit) {
     final exportPath = state.customExportPath.trim();
     if (isOhos) return const SizedBox.shrink();
-    return ListTile(
-      leading: const Icon(Icons.folder_outlined),
-      title: Text(t.settings.customExportPath),
-      subtitle: Text(
-        exportPath.isEmpty ? t.settings.notSet : exportPath,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.folder_outlined),
+      title: t.settings.customExportPath,
+      subtitle: exportPath.isEmpty ? t.settings.notSet : exportPath,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (exportPath.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear, size: 20),
+            CalmIconButton(
+              icon: Icons.close_rounded,
+              size: 26,
+              iconSize: 14,
               tooltip: t.common.clear,
               onPressed: () {
                 cubit.updateState(
@@ -121,7 +119,8 @@ class _StorageSettingPageState extends State<StorageSettingPage> {
                 showSuccessToast(t.common.settingSaved);
               },
             ),
-          const Icon(Icons.chevron_right),
+          const SizedBox(width: 2),
+          Icon(Icons.chevron_right_rounded, size: 18, color: context.calm.text3),
         ],
       ),
       onTap: () async {
@@ -147,30 +146,49 @@ class _StorageSettingPageState extends State<StorageSettingPage> {
     return SettingPageShell(
       title: t.settings.storage,
       child: ListView(
+        padding: kSettingPagePadding,
         children: [
           settingSectionTitle(
             context,
             t.settings.storage,
             icon: Icons.storage_outlined,
           ),
-          ListTile(
-            leading: const Icon(Icons.cleaning_services_outlined),
-            title: Text(t.settings.cache),
-            subtitle: Text(sizeText.isEmpty ? t.settings.cache : sizeText),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              await context.pushRoute(const CacheSettingRoute());
-              if (mounted) await _loadCacheSize();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.import_export_outlined),
-            title: Text(t.settings.dataBackup),
-            subtitle: Text(t.settings.dataBackupSubtitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.pushRoute(const DataBackupRoute()),
-          ),
-          if (!Platform.isIOS) _customExportPath(state, cubit),
+          settingCardGroup([
+            settingActionTile(
+              icon: Icons.cleaning_services_outlined,
+              title: t.settings.cache,
+              subtitle: sizeText.isEmpty ? t.settings.cache : sizeText,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_cacheCalculating)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: CalmLoading(size: 14),
+                    )
+                  else if (sizeText.isNotEmpty)
+                    CalmBadge(label: sizeText, tone: CalmBadgeTone.neutral),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: context.calm.text3,
+                  ),
+                ],
+              ),
+              onTap: () async {
+                await context.pushRoute(const CacheSettingRoute());
+                if (mounted) await _loadCacheSize();
+              },
+            ),
+            settingCategoryTile(
+              icon: Icons.import_export_outlined,
+              title: t.settings.dataBackup,
+              subtitle: t.settings.dataBackupSubtitle,
+              onTap: () => context.pushRoute(const DataBackupRoute()),
+            ),
+            if (!Platform.isIOS) _customExportPath(state, cubit),
+          ]),
           const SizedBox(height: 32),
         ],
       ),

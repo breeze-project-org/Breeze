@@ -7,9 +7,8 @@ import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_info/bloc/comic_preview_bloc.dart';
 import 'package:zephyr/page/comic_info/models/unified_plugin_preview.dart';
-import 'package:zephyr/page/search_result/widgets/bottom_loader.dart';
 import 'package:zephyr/type/enum.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/picture_bloc/bloc/picture_bloc.dart';
 import 'package:zephyr/widgets/picture_bloc/models/picture_info.dart';
 
@@ -40,7 +39,12 @@ class ComicPreviewSliver extends StatelessWidget {
             _header(context),
             if (state.status == ComicPreviewStatus.initial &&
                 state.items.isEmpty)
-              const SliverToBoxAdapter(child: BottomLoader())
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Center(child: CalmLoading()),
+                ),
+              )
             else ...[
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -63,7 +67,12 @@ class ComicPreviewSliver extends StatelessWidget {
                 ),
               ),
               if (state.status == ComicPreviewStatus.loadingMore)
-                const SliverToBoxAdapter(child: BottomLoader()),
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Center(child: CalmLoading()),
+                  ),
+                ),
               _footer(context, state),
             ],
           ],
@@ -76,22 +85,22 @@ class ComicPreviewSliver extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.only(top: 12, bottom: 12),
-        child: Text(
-          t.comicInfo.preview,
-          style: context.theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        child: CalmSectionHeader(title: t.comicInfo.preview),
       ),
     );
   }
 
   Widget _initialFailure(BuildContext context) {
-    return Center(
-      child: TextButton(
-        onPressed: () =>
-            context.read<ComicPreviewBloc>().add(const LoadComicPreview()),
-        child: Text(t.searchResult.retry),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Center(
+        child: CalmButton(
+          label: t.searchResult.retry,
+          icon: Icons.refresh_rounded,
+          variant: CalmButtonVariant.tonal,
+          onPressed: () =>
+              context.read<ComicPreviewBloc>().add(const LoadComicPreview()),
+        ),
       ),
     );
   }
@@ -102,12 +111,18 @@ class ComicPreviewSliver extends StatelessWidget {
     }
     if (state.status == ComicPreviewStatus.getMoreFailure) {
       return SliverToBoxAdapter(
-        child: Center(
-          child: TextButton(
-            onPressed: () => context.read<ComicPreviewBloc>().add(
-              const LoadComicPreview(loadMore: true),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Center(
+            child: CalmButton(
+              label: t.oldHome.loadMoreFailed,
+              icon: Icons.refresh_rounded,
+              variant: CalmButtonVariant.tonal,
+              size: CalmButtonSize.xs,
+              onPressed: () => context.read<ComicPreviewBloc>().add(
+                const LoadComicPreview(loadMore: true),
+              ),
             ),
-            child: Text(t.oldHome.loadMoreFailed),
           ),
         ),
       );
@@ -116,15 +131,17 @@ class ComicPreviewSliver extends StatelessWidget {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
     return SliverToBoxAdapter(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 6, bottom: 14),
-          child: TextButton.icon(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 14),
+        child: Center(
+          child: CalmButton(
+            label: t.oldHome.loadMore,
+            trailingIcon: Icons.keyboard_arrow_down_rounded,
+            variant: CalmButtonVariant.ghost,
+            size: CalmButtonSize.xs,
             onPressed: () => context.read<ComicPreviewBloc>().add(
               const LoadComicPreview(loadMore: true),
             ),
-            icon: const Icon(Icons.keyboard_arrow_down_rounded),
-            label: Text(t.oldHome.loadMore),
           ),
         ),
       ),
@@ -166,29 +183,50 @@ class _ComicPreviewTile extends StatelessWidget {
         builder: (context, state) {
           switch (state.status) {
             case PictureLoadStatus.initial:
+              // 静态占位：预览图数量多，持续动画在墨水屏上会拖出残影。
               return _tileBackground(
                 context,
-                const CircularProgressIndicator(),
+                Icon(
+                  Icons.image_outlined,
+                  size: 18,
+                  color: context.calm.text3.withValues(alpha: 0.7),
+                ),
               );
             case PictureLoadStatus.success:
-              return InkWell(
-                onTap: () => context.pushRoute(
-                  FullRouteImageRoute(imagePath: state.imagePath!),
-                ),
-                child: _tileBackground(
-                  context,
-                  Image.file(
-                    File(state.imagePath!),
-                    fit: BoxFit.contain,
-                    cacheWidth: 360,
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => context.pushRoute(
+                    FullRouteImageRoute(imagePath: state.imagePath!),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: _tileBackground(
+                      context,
+                      Image.file(
+                        File(state.imagePath!),
+                        fit: BoxFit.contain,
+                        cacheWidth: 360,
+                      ),
+                    ),
                   ),
                 ),
               );
             case PictureLoadStatus.failure:
-              return InkWell(
-                onTap: () =>
-                    context.read<PictureBloc>().add(GetPicture(pictureInfo)),
-                child: _tileBackground(context, const Icon(Icons.refresh)),
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () =>
+                      context.read<PictureBloc>().add(GetPicture(pictureInfo)),
+                  child: _tileBackground(
+                    context,
+                    Icon(
+                      Icons.refresh_rounded,
+                      size: 18,
+                      color: context.calm.text2,
+                    ),
+                  ),
+                ),
               );
           }
         },
@@ -199,8 +237,8 @@ class _ComicPreviewTile extends StatelessWidget {
   Widget _tileBackground(BuildContext context, Widget child) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: context.theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(8),
+        color: context.calm.surface2,
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Center(child: child),
     );

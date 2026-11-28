@@ -12,6 +12,7 @@ import 'package:zephyr/service/download/download_delete_service.dart';
 import 'package:zephyr/service/download/download_queue_manager.dart';
 import 'package:zephyr/service/download/download_task_repository.dart';
 import 'package:zephyr/service/download/models/download_task_json.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 /// 漫画详情页章节下载状态 + 长按多选控制器。
@@ -390,22 +391,33 @@ class EpisodeDownloadController {
     String title,
     String content,
   ) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(t.common.cancel),
+    final result = await showCalmDialog<bool>(
+      context,
+      title: title,
+      icon: Icons.help_outline_rounded,
+      bodyBuilder: (ctx) {
+        final c = ctx.calm;
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            content,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            style: TextStyle(fontSize: 12, height: 1.5, color: c.text2),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(t.common.ok),
-          ),
-        ],
-      ),
+        );
+      },
+      actionsBuilder: (ctx) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(ctx).pop(false),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(ctx).pop(true),
+        ),
+      ],
     );
     return result == true;
   }

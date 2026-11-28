@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/setting/global/doh_setting_page.dart';
+import 'package:zephyr/ui/ui.dart';
 
 class _TestGlobalSettingCubit extends GlobalSettingCubit {
   @override
@@ -32,11 +33,16 @@ void main() {
     expect(cubit.state.dohSetting.providers, defaultDohProviders);
     expect(find.text(t.settings.dohIpHint), findsOneWidget);
 
-    await tester.tap(find.byType(Switch).first);
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(CalmListTile, t.settings.doh),
+        matching: find.byType(CalmSwitch),
+      ),
+    );
     await tester.pump();
     expect(cubit.state.dohSetting.enabled, isTrue);
 
-    await tester.tap(find.byIcon(Icons.delete_outline).first);
+    await tester.tap(find.byIcon(Icons.delete_outline_rounded).first);
     await tester.pump();
     expect(
       cubit.state.dohSetting.providers.length,
@@ -46,7 +52,10 @@ void main() {
     await tester.tap(find.text(t.settings.dohAdd));
     await tester.pumpAndSettle();
     await tester.enterText(
-      find.byType(TextField),
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: find.byType(TextField),
+      ),
       'https://example.com/dns-query',
     );
     await tester.tap(find.text(t.common.ok));
@@ -61,7 +70,10 @@ void main() {
     await tester.tap(find.text(t.settings.dohAdd));
     await tester.pumpAndSettle();
     await tester.enterText(
-      find.byType(TextField),
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: find.byType(TextField),
+      ),
       'http://insecure.example/dns-query',
     );
     await tester.tap(find.text(t.common.ok));

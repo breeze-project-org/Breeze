@@ -9,6 +9,7 @@ import 'package:zephyr/main.dart';
 import 'package:zephyr/network/http/plugin/unified_comic_plugin.dart';
 import 'package:zephyr/network/http/plugin/unified_plugin_envelope.dart';
 import 'package:zephyr/page/login/slider_captcha_dialog.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/error/error_filter.dart';
 import 'package:zephyr/util/json/json_value.dart';
 import 'package:zephyr/widgets/toast.dart';
@@ -72,7 +73,6 @@ class _LoginFieldSpec {
 
 class _LoginPageState extends State<LoginPage> {
   final Map<String, TextEditingController> _controllers = {};
-  final Set<String> _revealedSecrets = {};
   final Map<String, Uint8List> _captchaImages = {};
   final Set<String> _captchaLoading = {};
   final Set<String> _captchaFailed = {};
@@ -322,23 +322,30 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!mounted) return;
 
-    return showDialog<void>(
-      context: context,
+    return showCalmDialog<void>(
+      context,
+      title: title,
+      icon: Icons.error_outline_rounded,
+      tone: CalmTone.danger,
       barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: SingleChildScrollView(
-            child: ListBody(children: <Widget>[Text(message)]),
+      bodyBuilder: (ctx) {
+        final c = ctx.calm;
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            message,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            style: TextStyle(fontSize: 12, height: 1.5, color: c.text2),
           ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(t.common.ok),
-              onPressed: () => context.pop(),
-            ),
-          ],
         );
       },
+      actionsBuilder: (ctx) => <Widget>[
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(ctx).pop(),
+        ),
+      ],
     );
   }
 
@@ -424,25 +431,29 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     if (_loadingScheme) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return CalmPageScaffold(
+        title: t.login.title,
+        maxContentWidth: 480,
+        body: Center(child: CalmLoading(label: t.common.loading, size: 22)),
+      );
     }
 
     if (_schemeError != null) {
-      return Scaffold(
-        appBar: AppBar(title: Text(t.login.title)),
+      return CalmPageScaffold(
+        title: t.login.title,
+        maxContentWidth: 480,
         body: Center(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_schemeError!, textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: _loadLoginScheme,
-                  child: Text(t.login.retry),
-                ),
-              ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: CalmErrorState(
+                title: _schemeError!,
+                errorDetail: from.isEmpty ? t.login.missingPluginId : from,
+                errorDetailMaxLines: 2,
+                primaryLabel: t.login.retry,
+                onPrimary: _loadLoginScheme,
+              ),
             ),
           ),
         ),
@@ -454,47 +465,37 @@ class _LoginPageState extends State<LoginPage> {
         : _submitLabel;
     // 滑块字段不占位：提交时自动弹拼图，登录页外观与无滑块时一致。
     final visibleFields = _fields.where((e) => !e.isSliderCaptcha).toList();
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title.isEmpty ? t.login.title : title),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.settings),
-            onPressed: () => context.pushRoute(GlobalSettingRoute()),
-          ),
-        ],
-      ),
+    return CalmPageScaffold(
+      title: title.isEmpty ? t.login.title : title,
+      maxContentWidth: 520,
+      actions: [
+        CalmIconButton(
+          icon: Icons.settings_rounded,
+          tooltip: t.settings.title,
+          onPressed: () => context.pushRoute(GlobalSettingRoute()),
+        ),
+      ],
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          // 桌面端居中限宽（与其他表单页一致），移动端全宽。
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                for (var i = 0; i < visibleFields.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 20),
-                  _buildField(visibleFields[i]),
-                ],
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      onPressed: _submitting ? null : _submitForm,
-                      child: _submitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(submitLabel),
-                    ),
-                  ],
-                ),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        child: CalmCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (var i = 0; i < visibleFields.length; i++) ...[
+                if (i > 0) const SizedBox(height: 14),
+                _buildField(visibleFields[i]),
               ],
-            ),
+              const SizedBox(height: 18),
+              CalmButton(
+                label: submitLabel,
+                icon: Icons.login_rounded,
+                variant: CalmButtonVariant.primary,
+                size: CalmButtonSize.md,
+                expand: true,
+                loading: _submitting,
+                onPressed: _submitting ? null : _submitForm,
+              ),
+            ],
           ),
         ),
       ),
@@ -506,41 +507,35 @@ class _LoginPageState extends State<LoginPage> {
     // 滑块字段不渲染：提交时自动弹拼图，登录页外观与无滑块时一致。
     if (spec.isSliderCaptcha) return const SizedBox.shrink();
 
+    final c = context.calm;
     final controller = _controllers[spec.key];
-    final revealed = _revealedSecrets.contains(spec.key);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: spec.required ? '${spec.label} *' : spec.label,
+        _FieldLabel(text: spec.required ? '${spec.label} *' : spec.label),
+        const SizedBox(height: 6),
+        if (spec.multiline)
+          CalmTextArea(
+            controller: controller,
+            hintText: spec.placeholder.isEmpty
+                ? spec.label
+                : spec.placeholder,
+            minLines: 3,
+            maxLines: 5,
+          )
+        else
+          CalmTextField(
+            controller: controller,
             hintText: spec.placeholder.isEmpty ? null : spec.placeholder,
-            border: const OutlineInputBorder(),
-            suffixIcon: spec.obscure
-                ? IconButton(
-                    onPressed: () {
-                      setState(() {
-                        if (revealed) {
-                          _revealedSecrets.remove(spec.key);
-                        } else {
-                          _revealedSecrets.add(spec.key);
-                        }
-                      });
-                    },
-                    icon: Icon(
-                      revealed ? Icons.visibility : Icons.visibility_off,
-                    ),
-                  )
-                : null,
+            prefixIcon: spec.obscure ? Icons.lock_outline_rounded : null,
+            obscureText: spec.obscure,
           ),
-          obscureText: spec.obscure && !revealed,
-          maxLines: spec.multiline ? 5 : 1,
-          minLines: spec.multiline ? 3 : 1,
-        ),
         if (spec.help.trim().isNotEmpty) ...[
           const SizedBox(height: 6),
-          Text(spec.help, style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            spec.help,
+            style: TextStyle(fontSize: 10.5, height: 1.5, color: c.text3),
+          ),
         ],
       ],
     );
@@ -549,6 +544,7 @@ class _LoginPageState extends State<LoginPage> {
   /// 验证码字段：左输入框 + 右图片（点击刷新），常规网站布局。
   /// 提交失败后宿主自动刷图，取到新图时清空旧输入（旧码已作废）。
   Widget _buildCaptchaField(_LoginFieldSpec spec) {
+    final c = context.calm;
     final controller = _controllers[spec.key];
     final bytes = _captchaImages[spec.key];
     final loading = _captchaLoading.contains(spec.key);
@@ -557,71 +553,73 @@ class _LoginPageState extends State<LoginPage> {
         ? t.login.captchaTapToRefresh
         : spec.captchaRefreshText;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _FieldLabel(text: spec.required ? '${spec.label} *' : spec.label),
+        const SizedBox(height: 6),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: TextField(
+              child: CalmTextField(
                 controller: controller,
-                decoration: InputDecoration(
-                  labelText: spec.required ? '${spec.label} *' : spec.label,
-                  hintText: spec.placeholder.isEmpty ? null : spec.placeholder,
-                  border: const OutlineInputBorder(),
-                ),
+                hintText: spec.placeholder.isEmpty
+                    ? spec.label
+                    : spec.placeholder,
+                prefixIcon: Icons.verified_user_outlined,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             // 右侧图与输入框等高，只负责显示不挡字；点图放大看，点按钮刷新。
             GestureDetector(
               onTap: loading || bytes == null
                   ? null
                   : () => _showCaptchaZoom(spec.key),
               child: Container(
-                // 输入框默认高度约 56；图按 200x62 等比放大到同高。
-                height: 56,
-                width: 180,
+                height: 36,
+                width: 132,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Theme.of(context).dividerColor),
-                  borderRadius: BorderRadius.circular(8),
+                  color: c.surface2,
+                  border: Border.all(color: c.border),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: loading
-                    ? Text(
-                        t.login.captchaLoading,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      )
+                    ? CalmLoading(size: 14)
                     : (bytes != null
                           ? Image.memory(
                               bytes,
-                              height: 56,
-                              width: 180,
+                              height: 36,
+                              width: 132,
                               fit: BoxFit.fill,
                             )
                           : Text(
                               failed
                                   ? t.login.captchaLoadFailed
                                   : t.login.captchaLoading,
-                              style: Theme.of(context).textTheme.bodySmall,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                color: failed ? c.danger : c.text3,
+                              ),
                             )),
               ),
             ),
-            const SizedBox(width: 4),
-            Tooltip(
-              message: refreshText,
-              child: IconButton(
-                onPressed: loading ? null : () => _fetchCaptcha(spec.key),
-                icon: const Icon(Icons.refresh),
-                color: Theme.of(context).colorScheme.primary,
-              ),
+            const SizedBox(width: 6),
+            CalmIconButton(
+              icon: Icons.refresh_rounded,
+              tooltip: refreshText,
+              onPressed: loading ? null : () => _fetchCaptcha(spec.key),
             ),
           ],
         ),
         if (spec.help.trim().isNotEmpty) ...[
           const SizedBox(height: 6),
-          Text(spec.help, style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            spec.help,
+            style: TextStyle(fontSize: 10.5, height: 1.5, color: c.text3),
+          ),
         ],
       ],
     );
@@ -631,47 +629,83 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _showCaptchaZoom(String key) async {
     final spec = _fields.where((e) => e.key == key).firstOrNull;
     if (spec == null) return;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
+    await showCalmDialog<void>(
+      context,
+      title: spec.label,
+      subtitle: spec.help.trim().isEmpty ? null : spec.help,
+      icon: Icons.image_outlined,
+      maxWidth: 440,
+      bodyBuilder: (ctx) {
+        final c = ctx.calm;
         final bytes = _captchaImages[key];
         final loading = _captchaLoading.contains(key);
-        return AlertDialog(
-          content: SizedBox(
-            width: 400,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (bytes != null)
-                  Image.memory(bytes, width: 400, fit: BoxFit.fitWidth)
-                else
-                  Text(t.login.captchaLoading),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: loading
-                          ? null
-                          : () {
-                              _fetchCaptcha(key);
-                              Navigator.of(dialogContext).pop();
-                            },
-                      child: Text(t.login.retry),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: Text(t.common.ok),
-                    ),
-                  ],
-                ),
-              ],
+        if (bytes != null) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(
+              bytes,
+              width: double.infinity,
+              fit: BoxFit.fitWidth,
             ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          child: Center(
+            child: loading
+                ? const CalmLoading()
+                : Text(
+                    t.login.captchaLoadFailed,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: c.text2),
+                  ),
           ),
         );
       },
+      actionsBuilder: (ctx) => <Widget>[
+        CalmButton(
+          label: t.login.retry,
+          icon: Icons.refresh_rounded,
+          variant: CalmButtonVariant.ghost,
+          onPressed: _captchaLoading.contains(key)
+              ? null
+              : () {
+                  _fetchCaptcha(key);
+                  Navigator.of(ctx).pop();
+                },
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(ctx).pop(),
+        ),
+      ],
     );
     // 弹窗里刷了图的话外层跟着重建。
     if (mounted) setState(() {});
+  }
+}
+
+/// 表单字段小标题（胶囊输入框不自带 label，这里统一排版）。
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    return Text(
+      text,
+      textHeightBehavior: kCalmTextHeightBehavior,
+      strutStyle: calmStrut(11.5),
+      style: TextStyle(
+        fontSize: 11.5,
+        fontWeight: FontWeight.w600,
+        color: c.text2,
+        height: 1.2,
+        leadingDistribution: TextLeadingDistribution.even,
+      ),
+    );
   }
 }

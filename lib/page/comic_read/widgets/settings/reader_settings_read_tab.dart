@@ -85,42 +85,35 @@ class _ReadModeSection extends StatelessWidget {
           !context.isEditingPerComic ||
               context.watch<ComicReadPreferenceCubit>().state.override == null
           ? null
-          : TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: context.theme.colorScheme.error,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+          : CalmButton(
+              label: t.reader.perComicFollowGlobal,
+              variant: CalmButtonVariant.ghost,
+              size: CalmButtonSize.xs,
+              icon: Icons.restart_alt_rounded,
               onPressed: () async {
                 HapticFeedback.selectionClick();
                 await context.read<ComicReadPreferenceCubit>().clearOverride();
                 changePageIndex(0);
               },
-              child: Text(t.reader.perComicFollowGlobal),
             ),
       children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _SettingsChoiceChip(
-              title: t.reader.webtoon,
-              selected: readMode == 0,
-              onTap: () => selectReadMode(0),
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.singlePageLtr,
-              selected: readMode == 1,
-              onTap: () => selectReadMode(1),
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.singlePageRtl,
-              selected: readMode == 2,
-              onTap: () => selectReadMode(2),
-            ),
-          ],
-        ),
+        _SettingsChipRow([
+          _SettingsChoiceChip(
+            title: t.reader.webtoon,
+            selected: readMode == 0,
+            onTap: () => selectReadMode(0),
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.singlePageLtr,
+            selected: readMode == 1,
+            onTap: () => selectReadMode(1),
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.singlePageRtl,
+            selected: readMode == 2,
+            onTap: () => selectReadMode(2),
+          ),
+        ]),
         // 横屏阅读是设备级开关，只写全局；本漫 tab 里隐藏。
         if (!isDesktopPlatform &&
             onLandscapeChanged != null &&
@@ -220,48 +213,44 @@ class _ThemeModeSection extends StatelessWidget {
     return _SettingsSection(
       title: t.reader.themeMode,
       children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _SettingsChoiceChip(
-              title: t.common.lightMode,
-              selected: globalSettingState.themeMode == ThemeMode.light,
-              onTap: () {
-                if (globalSettingState.themeMode == ThemeMode.light) {
-                  return;
-                }
-                globalSettingCubit.updateState(
-                  (current) => current.copyWith(themeMode: ThemeMode.light),
-                );
-              },
-            ),
-            _SettingsChoiceChip(
-              title: t.common.darkMode,
-              selected: globalSettingState.themeMode == ThemeMode.dark,
-              onTap: () {
-                if (globalSettingState.themeMode == ThemeMode.dark) {
-                  return;
-                }
-                globalSettingCubit.updateState(
-                  (current) => current.copyWith(themeMode: ThemeMode.dark),
-                );
-              },
-            ),
-            _SettingsChoiceChip(
-              title: t.common.followSystem,
-              selected: globalSettingState.themeMode == ThemeMode.system,
-              onTap: () {
-                if (globalSettingState.themeMode == ThemeMode.system) {
-                  return;
-                }
-                globalSettingCubit.updateState(
-                  (current) => current.copyWith(themeMode: ThemeMode.system),
-                );
-              },
-            ),
-          ],
-        ),
+        _SettingsChipRow([
+          _SettingsChoiceChip(
+            title: t.common.lightMode,
+            selected: globalSettingState.themeMode == ThemeMode.light,
+            onTap: () {
+              if (globalSettingState.themeMode == ThemeMode.light) {
+                return;
+              }
+              globalSettingCubit.updateState(
+                (current) => current.copyWith(themeMode: ThemeMode.light),
+              );
+            },
+          ),
+          _SettingsChoiceChip(
+            title: t.common.darkMode,
+            selected: globalSettingState.themeMode == ThemeMode.dark,
+            onTap: () {
+              if (globalSettingState.themeMode == ThemeMode.dark) {
+                return;
+              }
+              globalSettingCubit.updateState(
+                (current) => current.copyWith(themeMode: ThemeMode.dark),
+              );
+            },
+          ),
+          _SettingsChoiceChip(
+            title: t.common.followSystem,
+            selected: globalSettingState.themeMode == ThemeMode.system,
+            onTap: () {
+              if (globalSettingState.themeMode == ThemeMode.system) {
+                return;
+              }
+              globalSettingCubit.updateState(
+                (current) => current.copyWith(themeMode: ThemeMode.system),
+              );
+            },
+          ),
+        ]),
       ],
     );
   }
@@ -434,36 +423,32 @@ class _ReadBackgroundSection extends StatelessWidget {
     return _SettingsSection(
       title: t.reader.background,
       children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _SettingsChoiceChip(
-              title: t.reader.auto,
-              selected:
-                  effective.readerBackgroundMode == ReaderBackgroundMode.auto,
-              onTap: () => selectBackground(ReaderBackgroundMode.auto),
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.black,
-              selected:
-                  effective.readerBackgroundMode == ReaderBackgroundMode.black,
-              onTap: () => selectBackground(ReaderBackgroundMode.black),
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.white,
-              selected:
-                  effective.readerBackgroundMode == ReaderBackgroundMode.white,
-              onTap: () => selectBackground(ReaderBackgroundMode.white),
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.grey,
-              selected:
-                  effective.readerBackgroundMode == ReaderBackgroundMode.grey,
-              onTap: () => selectBackground(ReaderBackgroundMode.grey),
-            ),
-          ],
-        ),
+        _SettingsChipRow([
+          _SettingsChoiceChip(
+            title: t.reader.auto,
+            selected:
+                effective.readerBackgroundMode == ReaderBackgroundMode.auto,
+            onTap: () => selectBackground(ReaderBackgroundMode.auto),
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.black,
+            selected:
+                effective.readerBackgroundMode == ReaderBackgroundMode.black,
+            onTap: () => selectBackground(ReaderBackgroundMode.black),
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.white,
+            selected:
+                effective.readerBackgroundMode == ReaderBackgroundMode.white,
+            onTap: () => selectBackground(ReaderBackgroundMode.white),
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.grey,
+            selected:
+                effective.readerBackgroundMode == ReaderBackgroundMode.grey,
+            onTap: () => selectBackground(ReaderBackgroundMode.grey),
+          ),
+        ]),
       ],
     );
   }

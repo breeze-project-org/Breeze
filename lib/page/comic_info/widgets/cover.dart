@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/config/global/global_setting.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/picture_bloc/models/picture_info.dart';
 
 import 'package:zephyr/config/router/router.gr.dart';
@@ -20,7 +20,7 @@ class Cover extends StatefulWidget {
     super.key,
     required this.pictureInfo,
     this.height = 180,
-    this.borderRadius = 14,
+    this.borderRadius = 16,
     this.onTap,
   });
 
@@ -59,10 +59,24 @@ class _CoverState extends State<Cover> {
     super.dispose();
   }
 
+  /// 墨水屏模式：不驱动任何持续动画（骨架/转圈都会留下残影）。
+  bool _removeLoadingAnimation() {
+    try {
+      return context.select<GlobalSettingCubit, bool>(
+        (cubit) => cubit.state.eInkSetting.shouldRemoveLoadingSpinner,
+      );
+    } catch (_) {
+      // 没有全局设置作用域时（预览/单测）按普通模式处理。
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final width = widget.height / 4 * 3;
     final radius = BorderRadius.circular(widget.borderRadius);
+    final staticPlaceholder = _removeLoadingAnimation();
 
     return SizedBox(
       height: widget.height,
@@ -73,38 +87,43 @@ class _CoverState extends State<Cover> {
           builder: (context, state) {
             switch (state.status) {
               case PictureLoadStatus.initial:
-                return DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: radius,
-                    color: context.theme.colorScheme.surfaceContainerHigh,
-                    border: Border.all(
-                      color: context.theme.colorScheme.outlineVariant
-                          .withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: Center(
-                    child: LoadingAnimationWidget.waveDots(
-                      color: context.theme.colorScheme.primary,
-                      size: 40,
-                    ),
-                  ),
-                );
+                return staticPlaceholder
+                    ? Container(
+                        decoration: BoxDecoration(
+                          borderRadius: radius,
+                          color: c.surface2,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.auto_stories_outlined,
+                          size: 26,
+                          color: c.text3.withValues(alpha: 0.55),
+                        ),
+                      )
+                    : CalmSkeletonBox(
+                        width: width,
+                        height: widget.height,
+                        radius: widget.borderRadius,
+                      );
               case PictureLoadStatus.success:
-                return InkWell(
-                  onTap:
-                      widget.onTap ??
-                      () {
-                        context.pushRoute(
-                          FullRouteImageRoute(imagePath: state.imagePath!),
-                        );
-                      },
-                  child: ClipRRect(
-                    borderRadius: radius,
-                    child: Image.file(
-                      File(state.imagePath!),
-                      fit: BoxFit.cover,
-                      width: width,
-                      height: widget.height,
+                return MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap:
+                        widget.onTap ??
+                        () {
+                          context.pushRoute(
+                            FullRouteImageRoute(imagePath: state.imagePath!),
+                          );
+                        },
+                    child: ClipRRect(
+                      borderRadius: radius,
+                      child: Image.file(
+                        File(state.imagePath!),
+                        fit: BoxFit.cover,
+                        width: width,
+                        height: widget.height,
+                      ),
                     ),
                   ),
                 );
@@ -117,23 +136,39 @@ class _CoverState extends State<Cover> {
                       fit: BoxFit.cover,
                     ),
                   );
-                } else {
-                  return InkWell(
+                }
+                return MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
                     onTap: () {
                       context.read<PictureBloc>().add(
                         GetPicture(widget.pictureInfo),
                       );
                     },
-                    child: DecoratedBox(
+                    child: Container(
                       decoration: BoxDecoration(
                         borderRadius: radius,
-                        color:
-                            context.theme.colorScheme.surfaceContainerHighest,
+                        color: c.surface2,
                       ),
-                      child: const Center(child: Icon(Icons.refresh)),
+                      alignment: Alignment.center,
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: c.surface,
+                          shape: BoxShape.circle,
+                          boxShadow: c.shadowSm,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.refresh_rounded,
+                          size: 17,
+                          color: c.text2,
+                        ),
+                      ),
                     ),
-                  );
-                }
+                  ),
+                );
             }
           },
         ),

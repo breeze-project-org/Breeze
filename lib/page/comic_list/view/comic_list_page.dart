@@ -1,13 +1,14 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:zephyr/config/router/router.gr.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/global/global_setting.dart';
+import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_list/cubit/comic_list_cubit.dart';
 import 'package:zephyr/page/comic_list/models/comic_list_scene.dart';
-import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_list/scene_filter/plugin_list_filter_dialog.dart';
 import 'package:zephyr/page/comic_list/view/plugin_paged_comic_list_view.dart';
+import 'package:zephyr/ui/ui.dart';
+import 'package:zephyr/widgets/error_view.dart';
 
 @RoutePage()
 class ComicListPage extends StatelessWidget {
@@ -59,123 +60,83 @@ class _ComicListViewState extends State<_ComicListView>
     super.build(context);
     return BlocBuilder<ComicListCubit, ComicListState>(
       builder: (context, state) {
-        final title =
+        final pageTitle =
             widget.title ?? (state.scene?.title ?? t.comicList.defaultTitle);
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(title),
-            actions: [
-              if (state.requiresFilter)
-                IconButton(
-                  icon: const Icon(Icons.filter_alt),
-                  onPressed: () => _openFilterDialog(context),
-                ),
-            ],
-          ),
+        return CalmPageScaffold(
+          title: pageTitle,
+          // 漫画宫格需要占满整行（桌面端也铺满），限宽交给宫格自身的断点。
+          maxContentWidth: null,
+          actions: [
+            if (state.requiresFilter)
+              CalmIconButton(
+                icon: Icons.tune_rounded,
+                tooltip: t.comicList.filter,
+                selected: _hasActiveFilter(state),
+                onPressed: () => _openFilterDialog(context),
+              ),
+          ],
           body: _buildBody(context, state),
         );
       },
     );
   }
 
+  /// 当前筛选是否偏离插件给的默认值（用于顶栏筛选入口的激活态）。
+  bool _hasActiveFilter(ComicListState state) {
+    final bundle = state.filterBundle;
+    if (bundle == null || state.filterSelections.isEmpty) {
+      return false;
+    }
+    final defaults = bundle.defaultSelections;
+    for (final entry in state.filterSelections.entries) {
+      if (defaults[entry.key] != entry.value) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Widget _buildBody(BuildContext context, ComicListState state) {
     final currentFrom = state.currentFrom;
 
     if (currentFrom.isEmpty) {
-      return Center(child: Text(t.comicList.missingSource));
-    }
-
-    if (state.sceneLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.sceneError != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(state.sceneError!),
-            const SizedBox(height: 12),
-            if (state.sceneLoginPluginId.isNotEmpty)
-              Wrap(
-                spacing: 12,
-                alignment: WrapAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () async {
-                      await context.pushRoute(
-                        LoginRoute(from: state.sceneLoginPluginId),
-                      );
-                      if (context.mounted) {
-                        context.read<ComicListCubit>().reload();
-                      }
-                    },
-                    icon: const Icon(Icons.login_outlined),
-                    label: Text(t.login.loginButton),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => context.read<ComicListCubit>().reload(),
-                    icon: const Icon(Icons.refresh),
-                    label: Text(t.comicList.reload),
-                  ),
-                ],
-              )
-            else
-              ElevatedButton(
-                onPressed: () => context.read<ComicListCubit>().reload(),
-                child: Text(t.comicList.reload),
-              ),
-          ],
+      return _centered(
+        CalmEmptyState(
+          icon: Icons.extension_off_rounded,
+          title: t.comicList.missingSource,
         ),
       );
     }
+
+    if (state.sceneLoading) {
+      return const Center(child: CalmLoading(size: 22));
+    }
+
+    if (state.sceneError != null) {
+      return _centered(
+        ErrorView(
+          errorMessage: state.sceneError!,
+          loginPluginId: state.sceneLoginPluginId,
+          onRetry: () => context.read<ComicListCubit>().reload(),
+        ),
+      );
+    }
+
     if (state.requiresFilter &&
         state.filterLoading &&
         !state.hasResolvedFilter) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CalmLoading(size: 22));
     }
 
     if (state.requiresFilter &&
         state.filterError != null &&
         !state.hasResolvedFilter) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(state.filterError!),
-            const SizedBox(height: 12),
-            if (state.filterLoginPluginId.isNotEmpty)
-              Wrap(
-                spacing: 12,
-                alignment: WrapAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () async {
-                      await context.pushRoute(
-                        LoginRoute(from: state.filterLoginPluginId),
-                      );
-                      if (context.mounted) {
-                        context.read<ComicListCubit>().loadFilter();
-                      }
-                    },
-                    icon: const Icon(Icons.login_outlined),
-                    label: Text(t.login.loginButton),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        context.read<ComicListCubit>().loadFilter(),
-                    icon: const Icon(Icons.refresh),
-                    label: Text(t.comicList.reload),
-                  ),
-                ],
-              )
-            else
-              ElevatedButton(
-                onPressed: () => context.read<ComicListCubit>().loadFilter(),
-                child: Text(t.comicList.reload),
-              ),
-          ],
+      return _centered(
+        ErrorView(
+          errorMessage: state.filterError!,
+          loginPluginId: state.filterLoginPluginId,
+          onRetry: () => context.read<ComicListCubit>().loadFilter(),
         ),
       );
     }
@@ -185,7 +146,18 @@ class _ComicListViewState extends State<_ComicListView>
       return _buildSceneBody(state, scene);
     }
 
-    return const SizedBox.shrink();
+    return _centered(
+      CalmEmptyState(icon: Icons.inbox_rounded, title: t.comicList.nothingHere),
+    );
+  }
+
+  Widget _centered(Widget child) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Padding(padding: const EdgeInsets.all(16), child: child),
+      ),
+    );
   }
 
   Widget _buildSceneBody(ComicListState state, ComicListScene scene) {

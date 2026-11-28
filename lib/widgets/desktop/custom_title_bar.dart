@@ -3,8 +3,12 @@ import 'dart:io';
 import 'package:material_ui/material_ui.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:zephyr/platform/desktop/desktop_window.dart';
+import 'package:zephyr/ui/ui.dart';
 
-/// Material 3 风格的自定义标题栏（仅桌面平台使用）
+/// CalmUI 风格的自定义标题栏（仅桌面平台使用）。
+///
+/// 与正文同底色，仅用一条极淡的 1px 分隔线收口；窗口按钮悬停时给柔和底色，
+/// 关闭按钮沿用「危险语义」的玫瑰色。
 class CustomTitleBar extends StatefulWidget {
   const CustomTitleBar({super.key});
 
@@ -69,13 +73,16 @@ class _CustomTitleBarState extends State<CustomTitleBar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final c = context.calm;
     final isMacOS = Platform.isMacOS; // 检测是否为 macOS
+    final titleColor = isMacOS ? c.text2 : c.text;
 
     return Container(
       height: 40,
-      color: colorScheme.surface,
+      decoration: BoxDecoration(
+        color: c.bg,
+        border: Border(bottom: BorderSide(color: c.border)),
+      ),
       child: Row(
         children: [
           // --- macOS 专属占位 ---
@@ -100,9 +107,14 @@ class _CustomTitleBarState extends State<CustomTitleBar> {
                     const SizedBox(width: 8),
                     Text(
                       'Breeze',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: colorScheme.onSurface,
+                      textHeightBehavior: kCalmTextHeightBehavior,
+                      strutStyle: calmStrut(12.5),
+                      style: TextStyle(
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w500,
+                        color: titleColor,
+                        height: 1.2,
+                        leadingDistribution: TextLeadingDistribution.even,
                       ),
                     ),
                   ],
@@ -112,9 +124,14 @@ class _CustomTitleBarState extends State<CustomTitleBar> {
                   if (isMacOS)
                     Text(
                       'Breeze',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
-                        fontSize: 13, // macOS 标题通常更小更精致
+                      textHeightBehavior: kCalmTextHeightBehavior,
+                      strutStyle: calmStrut(12.5),
+                      style: TextStyle(
+                        fontSize: 12.5, // macOS 标题通常更小更精致
+                        fontWeight: FontWeight.w500,
+                        color: titleColor,
+                        height: 1.2,
+                        leadingDistribution: TextLeadingDistribution.even,
                       ),
                     ),
                   if (isMacOS) const Spacer(),
@@ -129,23 +146,23 @@ class _CustomTitleBarState extends State<CustomTitleBar> {
             _TitleBarButton(
               icon: Icons.minimize_rounded,
               onPressed: _minimize,
-              hoverColor: colorScheme.onSurface.withValues(alpha: 0.08),
-              iconColor: colorScheme.onSurfaceVariant,
+              hoverColor: c.surfaceHover,
+              iconColor: c.text2,
             ),
             _TitleBarButton(
               icon: _isMaximized
                   ? Icons.filter_none_rounded
                   : Icons.crop_square_rounded,
               onPressed: _toggleMaximize,
-              hoverColor: colorScheme.onSurface.withValues(alpha: 0.08),
-              iconColor: colorScheme.onSurfaceVariant,
+              hoverColor: c.surfaceHover,
+              iconColor: c.text2,
             ),
             _TitleBarButton(
               icon: Icons.close_rounded,
               onPressed: _handleClose,
-              hoverColor: Colors.red,
+              hoverColor: c.danger,
               hoverIconColor: Colors.white,
-              iconColor: colorScheme.onSurfaceVariant,
+              iconColor: c.text2,
             ),
           ],
         ],
@@ -184,10 +201,13 @@ class _TitleBarButtonState extends State<_TitleBarButton> {
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: widget.onPressed,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
           width: 46,
           height: 40,
           color: _isHovered ? widget.hoverColor : Colors.transparent,
+          alignment: Alignment.center,
           child: Icon(
             widget.icon,
             size: 18,

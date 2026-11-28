@@ -6,6 +6,7 @@ import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/page/setting/global/appearance_setting_page.dart';
+import 'package:zephyr/ui/ui.dart';
 
 class _TestGlobalSettingCubit extends GlobalSettingCubit {
   @override
@@ -159,11 +160,19 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pumpAndSettle();
     final showTile = find.widgetWithText(
-      SwitchListTile,
+      CalmListTile,
       t.settings.showScrollbar,
     );
-    expect(tester.widget<SwitchListTile>(showTile).value, isFalse);
+    expect(
+      tester
+          .widget<CalmSwitch>(
+            find.descendant(of: showTile, matching: find.byType(CalmSwitch)),
+          )
+          .value,
+      isFalse,
+    );
     expect(find.text(t.settings.alwaysShowScrollbar), findsNothing);
 
     await tester.tap(find.text(t.settings.showScrollbar));
@@ -176,6 +185,7 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.text(t.settings.alwaysShowScrollbar));
     await tester.pump();
     expect(cubit.state.alwaysShowScrollbar, isTrue);

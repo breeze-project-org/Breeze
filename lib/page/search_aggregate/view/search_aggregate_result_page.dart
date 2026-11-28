@@ -11,10 +11,10 @@ import 'package:zephyr/page/search/widget/search_input_dialog.dart';
 import 'package:zephyr/page/search/widget/source_select_dialog.dart';
 import 'package:zephyr/page/search_result/bloc/search_bloc.dart';
 import 'package:zephyr/config/router/router.gr.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_info.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_mapper.dart';
-import 'package:zephyr/widgets/section_header.dart';
 
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/search_aggregate/cubit/search_aggregate_cubit.dart';
@@ -110,10 +110,22 @@ class _SearchAggregateResultPageState
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     return Scaffold(
+      backgroundColor: c.bg,
       appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: c.bg,
+        foregroundColor: c.text,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
         titleSpacing: 0,
         title: _SearchBarTrigger(searchEvent: widget.searchEvent),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: c.border),
+        ),
       ),
       body: Column(
         children: [
@@ -125,7 +137,7 @@ class _SearchAggregateResultPageState
                     state.results.isNotEmpty || state.errors.isNotEmpty;
                 if (state.status == AggregateSearchStatus.loading &&
                     !hasAnyResponse) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: CalmLoading());
                 }
                 return Stack(
                   children: [
@@ -133,7 +145,7 @@ class _SearchAggregateResultPageState
                     if (state.status == AggregateSearchStatus.loading)
                       const Align(
                         alignment: Alignment.topCenter,
-                        child: LinearProgressIndicator(minHeight: 2),
+                        child: CalmProgressBar(height: 3),
                       ),
                   ],
                 );
@@ -154,9 +166,16 @@ class _SearchBarTrigger extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(left: 10, right: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          CalmIconButton(
+            icon: Icons.arrow_back_rounded,
+            tooltip: t.common.back,
+            onPressed: () => context.maybePop(),
+          ),
+          const SizedBox(width: 6),
           Expanded(
             child: SearchQueryField(
               query: searchEvent.searchStates.searchKeyword,
@@ -165,10 +184,11 @@ class _SearchBarTrigger extends StatelessWidget {
               onTap: () => _openSearchPage(context),
             ),
           ),
-          IconButton(
+          const SizedBox(width: 6),
+          CalmIconButton(
+            icon: Icons.tune_rounded,
             tooltip: t.search.selectSourceTooltip,
             onPressed: () => _showSourceDialog(context),
-            icon: const Icon(Icons.tune),
           ),
         ],
       ),
@@ -243,17 +263,15 @@ class _FilterChipsRow extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                FilterChip(
-                  showCheckmark: false,
-                  label: Text(t.search.hasResults),
+                CalmFilterChip(
+                  label: t.search.hasResults,
                   selected: state.showHasResults,
                   onSelected: (value) => context
                       .read<AggregateSearchCubit>()
                       .toggleHasResults(value),
                 ),
-                FilterChip(
-                  showCheckmark: false,
-                  label: Text(t.search.showErrors),
+                CalmFilterChip(
+                  label: t.search.showErrors,
                   selected: state.showErrors,
                   onSelected: (value) => context
                       .read<AggregateSearchCubit>()
@@ -276,6 +294,7 @@ class _ResultList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final children = <Widget>[];
     final registry = context.watch<PluginRegistryCubit>().state;
     final selectedIds = state.selectedSources.keys.toSet();
@@ -305,30 +324,31 @@ class _ResultList extends StatelessWidget {
         children.add(
           Padding(
             key: ValueKey('aggregate-source-$pluginId'),
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SectionHeader(
-                  title: _sourceTitle(context, pluginId),
-                  subtitle: t.search.resultCount(count: items.length),
+                // 旧实现整行可点进单源搜索结果页；分组头 + 「更多」胶囊都保留这个入口。
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () => _openSourceSearch(context, pluginId),
+                  child: CalmSectionHeader(
+                    title: _sourceTitle(context, pluginId),
+                    countText: t.search.resultCount(count: items.length),
+                    actionLabel: t.common.more,
+                    onActionTap: () => _openSourceSearch(context, pluginId),
+                  ),
                 ),
+                const SizedBox(height: 8),
                 if (entries.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10),
-                    child: ComicFixedSizeHorizontalList(
-                      key: ValueKey('aggregate-list-$pluginId'),
-                      entries: entries,
-                      spacing: 10,
-                      itemWidth: 112,
-                    ),
+                  ComicFixedSizeHorizontalList(
+                    key: ValueKey('aggregate-list-$pluginId'),
+                    entries: entries,
+                    spacing: 10,
+                    itemWidth: 112,
                   ),
                 if (entries.isEmpty)
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(14, 2, 14, 8),
-                    child: Text(t.search.noResults),
-                  ),
+                  CalmStatusBanner(title: t.search.noResults),
               ],
             ),
           ),
@@ -338,34 +358,37 @@ class _ResultList extends StatelessWidget {
       if (state.showErrors && error.isNotEmpty) {
         children.add(
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-            child: Card(
-              child: ListTile(
-                leading: const Icon(Icons.error_outline),
-                title: Text(
-                  t.search.loadFailedForSource(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CalmStatusBanner(
+                  title: t.search.loadFailedForSource(
                     source: _sourceTitle(context, pluginId),
                   ),
+                  tone: CalmTone.danger,
+                  trailing: refreshing
+                      ? const CalmLoading(size: 16)
+                      : CalmIconButton(
+                          icon: Icons.refresh_rounded,
+                          tooltip: t.common.refresh,
+                          size: 26,
+                          iconSize: 14,
+                          onPressed: () => context
+                              .read<AggregateSearchCubit>()
+                              .refreshSource(pluginId),
+                        ),
                 ),
-                subtitle: Text(
-                  error,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 5, 4, 0),
+                  child: Text(
+                    error,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: c.text2),
+                  ),
                 ),
-                trailing: refreshing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : IconButton(
-                        tooltip: t.common.refresh,
-                        icon: const Icon(Icons.refresh),
-                        onPressed: () => context
-                            .read<AggregateSearchCubit>()
-                            .refreshSource(pluginId),
-                      ),
-              ),
+              ],
             ),
           ),
         );
@@ -373,7 +396,15 @@ class _ResultList extends StatelessWidget {
     }
 
     if (children.isEmpty) {
-      return const SizedBox.shrink();
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: CalmEmptyState(
+            icon: Icons.travel_explore_rounded,
+            title: t.search.noResults,
+          ),
+        ),
+      );
     }
 
     return ListView(children: children);

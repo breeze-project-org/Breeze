@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart' hide SearchBar;
 import 'package:zephyr/page/search/cubit/search_cubit.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/json/json_value.dart';
 import 'package:zephyr/page/search/widget/history.dart';
 import 'package:zephyr/page/search/widget/search_bar.dart';
@@ -29,8 +30,12 @@ class SearchSchemeRenderer {
           widgets.add(SearchBar(aggregateMode: aggregateMode));
           break;
         case 'divider':
+          final height = (config['height'] as num?)?.toDouble() ?? 1;
           widgets.add(
-            Divider(height: (config['height'] as num?)?.toDouble() ?? 1),
+            Builder(
+              builder: (context) =>
+                  Divider(height: height, color: context.calm.border),
+            ),
           );
           break;
         case 'history':

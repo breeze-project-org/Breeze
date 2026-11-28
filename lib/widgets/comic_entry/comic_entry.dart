@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/comic_entry/models/models.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/cover.dart';
 import 'package:zephyr/widgets/toast.dart';
@@ -24,11 +25,13 @@ class ComicEntryWidget extends StatelessWidget {
   final VoidCallback? refresh;
   final PictureType? pictureType;
 
+  static const double _coverWidth = 100;
+  static const double _coverHeight = 133;
+  static const double _radius = 14;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    const coverWidth = 100.0;
-    const coverHeight = 133.0;
+    final c = context.calm;
     final statText = _buildStatText();
 
     return GestureDetector(
@@ -41,118 +44,148 @@ class ComicEntryWidget extends StatelessWidget {
       onLongPress: type == ComicEntryType.normal
           ? null
           : () => _showDeleteDialog(context),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
-              ),
-              child: CoverWidget(
-                fileServer: comic.cover.url,
-                path: comic.cover.cachePath,
-                id: comic.id,
-                pictureType: pictureType ?? PictureType.cover,
-                from: comic.from,
-                roundedCorner: false,
-                width: coverWidth,
-                height: coverHeight,
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: coverHeight),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: CalmCard(
+          padding: EdgeInsets.zero,
+          radius: _radius,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_radius),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CoverWidget(
+                  fileServer: comic.cover.url,
+                  path: comic.cover.cachePath,
+                  id: comic.id,
+                  pictureType: pictureType ?? PictureType.cover,
+                  from: comic.from,
+                  roundedCorner: false,
+                  width: _coverWidth,
+                  height: _coverHeight,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: _coverHeight,
+                      ),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            comic.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                comic.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: c.text,
+                                  height: 1.3,
+                                ),
+                              ),
+                              if (comic.primaryText.isNotEmpty) ...[
+                                const SizedBox(height: 5),
+                                Text(
+                                  comic.primaryText,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textHeightBehavior: kCalmTextHeightBehavior,
+                                  strutStyle: calmStrut(11.5),
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: c.accent,
+                                    height: 1.2,
+                                    leadingDistribution:
+                                        TextLeadingDistribution.even,
+                                  ),
+                                ),
+                              ],
+                              if (comic.secondaryText.isNotEmpty) ...[
+                                const SizedBox(height: 5),
+                                Text(
+                                  comic.secondaryText,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: c.text2,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                              if (comic.updatedAtText.isNotEmpty) ...[
+                                const SizedBox(height: 5),
+                                Text(
+                                  t.comicEntry.updatedAt(
+                                    time: comic.updatedAtText,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textHeightBehavior: kCalmTextHeightBehavior,
+                                  strutStyle: calmStrut(10.5),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: c.text3,
+                                    height: 1.2,
+                                    leadingDistribution:
+                                        TextLeadingDistribution.even,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          if (comic.primaryText.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              comic.primaryText,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.primary,
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 5,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              CalmBadge(
+                                label: comic.finished
+                                    ? t.comicEntry.finished
+                                    : t.comicEntry.ongoing,
+                                dot: true,
+                                tone: comic.finished
+                                    ? CalmBadgeTone.success
+                                    : CalmBadgeTone.tonal,
                               ),
-                            ),
-                          ],
-                          if (comic.secondaryText.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              comic.secondaryText,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                          if (comic.updatedAtText.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              t.comicEntry.updatedAt(time: comic.updatedAtText),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                              if (statText.isNotEmpty)
+                                Text(
+                                  statText,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textHeightBehavior: kCalmTextHeightBehavior,
+                                  strutStyle: calmStrut(10.5),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: c.text3,
+                                    height: 1.2,
+                                    leadingDistribution:
+                                        TextLeadingDistribution.even,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            comic.finished
-                                ? t.comicEntry.finished
-                                : t.comicEntry.ongoing,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: comic.finished
-                                  ? theme.colorScheme.tertiary
-                                  : theme.colorScheme.secondary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (statText.isNotEmpty)
-                            Text(
-                              statText,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -175,26 +208,35 @@ class ComicEntryWidget extends StatelessWidget {
       return;
     }
 
-    await showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => dialogContext.pop(),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () async {
-              dialogContext.pop();
-              await _handleDelete();
-            },
-            child: Text(t.common.ok),
-          ),
-        ],
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: title,
+      icon: Icons.delete_outline_rounded,
+      tone: CalmTone.danger,
+      bodyBuilder: (dialogContext) => Text(
+        content,
+        style: TextStyle(
+          fontSize: 12.5,
+          color: dialogContext.calm.text2,
+          height: 1.5,
+        ),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
+    if (confirmed == true) {
+      await _handleDelete();
+    }
   }
 
   (String, String) _dialogContent() {

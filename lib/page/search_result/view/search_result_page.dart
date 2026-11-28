@@ -18,6 +18,8 @@ import 'package:zephyr/page/search_result/search_result.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_grid.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/detail_columns.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_mapper.dart';
+import 'package:zephyr/ui/ui.dart';
+import 'package:zephyr/widgets/error_view.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
@@ -138,7 +140,7 @@ class _SearchResultPageState extends State<_SearchResultPage>
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final c = context.calm;
     final settingState = context.watch<GlobalSettingCubit>().state;
     final showSearchBookmark = settingState.showSearchBookmark;
     // 开关可能在书签选点期间经设置同步关闭：立即退出选点态。
@@ -149,6 +151,7 @@ class _SearchResultPageState extends State<_SearchResultPage>
     }
     // 搜索书签无需插件声明：快照只是搜索参数重放，全插件可用。
     return Scaffold(
+      backgroundColor: c.bg,
       appBar: const SearchResultBar(),
       body: Stack(
         children: [
@@ -158,7 +161,7 @@ class _SearchResultPageState extends State<_SearchResultPage>
               top: 0,
               left: 0,
               right: 0,
-              child: _buildBookmarkPickBanner(colorScheme),
+              child: _buildBookmarkPickBanner(c),
             ),
         ],
       ),
@@ -171,27 +174,31 @@ class _SearchResultPageState extends State<_SearchResultPage>
               position: _slideAnimation,
               child: SpeedDial(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(color: c.borderStrong),
                 ),
                 buttonSize: const Size(56, 56),
                 childrenButtonSize: const Size(56, 56),
-                backgroundColor: colorScheme.primaryContainer,
-                foregroundColor: colorScheme.onPrimaryContainer,
-                icon: Icons.menu,
-                activeIcon: Icons.close,
+                elevation: 3,
+                backgroundColor: c.surface,
+                foregroundColor: c.accent,
+                icon: Icons.menu_rounded,
+                activeIcon: Icons.close_rounded,
                 useRotationAnimation: true,
                 animationDuration: const Duration(milliseconds: 300),
                 spacing: 12,
                 spaceBetweenChildren: 8,
                 children: [
                   SpeedDialChild(
-                    child: const Icon(Icons.vertical_align_top),
+                    child: const Icon(Icons.vertical_align_top_rounded),
                     label: t.searchResult.returnToTop,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    backgroundColor: colorScheme.secondaryContainer,
-                    foregroundColor: colorScheme.onSecondaryContainer,
+                    backgroundColor: c.surface,
+                    foregroundColor: c.text,
+                    labelBackgroundColor: c.surface,
+                    labelStyle: TextStyle(fontSize: 11.5, color: c.text),
                     onTap: () {
                       _scrollController.animateTo(
                         0,
@@ -201,13 +208,15 @@ class _SearchResultPageState extends State<_SearchResultPage>
                     },
                   ),
                   SpeedDialChild(
-                    child: const Icon(Icons.shortcut),
+                    child: const Icon(Icons.shortcut_rounded),
                     label: t.searchResult.jumpToPage,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    backgroundColor: colorScheme.secondaryContainer,
-                    foregroundColor: colorScheme.onSecondaryContainer,
+                    backgroundColor: c.surface,
+                    foregroundColor: c.text,
+                    labelBackgroundColor: c.surface,
+                    labelStyle: TextStyle(fontSize: 11.5, color: c.text),
                     onTap: () async {
                       final int? targetPage = await showNumberInputDialog(
                         context: context,
@@ -231,10 +240,12 @@ class _SearchResultPageState extends State<_SearchResultPage>
                       child: const Icon(Icons.bookmark_add_outlined),
                       label: t.searchResult.bookmarkAdd,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      backgroundColor: colorScheme.secondaryContainer,
-                      foregroundColor: colorScheme.onSecondaryContainer,
+                      backgroundColor: c.surface,
+                      foregroundColor: c.accent,
+                      labelBackgroundColor: c.surface,
+                      labelStyle: TextStyle(fontSize: 11.5, color: c.text),
                       onTap: _startBookmarkPick,
                     ),
                 ],
@@ -247,22 +258,11 @@ class _SearchResultPageState extends State<_SearchResultPage>
     builder: (context, state) {
       switch (state.status) {
         case SearchStatus.initial:
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CalmLoading());
         case SearchStatus.failure:
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(state.result, style: TextStyle(fontSize: 20)),
-                SizedBox(height: 10), // 添加间距
-                ElevatedButton(
-                  onPressed: () {
-                    _refresh(SearchStatus.initial);
-                  },
-                  child: Text(t.searchResult.retry),
-                ),
-              ],
-            ),
+          return ErrorView(
+            errorMessage: state.result,
+            onRetry: () => _refresh(SearchStatus.initial),
           );
         case SearchStatus.success:
         case SearchStatus.loadingMore:
@@ -311,9 +311,12 @@ class _SearchResultPageState extends State<_SearchResultPage>
     if (state.status == SearchStatus.success) {
       if (state.comics.isEmpty && state.hasReachedMax) {
         return Center(
-          child: Text(
-            t.comicList.nothingHere,
-            style: TextStyle(fontSize: 20.0),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: CalmEmptyState(
+              icon: Icons.search_off_rounded,
+              title: t.comicList.nothingHere,
+            ),
           ),
         );
       }
@@ -354,29 +357,27 @@ class _SearchResultPageState extends State<_SearchResultPage>
     );
   }
 
-  Widget _buildBookmarkPickBanner(ColorScheme colorScheme) {
-    return Material(
-      color: colorScheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Row(
+  Widget _buildBookmarkPickBanner(CalmColors c) {
+    return Container(
+      color: c.bg,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 2),
+      child: CalmStatusBanner(
+        title: t.searchResult.bookmarkPickBanner,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Text(
-                t.searchResult.bookmarkPickBanner,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: colorScheme.onSecondaryContainer),
-              ),
-            ),
-            TextButton(
+            CalmButton(
+              label: t.common.cancel,
+              size: CalmButtonSize.xs,
+              variant: CalmButtonVariant.ghost,
               onPressed: _exitBookmarkPick,
-              child: Text(t.common.cancel),
             ),
-            const SizedBox(width: 8),
-            FilledButton(
+            const SizedBox(width: 4),
+            CalmButton(
+              label: t.common.confirm,
+              size: CalmButtonSize.xs,
+              variant: CalmButtonVariant.primary,
               onPressed: _confirmBookmarkPick,
-              child: Text(t.common.confirm),
             ),
           ],
         ),

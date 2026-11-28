@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/event/event.dart';
 import 'package:zephyr/util/system/external_link.dart';
 import 'package:zephyr/util/event/webview_observe_bus.dart';
@@ -117,8 +118,10 @@ class _WebViewPageState extends State<WebViewPage> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.webview.cannotOpenLink(uri: uri.toString()))),
+      CalmToast.show(
+        context,
+        title: t.webview.cannotOpenLink(uri: uri.toString()),
+        tone: CalmTone.warning,
       );
     }
   }
@@ -269,107 +272,127 @@ class _WebViewPageState extends State<WebViewPage> {
 
   Widget _buildInvalidUrlView(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.link_off, size: 44, color: Colors.grey),
-            const SizedBox(height: 12),
-            Text(t.webview.invalidLink),
-            const SizedBox(height: 8),
-            Text(
-              _url.isEmpty ? t.webview.emptyLink : _url,
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: CalmEmptyState(
+            icon: Icons.link_off_rounded,
+            title: t.webview.invalidLink,
+            subtitle: _url.isEmpty ? t.webview.emptyLink : _url,
+          ),
         ),
       ),
     );
   }
 
+  /// 主文档重载：清掉错误态并让进度条归零后重新加载。
+  Future<void> _reloadMainFrame() async {
+    setState(() {
+      _mainFrameError = null;
+      _progress = 0;
+    });
+    try {
+      await _controller?.reload();
+    } on MissingPluginException catch (e) {
+      logger.w('WebView 已销毁，无法重载', error: e);
+    } on PlatformException catch (e) {
+      logger.w('WebView 重载失败', error: e);
+    }
+  }
+
   Widget _buildMainFrameError(BuildContext context) {
     final uri = _uri;
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 44, color: Colors.orange),
-            const SizedBox(height: 12),
-            Text(_mainFrameError ?? t.webview.loadFailed),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: [
-                FilledButton.tonal(
-                  onPressed: () async {
-                    setState(() {
-                      _mainFrameError = null;
-                      _progress = 0;
-                    });
-                    try {
-                      await _controller?.reload();
-                    } on MissingPluginException catch (e) {
-                      logger.w('WebView 已销毁，无法重载', error: e);
-                    } on PlatformException catch (e) {
-                      logger.w('WebView 重载失败', error: e);
-                    }
-                  },
-                  child: Text(t.webview.retry),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CalmErrorState(
+                title: t.webview.loadFailed,
+                errorDetail: _mainFrameError ?? t.webview.loadFailed,
+                errorDetailMaxLines: 2,
+                primaryLabel: t.webview.retry,
+                onPrimary: _reloadMainFrame,
+              ),
+              if (uri != null) ...[
+                const SizedBox(height: 10),
+                CalmButton(
+                  label: t.webview.openInExternalBrowser,
+                  icon: Icons.open_in_browser_rounded,
+                  variant: CalmButtonVariant.secondary,
+                  onPressed: () => _openExternal(uri),
                 ),
-                if (uri != null)
-                  FilledButton.tonalIcon(
-                    onPressed: () => _openExternal(uri),
-                    icon: const Icon(Icons.open_in_browser),
-                    label: Text(t.webview.openInExternalBrowser),
-                  ),
               ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildLinuxBody(BuildContext context) {
+    final c = context.calm;
+    final closed = _isWebviewClosed;
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _isWebviewClosed ? Icons.check_circle_outline : Icons.open_in_new,
-            size: 48,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _isWebviewClosed
-                ? t.webview.windowClosed
-                : t.webview.openedInExternalWindow,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              _url,
-              style: Theme.of(context).textTheme.bodySmall,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: closed ? c.successSoft : c.accentSoft,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                closed ? Icons.check_rounded : Icons.open_in_new_rounded,
+                size: 26,
+                color: closed ? c.success : c.accent,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              closed
+                  ? t.webview.windowClosed
+                  : t.webview.openedInExternalWindow,
               textAlign: TextAlign.center,
+              textHeightBehavior: kCalmTextHeightBehavior,
+              strutStyle: calmStrut(14.5),
+              style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+                color: c.text,
+                height: 1.2,
+                leadingDistribution: TextLeadingDistribution.even,
+              ),
             ),
-          ),
-          if (_isWebviewClosed) ...[
-            const SizedBox(height: 24),
-            FilledButton.tonal(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(t.webview.back),
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Text(
+                _url,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11.5, height: 1.5, color: c.text3),
+              ),
             ),
+            if (closed) ...[
+              const SizedBox(height: 20),
+              CalmButton(
+                label: t.webview.back,
+                icon: Icons.arrow_back_rounded,
+                variant: CalmButtonVariant.primary,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -497,37 +520,56 @@ class _WebViewPageState extends State<WebViewPage> {
         if (_progress < 100)
           Align(
             alignment: Alignment.topCenter,
-            child: LinearProgressIndicator(value: _progress / 100),
+            child: CalmProgressBar(value: _progress / 100, height: 3),
           ),
       ],
     );
   }
 
   Widget _buildUnsupportedView(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(_title)),
+    final c = context.calm;
+    return CalmPageScaffold(
+      title: _title,
+      maxContentWidth: 480,
       body: Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.public_off, size: 56),
-              const SizedBox(height: 16),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: c.surface2,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                alignment: Alignment.center,
+                child: Icon(Icons.public_off_rounded, size: 26, color: c.text3),
+              ),
+              const SizedBox(height: 14),
               Text(
                 '当前平台暂不支持内置网页视图\n'
                 'WebView is not available on this platform',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: TextStyle(fontSize: 12.5, height: 1.6, color: c.text2),
               ),
               if (_url.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: SelectableText(
+                    _url,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11.5, color: c.text3),
+                  ),
+                ),
                 const SizedBox(height: 16),
-                SelectableText(_url, textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                FilledButton.icon(
+                CalmButton(
+                  label: t.webview.openInExternalBrowser,
+                  icon: Icons.open_in_browser_rounded,
+                  variant: CalmButtonVariant.primary,
                   onPressed: () => _openExternal(Uri.parse(_url)),
-                  icon: const Icon(Icons.open_in_browser),
-                  label: Text(t.webview.openInExternalBrowser),
                 ),
               ],
             ],
@@ -544,28 +586,28 @@ class _WebViewPageState extends State<WebViewPage> {
     }
     final uri = _uri;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_title),
-        actions: <Widget>[
-          if (Platform.isLinux && !_isWebviewClosed)
-            IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: t.webview.closeWindow,
-              onPressed: () {
-                _linuxWebview?.close();
-                if (mounted) {
-                  setState(() => _isWebviewClosed = true);
-                }
-              },
-            ),
-          if (uri != null)
-            IconButton(
-              icon: const Icon(Icons.open_in_browser),
-              onPressed: () => _openExternal(uri),
-            ),
-        ],
-      ),
+    return CalmPageScaffold(
+      title: _title,
+      maxContentWidth: null,
+      actions: <Widget>[
+        if (Platform.isLinux && !_isWebviewClosed)
+          CalmIconButton(
+            icon: Icons.close_rounded,
+            tooltip: t.webview.closeWindow,
+            onPressed: () {
+              _linuxWebview?.close();
+              if (mounted) {
+                setState(() => _isWebviewClosed = true);
+              }
+            },
+          ),
+        if (uri != null)
+          CalmIconButton(
+            icon: Icons.open_in_browser_rounded,
+            tooltip: t.webview.openInExternalBrowser,
+            onPressed: () => _openExternal(uri),
+          ),
+      ],
       body: Platform.isLinux
           ? _buildLinuxBody(context)
           : _buildMobileBody(context),

@@ -1,6 +1,10 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 
+/// 轻盈分组头：左侧主色圆条 + 标题 + 可选右侧提示/箭头。
+///
+/// 保持旧签名不变（`title` / `subtitle` / `onTap` / `margin`），
+/// 整行可点击的行为沿用旧实现，视觉交给 [CalmSectionHeader]。
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
     super.key,
@@ -17,54 +21,25 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final canNavigate = onTap != null;
+    final trimmedSubtitle = subtitle.trim();
 
     return Padding(
       padding: margin,
-      child: Container(
-        decoration: BoxDecoration(
-          color: context.theme.colorScheme.secondaryFixed.withValues(
-            alpha: 0.1,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      child: MouseRegion(
+        cursor: canNavigate
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
         child: GestureDetector(
-          onTap: canNavigate ? onTap : null,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: context.theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              if (subtitle.trim().isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: context.theme.colorScheme.onSurfaceVariant,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              if (canNavigate)
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: context.theme.colorScheme.onSurface.withValues(
-                    alpha: 0.5,
-                  ),
-                ),
-
-              if (canNavigate) const SizedBox(width: 5),
-            ],
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: CalmSectionHeader(
+            title: title,
+            countText: trimmedSubtitle.isEmpty ? null : trimmedSubtitle,
+            trailing: canNavigate
+                ? Icon(Icons.chevron_right_rounded, size: 16, color: c.text3)
+                : null,
           ),
         ),
       ),

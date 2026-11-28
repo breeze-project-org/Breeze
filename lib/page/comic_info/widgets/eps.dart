@@ -11,7 +11,7 @@ import 'package:zephyr/page/comic_info/cubit/episode_selection_cubit.dart';
 import 'package:zephyr/page/comic_info/widgets/episode_download_controller.dart';
 import 'package:zephyr/service/download/download_task_repository.dart';
 import 'package:zephyr/type/enum.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/config/router/router.gr.dart';
@@ -85,76 +85,87 @@ class EpButtonWidget extends StatelessWidget {
       child: BlocBuilder<EpisodeSelectionCubit, int>(
         bloc: controller.selectionCubit,
         builder: (context, _) {
+          final c = context.calm;
           final selectionMode = controller.selectionMode;
           final selected = controller.selectedIds.contains(chapter.id);
-          final colorScheme = context.theme.colorScheme;
-          final readColor = colorScheme.onSurfaceVariant.withValues(
-            alpha: 0.55,
-          );
-          return InkWell(
-            onTap: selectionMode ? onToggleSelect : () => _openRead(context),
-            onLongPress: onEnterSelect,
-            child: Container(
-              width: double.infinity,
-              height: fixedHeight,
-              margin: EdgeInsets.zero,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: selected
-                    ? colorScheme.primaryContainer.withValues(alpha: 0.35)
-                    : isRead
-                    ? colorScheme.surfaceContainerLow
-                    : colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(8),
-                border: selected
-                    ? Border.all(
-                        color: colorScheme.primary.withValues(alpha: 0.6),
-                        width: 1,
-                      )
-                    : null,
-              ),
-              child: Row(
-                children: [
-                  if (selectionMode)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Icon(
-                        selected
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        color: selected
-                            ? colorScheme.primary
-                            : context.textColor.withValues(alpha: 0.5),
-                        size: 20,
+          // 已读行整体置灰（保留可点击），但保持不透明以外的次级色阶。
+          final readColor = c.text3.withValues(alpha: 0.72);
+          return MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: selectionMode ? onToggleSelect : () => _openRead(context),
+              onLongPress: onEnterSelect,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                width: double.infinity,
+                height: fixedHeight,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? c.accentSoft
+                      : isRead
+                      ? c.surface2
+                      : c.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected ? c.accentBorder : c.border,
+                    width: selected ? 1.2 : 1,
+                  ),
+                  boxShadow: selected ? const [] : c.shadowSm,
+                ),
+                child: Row(
+                  children: [
+                    if (selectionMode)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Icon(
+                          selected
+                              ? Icons.check_circle_rounded
+                              : Icons.radio_button_unchecked,
+                          color: selected ? c.accent : c.text3,
+                          size: 19,
+                        ),
+                      ),
+                    Text(
+                      episodeLabel,
+                      textHeightBehavior: kCalmTextHeightBehavior,
+                      strutStyle: calmStrut(12),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isRead ? readColor : c.accent,
+                        height: 1.2,
+                        leadingDistribution: TextLeadingDistribution.even,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
-                  Text(
-                    episodeLabel,
-                    style: context.theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: isRead ? readColor : colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: isRead ? FontWeight.w500 : FontWeight.w600,
-                        fontSize: 15,
-                        color: isRead ? readColor : context.textColor,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: isRead
+                              ? FontWeight.w500
+                              : FontWeight.w600,
+                          fontSize: 15,
+                          color: isRead ? readColor : c.text,
+                        ),
                       ),
                     ),
-                  ),
-                  _EpisodeTrailing(
-                    controller: controller,
-                    chapter: chapter,
-                    downloadAllowed: downloadAllowed,
-                    onAction: onAction,
-                  ),
-                ],
+                    _EpisodeTrailing(
+                      controller: controller,
+                      chapter: chapter,
+                      downloadAllowed: downloadAllowed,
+                      onAction: onAction,
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -253,9 +264,17 @@ class _EpisodeTrailing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     if (!downloadAllowed) {
       // 不允许下载时显示静态按钮，无需订阅，点击后由 onAction 弹出禁用原因。
-      return _slot(context, const Icon(Icons.download_outlined, size: 20));
+      return _slot(
+        context,
+        Icon(
+          Icons.download_outlined,
+          size: 19,
+          color: c.text3.withValues(alpha: 0.75),
+        ),
+      );
     }
     // 只订阅自己这一章的 (status, progress)：别的章节进度变化时不重建。
     return BlocSelector<
@@ -271,38 +290,44 @@ class _EpisodeTrailing extends StatelessWidget {
           case ChapterDownloadStatus.notDownloaded:
             return _slot(
               context,
-              const Icon(Icons.download_outlined, size: 20),
+              Icon(
+                Icons.download_outlined,
+                size: 19,
+                color: c.text3.withValues(alpha: 0.75),
+              ),
             );
           case ChapterDownloadStatus.queued:
-            return _slot(context, const Icon(Icons.hourglass_empty, size: 20));
+            return _slot(
+              context,
+              Icon(
+                Icons.hourglass_empty_rounded,
+                size: 19,
+                color: c.text3.withValues(alpha: 0.75),
+              ),
+            );
           case ChapterDownloadStatus.downloading:
             return _slot(
               context,
               SizedBox.square(
-                dimension: 20,
+                dimension: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   value: selected.$2,
+                  color: c.accent,
+                  backgroundColor: c.accentSoft,
                 ),
               ),
             );
           case ChapterDownloadStatus.failed:
             return _slot(
               context,
-              Icon(
-                Icons.error_outline,
-                size: 20,
-                color: context.theme.colorScheme.error,
-              ),
+              Icon(Icons.error_outline_rounded, size: 19, color: c.danger),
             );
           case ChapterDownloadStatus.downloaded:
+            // 已下载：柔和成功色微标记，不用大面积色块抢标题。
             return _slot(
               context,
-              Icon(
-                Icons.check_circle,
-                size: 20,
-                color: context.theme.colorScheme.primary,
-              ),
+              Icon(Icons.check_circle_rounded, size: 19, color: c.success),
             );
         }
       },
@@ -312,10 +337,13 @@ class _EpisodeTrailing extends StatelessWidget {
   // 行内容高度只有 32（56-上下 padding），IconButton 默认最小 40 会被纵向
   // 挤压，里面的进度圈会被压成椭圆。这里统一用 32x32 正方形槽位，保证不变形。
   Widget _slot(BuildContext context, Widget child) {
-    return InkWell(
-      onTap: onAction,
-      borderRadius: BorderRadius.circular(16),
-      child: SizedBox.square(dimension: 32, child: Center(child: child)),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onAction,
+        child: SizedBox.square(dimension: 32, child: Center(child: child)),
+      ),
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
@@ -9,6 +8,7 @@ import 'package:zephyr/main.dart';
 import 'package:zephyr/network/utils/github_proxy.dart';
 import 'package:zephyr/service/update/check_update.dart';
 import 'package:zephyr/service/update/json/github_release_json.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/error/error_filter.dart';
 import 'package:zephyr/util/system/external_link.dart';
 
@@ -145,8 +145,10 @@ class _ChangelogPageState extends State<ChangelogPage> {
           });
         } else {
           // 如果是加载更多时出错，提示 Toast 或在底部显示失败
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(t.changelog.loadFailedWithError(error: e))),
+          CalmToast.show(
+            context,
+            title: t.changelog.loadFailedWithError(error: e),
+            tone: CalmTone.warning,
           );
         }
       }
@@ -162,8 +164,10 @@ class _ChangelogPageState extends State<ChangelogPage> {
     final Uri url = Uri.parse(urlString);
     if (!await openExternalUrl(url)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t.changelog.cannotOpenLink(url: urlString))),
+        CalmToast.show(
+          context,
+          title: t.changelog.cannotOpenLink(url: urlString),
+          tone: CalmTone.warning,
         );
       }
     }
@@ -171,53 +175,39 @@ class _ChangelogPageState extends State<ChangelogPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t.changelog.title),
-        centerTitle: true,
-        scrolledUnderElevation: 0,
-      ),
-      body: _buildBody(colorScheme),
+    return CalmPageScaffold(
+      title: t.changelog.title,
+      maxContentWidth: 768,
+      body: _buildBody(),
     );
   }
 
-  Widget _buildBody(ColorScheme colorScheme) {
-    // 首次全屏 Loading
+  Widget _buildBody() {
     if (_isLoading) {
-      return Center(
-        child: LoadingAnimationWidget.staggeredDotsWave(
-          color: colorScheme.primary,
-          size: 50,
-        ),
-      );
+      return Center(child: CalmLoading(label: t.common.loading, size: 22));
     }
 
     // 首次全屏错误
     if (_errorMsg != null && _releases.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wifi_off_rounded, size: 64, color: colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              t.changelog.checkNetwork,
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.tonal(
-              onPressed: () {
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: CalmErrorState(
+              title: t.changelog.checkNetwork,
+              errorDetail: _errorMsg!,
+              errorDetailMaxLines: 3,
+              primaryLabel: t.changelog.retry,
+              onPrimary: () {
                 setState(() {
                   _isLoading = true;
                   _errorMsg = null;
                 });
                 _fetchReleases(refresh: true);
               },
-              child: Text(t.changelog.retry),
             ),
-          ],
+          ),
         ),
       );
     }
@@ -229,44 +219,43 @@ class _ChangelogPageState extends State<ChangelogPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             SizedBox(
-              height: MediaQuery.sizeOf(context).height * 0.8,
-              child: Center(child: Text(t.changelog.empty)),
+              height: MediaQuery.sizeOf(context).height * 0.6,
+              child: Center(
+                child: CalmEmptyState(
+                  icon: Icons.history_rounded,
+                  title: t.changelog.empty,
+                ),
+              ),
             ),
           ],
         ),
       );
     }
 
-    // 桌面端窄栏居中：与追更/more等页一致，Align + 768 上限，移动端无影响。
+    // 桌面端窄栏居中由 CalmPageScaffold(maxContentWidth: 768) 统一处理。
     return RefreshIndicator(
       onRefresh: () => _fetchReleases(refresh: true),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 768),
-          child: ListView.builder(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            itemCount: _releases.length + (_hasMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == _releases.length) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              final release = _releases[index];
-              return Container(
-                key: ValueKey(release.id), // 添加 Key 提高性能
-                child: _ReleaseCard(release: release, onLinkTap: _launchUrl)
-                    .animate()
-                    .fade(duration: 400.ms)
-                    .slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-              );
-            },
-          ),
-        ),
+      child: ListView.builder(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        itemCount: _releases.length + (_hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == _releases.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CalmLoading(size: 16)),
+            );
+          }
+          final release = _releases[index];
+          return KeyedSubtree(
+            key: ValueKey(release.id),
+            child: _ReleaseCard(release: release, onLinkTap: _launchUrl)
+                .animate()
+                .fade(duration: 400.ms)
+                .slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+          );
+        },
       ),
     );
   }
@@ -280,213 +269,253 @@ class _ReleaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final dateStr = DateFormat('yyyy-MM-dd HH:mm')
-        .format(release.publishedAt.toLocal());
+    final c = context.calm;
+    final dateStr = DateFormat(
+      'yyyy-MM-dd HH:mm',
+    ).format(release.publishedAt.toLocal());
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
-          width: 1,
-        ),
-      ),
-
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: true,
-          shape: const Border(),
-          collapsedShape: const Border(),
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          title: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            release.tagName,
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.primary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: CalmCard(
+        padding: EdgeInsets.zero,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: true,
+            shape: const Border(),
+            collapsedShape: const Border(),
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 6,
+            ),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            title: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          CalmBadge(
+                            label: release.tagName,
+                            tone: CalmBadgeTone.accent,
+                            icon: Icons.sell_outlined,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (release.prerelease)
-                          _TagChip(text: 'Pre', color: Colors.orange),
-                        if (release.draft) ...[
-                          const SizedBox(width: 4),
-                          _TagChip(text: 'Draft', color: Colors.grey),
+                          if (release.prerelease)
+                            const CalmBadge(
+                              label: 'Pre',
+                              tone: CalmBadgeTone.warning,
+                            ),
+                          if (release.draft)
+                            const CalmBadge(
+                              label: 'Draft',
+                              tone: CalmBadgeTone.neutral,
+                            ),
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      t.changelog.publishedAt(date: dateStr),
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        t.changelog.publishedAt(date: dateStr),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: c.text3,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Tooltip(
-                message: t.changelog.viewInBrowser,
-                child: IconButton(
-                  icon: const Icon(Icons.open_in_new_rounded, size: 20),
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  visualDensity: VisualDensity.compact,
+                CalmIconButton(
+                  icon: Icons.open_in_new_rounded,
+                  tooltip: t.changelog.viewInBrowser,
                   onPressed: () => onLinkTap(release.htmlUrl),
                 ),
-              ),
-            ],
-          ),
-          children: [
-            Divider(
-              height: 1,
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ],
             ),
-            const SizedBox(height: 12),
-            MarkdownWidget(
-              data: release.body,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              config: MarkdownConfig(
-                configs: [
-                  PConfig(
-                    textStyle: textTheme.bodyMedium!.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  LinkConfig(
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                      decoration: TextDecoration.underline,
-                    ),
-                    onTap: (url) => onLinkTap(url),
-                  ),
-                  CodeConfig(
-                    style: TextStyle(
-                      backgroundColor: colorScheme.surface,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                  PreConfig(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface, // 代码块背景
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: colorScheme.outlineVariant.withValues(
-                          alpha: 0.3,
-                        ),
+            children: [
+              const CalmDivider(),
+              const SizedBox(height: 10),
+              MarkdownWidget(
+                data: release.body,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                config: MarkdownConfig(
+                  configs: [
+                    PConfig(
+                      textStyle: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.65,
+                        color: c.text,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (release.assets.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  // 附件区域背景色，使用 surface 形成凹陷感，或者 secondaryContainer 形成凸起感
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.attach_file_rounded,
-                          size: 16,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          t.changelog.attachments,
-                          style: textTheme.labelLarge?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    LinkConfig(
+                      style: TextStyle(
+                        color: c.accent,
+                        decoration: TextDecoration.underline,
+                      ),
+                      onTap: (url) => onLinkTap(url),
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: release.assets.map((asset) {
-                        return ActionChip(
-                          visualDensity: VisualDensity.compact,
-                          avatar: Icon(
-                            Icons.download_rounded,
-                            size: 14,
-                            color: colorScheme.onSecondaryContainer,
-                          ),
-                          label: Text(asset.name),
-                          backgroundColor: colorScheme.secondaryContainer,
-                          labelStyle: TextStyle(
-                            color: colorScheme.onSecondaryContainer,
-                            fontSize: 12,
-                          ),
-                          side: BorderSide.none,
-                          onPressed: () => onLinkTap(asset.browserDownloadUrl),
-                          tooltip:
-                              '${(asset.size / 1024 / 1024).toStringAsFixed(2)} MB',
-                        );
-                      }).toList(),
+                    CodeConfig(
+                      style: TextStyle(
+                        backgroundColor: c.surface2,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    PreConfig(
+                      decoration: BoxDecoration(
+                        color: c.surface2,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: c.border),
+                      ),
                     ),
                   ],
                 ),
               ),
+              if (release.assets.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: c.bg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: c.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CalmSectionHeader(
+                        title: t.changelog.attachments,
+                        countText: '${release.assets.length}',
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: release.assets.map((asset) {
+                          return _AttachmentChip(
+                            name: asset.name,
+                            sizeBytes: asset.size,
+                            onTap: () => onLinkTap(asset.browserDownloadUrl),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _TagChip extends StatelessWidget {
-  final String text;
-  final Color color;
+class _AttachmentChip extends StatefulWidget {
+  const _AttachmentChip({
+    required this.name,
+    required this.sizeBytes,
+    required this.onTap,
+  });
 
-  const _TagChip({required this.text, required this.color});
+  final String name;
+  final int sizeBytes;
+  final VoidCallback onTap;
+
+  @override
+  State<_AttachmentChip> createState() => _AttachmentChipState();
+}
+
+class _AttachmentChipState extends State<_AttachmentChip> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  String get _sizeLabel =>
+      '${(widget.sizeBytes / 1024 / 1024).toStringAsFixed(1)} MB';
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
+    final c = context.calm;
+    final bg = _pressed
+        ? c.accentSoft
+        : _hovered
+        ? Color.alphaBlend(c.accent.withValues(alpha: 0.06), c.surface)
+        : c.surface;
+
+    return Tooltip(
+      message: '${widget.name} · $_sizeLabel',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() {
+          _hovered = false;
+          _pressed = false;
+        }),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapUp: (_) => setState(() => _pressed = false),
+          onTapCancel: () => setState(() => _pressed = false),
+          child: AnimatedScale(
+            scale: _pressed ? 0.97 : 1.0,
+            duration: const Duration(milliseconds: 100),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _hovered ? c.accentBorder : c.border,
+                ),
+                boxShadow: c.shadowSm,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(Icons.download_rounded, size: 13.5, color: c.accent),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      widget.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textHeightBehavior: kCalmTextHeightBehavior,
+                      strutStyle: calmStrut(11.5),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: _hovered ? c.accent : c.text,
+                        height: 1.2,
+                        leadingDistribution: TextLeadingDistribution.even,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _sizeLabel,
+                    textHeightBehavior: kCalmTextHeightBehavior,
+                    strutStyle: calmStrut(10.5),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: c.text3,
+                      height: 1.2,
+                      leadingDistribution: TextLeadingDistribution.even,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

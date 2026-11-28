@@ -49,39 +49,46 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
     return SettingPageShell(
       title: t.settings.debug,
       child: ListView(
+        padding: kSettingPagePadding,
         children: [
           settingSectionTitle(
             context,
             t.settings.debug,
             icon: Icons.bug_report_outlined,
           ),
-          _logAddress(state, cubit),
-          _enableMemoryDebug(state, cubit),
-          _blockRustHttpRequests(state, cubit),
-          if (defaultTargetPlatform == TargetPlatform.android)
-            _forceEnableImpeller(state, cubit),
+          settingCardGroup([
+            _logAddress(state, cubit),
+            _enableMemoryDebug(state, cubit),
+            _blockRustHttpRequests(state, cubit),
+            if (defaultTargetPlatform == TargetPlatform.android)
+              _forceEnableImpeller(state, cubit),
+          ]),
           if (kDebugMode) ...[
-            ListTile(
-              leading: const Icon(Icons.colorize_outlined),
-              title: Text(t.settings.colorPreview),
-              subtitle: Text(t.settings.colorPreviewSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.pushRoute(const ShowColorRoute()),
+            settingSectionTitle(
+              context,
+              t.settings.colorPreview,
+              icon: Icons.colorize_outlined,
             ),
-            ListTile(
-              leading: const Icon(Icons.developer_mode_outlined),
-              title: Text(t.settings.qjsRuntimeDebug),
-              subtitle: Text(t.settings.qjsRuntimeDebugSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.pushRoute(const QjsRuntimeDebugRoute()),
-            ),
-            ListTile(
-              leading: const Icon(Icons.memory_outlined),
-              title: Text(t.settings.coremlDebug),
-              subtitle: Text(t.settings.coremlDebugSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.pushRoute(const CoreMLUpscaleDebugRoute()),
-            ),
+            settingCardGroup([
+              settingCategoryTile(
+                icon: Icons.colorize_outlined,
+                title: t.settings.colorPreview,
+                subtitle: t.settings.colorPreviewSubtitle,
+                onTap: () => context.pushRoute(const ShowColorRoute()),
+              ),
+              settingCategoryTile(
+                icon: Icons.developer_mode_outlined,
+                title: t.settings.qjsRuntimeDebug,
+                subtitle: t.settings.qjsRuntimeDebugSubtitle,
+                onTap: () => context.pushRoute(const QjsRuntimeDebugRoute()),
+              ),
+              settingCategoryTile(
+                icon: Icons.memory_outlined,
+                title: t.settings.coremlDebug,
+                subtitle: t.settings.coremlDebugSubtitle,
+                onTap: () => context.pushRoute(const CoreMLUpscaleDebugRoute()),
+              ),
+            ]),
           ],
           const SizedBox(height: 32),
         ],
@@ -93,11 +100,10 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.memory_outlined),
-      title: Text(t.settings.memoryDebug),
-      subtitle: Text(t.settings.memoryDebugSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.memory_outlined,
+      title: t.settings.memoryDebug,
+      subtitle: t.settings.memoryDebugSubtitle,
       value: state.enableMemoryDebug,
       onChanged: (bool value) {
         cubit.updateState(
@@ -109,42 +115,40 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
 
   Widget _logAddress(GlobalSettingState state, GlobalSettingCubit cubit) {
     final logAddress = state.logAddress.trim();
-    return ListTile(
-      leading: const Icon(Icons.link_outlined),
-      title: Text(t.settings.logAddress),
-      subtitle: Text(
-        logAddress.isEmpty ? t.settings.logAddressSubtitle : logAddress,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: const Icon(Icons.chevron_right),
+    return settingActionTile(
+      icon: Icons.link_outlined,
+      title: t.settings.logAddress,
+      subtitle: logAddress.isEmpty ? t.settings.logAddressSubtitle : logAddress,
       onTap: () async {
-        var inputValue = logAddress;
-        final result = await showDialog<String>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(t.settings.logAddress),
-            content: TextFormField(
-              initialValue: logAddress,
-              autofocus: true,
-              onChanged: (value) => inputValue = value.trim(),
-              decoration: const InputDecoration(
-                hintText: 'https://example.com/log',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                child: Text(t.common.cancel),
-                onPressed: () => Navigator.pop(context),
-              ),
-              TextButton(
-                child: Text(t.common.ok),
-                onPressed: () => Navigator.pop(context, inputValue),
-              ),
-            ],
+        final controller = TextEditingController(text: logAddress);
+        final result = await showCalmDialog<String>(
+          context,
+          title: t.settings.logAddress,
+          subtitle: t.settings.logAddressSubtitle,
+          icon: Icons.link_outlined,
+          bodyBuilder: (dialogContext) => CalmTextField(
+            controller: controller,
+            hintText: 'https://example.com/log',
+            prefixIcon: Icons.link_rounded,
+            keyboardType: TextInputType.url,
+            onSubmitted: (value) =>
+                Navigator.of(dialogContext).pop(value.trim()),
           ),
+          actionsBuilder: (dialogContext) => [
+            CalmButton(
+              label: t.common.cancel,
+              variant: CalmButtonVariant.ghost,
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            CalmButton(
+              label: t.common.ok,
+              variant: CalmButtonVariant.primary,
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(controller.text.trim()),
+            ),
+          ],
         );
+        controller.dispose();
 
         if (result != null && result != logAddress) {
           cubit.updateState((current) => current.copyWith(logAddress: result));
@@ -158,11 +162,10 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.cloud_off_outlined),
-      title: Text(t.settings.blockRustHttpRequests),
-      subtitle: Text(t.settings.blockRustHttpRequestsSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.cloud_off_outlined,
+      title: t.settings.blockRustHttpRequests,
+      subtitle: t.settings.blockRustHttpRequestsSubtitle,
       value: state.blockRustHttpRequests,
       onChanged: (bool value) {
         setHttpRequestsBlocked(blocked: value);
@@ -177,11 +180,10 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.auto_awesome_outlined),
-      title: Text(t.settings.forceEnableImpeller),
-      subtitle: Text(t.settings.forceEnableImpellerSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.auto_awesome_outlined,
+      title: t.settings.forceEnableImpeller,
+      subtitle: t.settings.forceEnableImpellerSubtitle,
       value: state.forceEnableImpeller,
       onChanged: (bool value) async {
         cubit.updateState(

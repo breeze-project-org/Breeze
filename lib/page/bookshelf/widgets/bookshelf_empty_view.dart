@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 
+/// 书架空态：居中轻盈占位 + 可选刷新胶囊，整页仍可下拉刷新。
 class BookshelfEmptyView extends StatelessWidget {
   const BookshelfEmptyView({
     super.key,
@@ -15,36 +17,28 @@ class BookshelfEmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return RefreshIndicator(
       onRefresh: () async => onRefresh?.call(),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          // 内容不足一屏时也撑满高度，让空态垂直居中、下拉手势有落点。
           return SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(icon, size: 72, color: theme.colorScheme.outline),
-                    const SizedBox(height: 16),
-                    Text(
-                      title.isEmpty ? t.comicList.nothingHere : title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                    if (onRefresh != null) ...[
-                      const SizedBox(height: 24),
-                      FilledButton.icon(
-                        onPressed: onRefresh,
-                        icon: const Icon(Icons.refresh),
-                        label: Text(t.common.refresh),
-                      ),
-                    ],
-                  ],
+                child: CalmEmptyState(
+                  icon: icon,
+                  title: title.isEmpty ? t.comicList.nothingHere : title,
+                  action: onRefresh == null
+                      ? null
+                      : CalmButton(
+                          label: t.common.refresh,
+                          icon: Icons.refresh_rounded,
+                          variant: CalmButtonVariant.secondary,
+                          size: CalmButtonSize.sm,
+                          onPressed: onRefresh,
+                        ),
                 ),
               ),
             ),

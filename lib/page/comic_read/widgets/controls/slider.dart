@@ -12,6 +12,7 @@ import 'package:zephyr/page/comic_read/cubit/image_size_cubit.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
 import 'package:zephyr/page/comic_read/widgets/layout/read_layout.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
 
 class SliderWidget extends StatefulWidget {
@@ -59,6 +60,7 @@ class _SliderWidgetState extends State<SliderWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     return Expanded(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -68,15 +70,10 @@ class _SliderWidgetState extends State<SliderWidget> {
             height: 52,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              color: context.theme.colorScheme.surfaceContainerHigh.withValues(
-                alpha: 0.9,
-              ),
+              color: c.surface.withValues(alpha: 0.94),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: context.theme.colorScheme.outlineVariant.withValues(
-                  alpha: 0.35,
-                ),
-              ),
+              border: Border.all(color: c.border),
+              boxShadow: c.shadowMd,
             ),
             child: _SliderContents(configuration: widget, owner: this),
           ),
@@ -88,6 +85,7 @@ class _SliderWidgetState extends State<SliderWidget> {
   void _showOverlayToast(String message) {
     final isNumeric = int.tryParse(message) != null;
     final fontSize = isNumeric ? 60.0 : 34.0;
+    final c = context.calm;
     // 移除之前的 Overlay
     _overlayEntry?.remove();
 
@@ -97,30 +95,26 @@ class _SliderWidgetState extends State<SliderWidget> {
         return Stack(
           children: [
             Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 48.0,
-                      vertical: 24.0,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.theme.colorScheme.surfaceBright.withValues(
-                        alpha: 0.5,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: RichText(
-                      text: TextSpan(
-                        text: message,
-                        style: TextStyle(
-                          fontSize: fontSize,
-                          color: context.textColor.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40.0,
+                  vertical: 20.0,
+                ),
+                decoration: BoxDecoration(
+                  color: c.surface.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: c.border),
+                  boxShadow: c.shadowMd,
+                ),
+                child: Text(
+                  message,
+                  textHeightBehavior: kCalmTextHeightBehavior,
+                  strutStyle: calmStrut(fontSize),
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w600,
+                    color: c.text,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
@@ -212,6 +206,7 @@ class _SliderContents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final cubit = context.read<ReaderCubit>();
     final totalSlots = context.select(
       (ReaderCubit cubit) => cubit.state.totalSlots,
@@ -342,12 +337,16 @@ class _SliderContents extends StatelessWidget {
         trackHeight: 6,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-        activeTrackColor: context.theme.colorScheme.primary,
-        inactiveTrackColor: context.theme.colorScheme.primary.withValues(
-          alpha: 0.22,
+        activeTrackColor: c.accent,
+        inactiveTrackColor: c.surface2,
+        thumbColor: c.accent,
+        overlayColor: c.accentSoft,
+        valueIndicatorColor: c.surface,
+        valueIndicatorTextStyle: TextStyle(
+          color: c.text,
+          fontWeight: FontWeight.w600,
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
-        thumbColor: context.theme.colorScheme.primary,
-        overlayColor: context.theme.colorScheme.primary.withValues(alpha: 0.16),
         showValueIndicator: ShowValueIndicator.never,
       ),
       child: isRtl

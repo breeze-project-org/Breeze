@@ -6,7 +6,6 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 import 'package:zephyr/util/ohos/platform.dart';
@@ -30,12 +29,12 @@ import 'package:zephyr/page/bookshelf/widgets/bookshelf_grid_shimmer.dart';
 import 'package:zephyr/page/bookshelf/widgets/bookshelf_loading_view.dart';
 import 'package:zephyr/page/bookshelf/widgets/folder_shelf_item.dart';
 import 'package:zephyr/type/enum.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_grid.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/detail_columns.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_info.dart';
-import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 class FolderShelfPage extends StatelessWidget {
@@ -231,8 +230,7 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
       listener: (context, state) {
         final error = state.error;
         if (error != null && error.isNotEmpty) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(error)));
+          showErrorToast(error);
         }
         if (state.currentPath != _lastPath) {
           _lastPath = state.currentPath;
@@ -351,123 +349,118 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
 
   /// 面包屑：返回 / 路径 / 回根。菜单由右端常驻按钮负责，这里不重复放。
   Widget _buildBreadcrumbPill(BuildContext context, FolderShelfState state) {
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: SizedBox(
-          height: 48,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.arrow_back),
-                tooltip: t.common.back,
-                onPressed: () => context.read<FolderShelfBloc>().add(
-                  const FolderShelfGoBack(),
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  state.breadcrumbTitle,
-                  style: Theme.of(context).textTheme.titleMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.home),
-                onPressed: () => context.read<FolderShelfBloc>().add(
-                  const FolderShelfGoHome(),
-                ),
-              ),
-            ],
+    final c = context.calm;
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: c.border),
+        boxShadow: c.shadowMd,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          CalmIconButton(
+            icon: Icons.arrow_back_rounded,
+            tooltip: t.common.back,
+            size: 30,
+            iconSize: 16,
+            onPressed: () =>
+                context.read<FolderShelfBloc>().add(const FolderShelfGoBack()),
           ),
-        ),
+          const SizedBox(width: 2),
+          Expanded(
+            // 路径很长时横向滚动，不把 44px 高的浮条撑成多行。
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              // Center(widthFactor: 1) 让面包屑在 44px 高内垂直居中，
+              // 同时保持自身宽度不撑满。
+              child: Center(
+                widthFactor: 1,
+                child: CalmBreadcrumb(
+                  segments: state.breadcrumbTitle.split(' > '),
+                  onTapSegment: (index) => _jumpToBreadcrumb(state, index),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 2),
+          CalmIconButton(
+            icon: Icons.home_rounded,
+            tooltip: t.common.root,
+            size: 30,
+            iconSize: 16,
+            onPressed: () =>
+                context.read<FolderShelfBloc>().add(const FolderShelfGoHome()),
+          ),
+        ],
       ),
     );
   }
 
-  /// 右下角全局操作菜单，与搜索结果页同款 SpeedDial 样式。
-  /// 长按条目 → 多选已覆盖“管理”入口，这里不再重复放。
-  /// 历史无文件夹体系：只有多选入口。
-  Widget _buildNavMenuButton(BuildContext context, FolderShelfState state) {
-    final colorScheme = Theme.of(context).colorScheme;
-    ShapeBorder roundedRect(double radius) =>
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
-    SpeedDialChild menuChild({
-      required Widget child,
-      required String label,
-      required VoidCallback onTap,
-    }) {
-      return SpeedDialChild(
-        child: child,
-        label: label,
-        shape: roundedRect(12),
-        backgroundColor: colorScheme.secondaryContainer,
-        foregroundColor: colorScheme.onSecondaryContainer,
-        onTap: onTap,
-      );
+  /// 点面包屑的祖先层级直接跳到该目录（末尾的当前目录不可点）。
+  /// 段 0 是 tab 名，对应回根目录；其余段按层级拼回绝对路径。
+  void _jumpToBreadcrumb(FolderShelfState state, int index) {
+    final bloc = context.read<FolderShelfBloc>();
+    if (index <= 0) {
+      bloc.add(const FolderShelfGoHome());
+      return;
     }
+    final parts = state.currentPath
+        .split('/')
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (index >= parts.length) return;
+    bloc.add(FolderShelfEnterFolder('/${parts.take(index).join('/')}'));
+  }
 
-    // 历史只有一个多选入口：不用 SpeedDial 展开，直接放同款圆形按钮。
+  /// 右下角全局操作菜单：轻盈胶囊 SpeedDial（展开为紧凑操作卡）。
+  /// 长按条目 → 多选已覆盖“管理”入口，这里不再重复放。
+  /// 历史无文件夹体系：只有多选入口，直接给一颗主色胶囊按钮。
+  Widget _buildNavMenuButton(BuildContext context, FolderShelfState state) {
     if (state.mode == ShelfPageMode.history) {
-      return FloatingActionButton(
-        heroTag: null,
-        shape: roundedRect(16),
-        backgroundColor: colorScheme.primaryContainer,
-        foregroundColor: colorScheme.onPrimaryContainer,
-        tooltip: t.bookshelf.multiSelect,
+      return CalmButton(
+        label: t.bookshelf.multiSelect,
+        icon: Icons.checklist_rounded,
+        variant: CalmButtonVariant.primary,
+        size: CalmButtonSize.md,
         onPressed: () => context.read<FolderShelfBloc>().add(
           const FolderShelfEnterSelectionMode(),
         ),
-        child: const Icon(Icons.checklist),
       );
     }
-    return SpeedDial(
-      shape: roundedRect(16),
-      buttonSize: const Size(56, 56),
-      childrenButtonSize: const Size(56, 56),
-      backgroundColor: colorScheme.primaryContainer,
-      foregroundColor: colorScheme.onPrimaryContainer,
-      icon: Icons.menu,
-      activeIcon: Icons.close,
-      useRotationAnimation: true,
-      animationDuration: const Duration(milliseconds: 300),
-      spacing: 12,
-      spaceBetweenChildren: 8,
-      children: [
-        menuChild(
-          child: const Icon(Icons.checklist),
+    return CalmSpeedDial(
+      label: t.common.more,
+      actions: [
+        (
           label: t.bookshelf.multiSelect,
+          icon: Icons.checklist_rounded,
           onTap: () => context.read<FolderShelfBloc>().add(
             const FolderShelfEnterSelectionMode(),
           ),
         ),
-        menuChild(
-          child: const Icon(Icons.create_new_folder_outlined),
+        (
           label: t.bookshelf.newFolder,
+          icon: Icons.create_new_folder_outlined,
           onTap: () => _showCreateFolderDialog(context),
         ),
-        if (state.mode == ShelfPageMode.download)
-          menuChild(
-            child: const Icon(Icons.library_add_outlined),
+        if (state.mode == ShelfPageMode.download) ...[
+          (
             label: t.bookshelf.importExternalComic,
+            icon: Icons.library_add_outlined,
             onTap: () => _importExternalComic(context),
           ),
-        if (state.mode == ShelfPageMode.download)
-          menuChild(
-            child: const Icon(Icons.file_download_outlined),
+          (
             label: t.bookshelf.importComic,
+            icon: Icons.file_download_outlined,
             onTap: () => _importComic(context),
           ),
-        menuChild(
-          child: const Icon(Icons.help_outline),
+        ],
+        (
           label: t.common.help,
+          icon: Icons.help_outline_rounded,
           onTap: () => _showShelfHelpDialog(context),
         ),
       ],
@@ -475,18 +468,25 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
   }
 
   Future<void> _showShelfHelpDialog(BuildContext context) async {
-    return showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(t.bookshelf.folderHint),
-        content: Text(t.bookshelf.helpContent),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(t.common.gotIt),
-          ),
-        ],
+    return showCalmDialog<void>(
+      context,
+      title: t.bookshelf.folderHint,
+      icon: Icons.help_outline_rounded,
+      bodyBuilder: (dialogContext) => Text(
+        t.bookshelf.helpContent,
+        style: TextStyle(
+          fontSize: 12.5,
+          color: dialogContext.calm.text2,
+          height: 1.5,
+        ),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.gotIt,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+      ],
     );
   }
 
@@ -663,7 +663,8 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
                       top: 0,
                       left: 0,
                       right: 0,
-                      child: LinearProgressIndicator(minHeight: 2),
+                      // 不定长胶囊进度条：颜色取 c.accent，与主题联动。
+                      child: CalmProgressBar(height: 3),
                     ),
                   _buildSelectionBar(context),
                 ],
@@ -688,6 +689,7 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
       (FolderShelfBloc bloc) => bloc.state.hasSelection,
     );
     final mode = context.select((FolderShelfBloc bloc) => bloc.state.mode);
+    final bloc = context.read<FolderShelfBloc>();
     return Positioned(
       bottom: 8,
       left: 8,
@@ -703,94 +705,71 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
             opacity: selectionMode ? 1 : 0,
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Material(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 6,
+                constraints: const BoxConstraints(maxWidth: 620),
+                // 浮空胶囊条内部自带 Wrap，窄屏下操作按钮自动换行不溢出。
+                child: CalmBatchActionBar(
+                  selectedCount: selectedCount,
+                  onClose: () => bloc.add(const FolderShelfExitSelectionMode()),
+                  actions: [
+                    CalmButton(
+                      label: t.common.selectAll,
+                      variant: CalmButtonVariant.ghost,
+                      size: CalmButtonSize.xs,
+                      onPressed: () => bloc.add(const FolderShelfSelectAll()),
                     ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      reverse: true,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: t.common.cancel,
-                            onPressed: () => context
-                                .read<FolderShelfBloc>()
-                                .add(const FolderShelfExitSelectionMode()),
-                            icon: const Icon(Icons.close),
-                          ),
-                          Text(t.bookshelf.selectedCount(count: selectedCount)),
-                          const SizedBox(width: 8),
-                          TextButton(
-                            onPressed: () => context
-                                .read<FolderShelfBloc>()
-                                .add(const FolderShelfSelectAll()),
-                            child: Text(t.common.selectAll),
-                          ),
-                          if (mode != ShelfPageMode.history)
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              tooltip: t.bookshelf.moveTo,
-                              onPressed: hasSelection
-                                  ? () => _showTargetFolderDialog(
-                                      context,
-                                      onConfirmed: (targets) {
-                                        context.read<FolderShelfBloc>().add(
-                                          FolderShelfMoveSelected(targets),
-                                        );
-                                      },
-                                    )
-                                  : null,
-                              icon: const Icon(Icons.drive_file_move_outline),
-                            ),
-                          if (mode != ShelfPageMode.history)
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              tooltip: t.bookshelf.copyTo,
-                              onPressed: hasSelection
-                                  ? () => _showTargetFolderDialog(
-                                      context,
-                                      onConfirmed: (targets) {
-                                        context.read<FolderShelfBloc>().add(
-                                          FolderShelfCopySelected(targets),
-                                        );
-                                      },
-                                    )
-                                  : null,
-                              icon: const Icon(Icons.folder_copy_outlined),
-                            ),
-                          if (mode == ShelfPageMode.download)
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              tooltip: t.bookshelf.batchExport,
-                              onPressed: hasSelection
-                                  ? () => _batchExportSelected(
-                                      context,
-                                      context.read<FolderShelfBloc>().state,
-                                    )
-                                  : null,
-                              icon: const Icon(Icons.file_upload_outlined),
-                            ),
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: t.common.delete,
-                            onPressed: hasSelection
-                                ? () => _confirmDeleteSelected(context)
-                                : null,
-                            icon: const Icon(Icons.delete_outline),
-                          ),
-                        ],
+                    if (mode != ShelfPageMode.history)
+                      CalmIconButton(
+                        icon: Icons.drive_file_move_outline,
+                        tooltip: t.bookshelf.moveTo,
+                        size: 28,
+                        iconSize: 15,
+                        onPressed: hasSelection
+                            ? () => _showTargetFolderDialog(
+                                context,
+                                onConfirmed: (targets) {
+                                  bloc.add(FolderShelfMoveSelected(targets));
+                                },
+                              )
+                            : null,
                       ),
+                    if (mode != ShelfPageMode.history)
+                      CalmIconButton(
+                        icon: Icons.folder_copy_outlined,
+                        tooltip: t.bookshelf.copyTo,
+                        size: 28,
+                        iconSize: 15,
+                        onPressed: hasSelection
+                            ? () => _showTargetFolderDialog(
+                                context,
+                                onConfirmed: (targets) {
+                                  bloc.add(FolderShelfCopySelected(targets));
+                                },
+                              )
+                            : null,
+                      ),
+                    if (mode == ShelfPageMode.download)
+                      CalmIconButton(
+                        icon: Icons.file_upload_outlined,
+                        tooltip: t.bookshelf.batchExport,
+                        size: 28,
+                        iconSize: 15,
+                        onPressed: hasSelection
+                            ? () => _batchExportSelected(
+                                context,
+                                context.read<FolderShelfBloc>().state,
+                              )
+                            : null,
+                      ),
+                    CalmIconButton(
+                      icon: Icons.delete_outline,
+                      tooltip: t.common.delete,
+                      size: 28,
+                      iconSize: 15,
+                      onPressed: hasSelection
+                          ? () => _confirmDeleteSelected(context)
+                          : null,
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -802,33 +781,34 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
 
   Future<void> _showCreateFolderDialog(BuildContext context) async {
     final controller = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(t.bookshelf.createFolder),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(hintText: t.bookshelf.folderName),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(t.common.cancel),
-            ),
-            TextButton(
-              onPressed: () {
-                final text = controller.text.trim();
-                if (text.isNotEmpty) {
-                  Navigator.of(dialogContext).pop(text);
-                }
-              },
-              child: Text(t.common.ok),
-            ),
-          ],
-        );
-      },
+    final name = await showCalmDialog<String>(
+      context,
+      title: t.bookshelf.createFolder,
+      icon: Icons.create_new_folder_outlined,
+      bodyBuilder: (dialogContext) => CalmTextField(
+        controller: controller,
+        hintText: t.bookshelf.folderName,
+        prefixIcon: Icons.folder_outlined,
+        onSubmitted: (text) {
+          final value = text.trim();
+          if (value.isNotEmpty) Navigator.of(dialogContext).pop(value);
+        },
+      ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () {
+            final text = controller.text.trim();
+            if (text.isNotEmpty) Navigator.of(dialogContext).pop(text);
+          },
+        ),
+      ],
     );
     controller.dispose();
     if (name != null && name.isNotEmpty && context.mounted) {
@@ -842,37 +822,40 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
     String folderPath,
     Offset position,
   ) {
-    final anchor = Rect.fromCenter(center: position, width: 1, height: 1);
-
-    FluentPopupMenu.show<String>(
-      context: context,
-      anchor: anchor,
-      items: [
-        FluentPopupMenuItem(
-          value: 'rename',
-          leading: const Icon(Icons.drive_file_rename_outline),
-          title: Text(t.common.rename),
-        ),
-        FluentPopupMenuItem(
-          value: 'move',
-          leading: const Icon(Icons.drive_file_move_outline),
-          title: Text(t.bookshelf.moveTo),
-        ),
-        FluentPopupMenuItem(
-          value: 'cover',
-          leading: const Icon(Icons.image_outlined),
-          title: Text(t.bookshelf.changeFolderCover),
-        ),
-        FluentPopupMenuItem(
-          value: 'delete',
-          leading: const Icon(Icons.delete_outline),
-          title: Text(t.common.delete),
-        ),
-      ],
-      onSelected: (value) {
+    // 右键 / 长按统一走轻盈上下文菜单（自动避让屏幕边缘）。
+    unawaited(
+      showCalmContextMenu<String>(
+        context,
+        globalPosition: position,
+        entries: [
+          CalmPopupMenuEntry.item(
+            value: 'rename',
+            label: t.common.rename,
+            icon: Icons.drive_file_rename_outline,
+          ),
+          CalmPopupMenuEntry.item(
+            value: 'move',
+            label: t.bookshelf.moveTo,
+            icon: Icons.drive_file_move_outline,
+          ),
+          CalmPopupMenuEntry.item(
+            value: 'cover',
+            label: t.bookshelf.changeFolderCover,
+            icon: Icons.image_outlined,
+          ),
+          const CalmPopupMenuEntry.divider(),
+          CalmPopupMenuEntry.item(
+            value: 'delete',
+            label: t.common.delete,
+            icon: Icons.delete_outline,
+            danger: true,
+          ),
+        ],
+      ).then((value) {
+        if (!context.mounted) return;
         switch (value) {
           case 'rename':
-            _showRenameFolderDialog(context, folder, folderPath);
+            unawaited(_showRenameFolderDialog(context, folder, folderPath));
           case 'move':
             unawaited(
               _showTargetFolderDialog(
@@ -891,9 +874,9 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
           case 'cover':
             unawaited(_chooseFolderCover(context, folder));
           case 'delete':
-            _confirmDeleteSingleFolder(context, folderPath);
+            unawaited(_confirmDeleteSingleFolder(context, folderPath));
         }
-      },
+      }),
     );
   }
 
@@ -922,24 +905,31 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
     BuildContext context,
     String path,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(t.bookshelf.confirmDeleteFolderTitle),
-          content: Text(t.bookshelf.confirmDeleteFolderContent),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(t.common.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(t.common.delete),
-            ),
-          ],
-        );
-      },
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: t.bookshelf.confirmDeleteFolderTitle,
+      icon: Icons.delete_outline,
+      tone: CalmTone.danger,
+      bodyBuilder: (dialogContext) => Text(
+        t.bookshelf.confirmDeleteFolderContent,
+        style: TextStyle(
+          fontSize: 12.5,
+          color: dialogContext.calm.text2,
+          height: 1.5,
+        ),
+      ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.delete,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
     if (confirmed == true && context.mounted) {
       context.read<FolderShelfBloc>().add(FolderShelfDeleteFolder(path));
@@ -952,33 +942,34 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
     String folderPath,
   ) async {
     final controller = TextEditingController(text: folder.name);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(t.bookshelf.renameFolder),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(hintText: t.common.rename),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(t.common.cancel),
-            ),
-            TextButton(
-              onPressed: () {
-                final text = controller.text.trim();
-                if (text.isNotEmpty) {
-                  Navigator.of(dialogContext).pop(text);
-                }
-              },
-              child: Text(t.common.ok),
-            ),
-          ],
-        );
-      },
+    final name = await showCalmDialog<String>(
+      context,
+      title: t.bookshelf.renameFolder,
+      icon: Icons.drive_file_rename_outline,
+      bodyBuilder: (dialogContext) => CalmTextField(
+        controller: controller,
+        hintText: t.common.rename,
+        prefixIcon: Icons.folder_outlined,
+        onSubmitted: (text) {
+          final value = text.trim();
+          if (value.isNotEmpty) Navigator.of(dialogContext).pop(value);
+        },
+      ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.primary,
+          onPressed: () {
+            final text = controller.text.trim();
+            if (text.isNotEmpty) Navigator.of(dialogContext).pop(text);
+          },
+        ),
+      ],
     );
     controller.dispose();
     if (name != null && name.isNotEmpty && context.mounted) {
@@ -1011,33 +1002,35 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
     ComicSimplifyEntryInfo info,
     Offset position,
   ) {
-    final anchor = Rect.fromCenter(center: position, width: 1, height: 1);
-
-    FluentPopupMenu.show<String>(
-      context: context,
-      anchor: anchor,
-      items: [
-        FluentPopupMenuItem(
-          value: 'multi_select',
-          leading: const Icon(Icons.checklist),
-          title: Text(t.bookshelf.multiSelect),
-        ),
-        FluentPopupMenuItem(
-          value: 'delete',
-          leading: const Icon(Icons.delete_outline),
-          title: Text(t.common.delete),
-        ),
-      ],
-      onSelected: (value) {
+    unawaited(
+      showCalmContextMenu<String>(
+        context,
+        globalPosition: position,
+        entries: [
+          CalmPopupMenuEntry.item(
+            value: 'multi_select',
+            label: t.bookshelf.multiSelect,
+            icon: Icons.checklist_rounded,
+          ),
+          const CalmPopupMenuEntry.divider(),
+          CalmPopupMenuEntry.item(
+            value: 'delete',
+            label: t.common.delete,
+            icon: Icons.delete_outline,
+            danger: true,
+          ),
+        ],
+      ).then((value) {
+        if (!context.mounted) return;
         switch (value) {
           case 'multi_select':
             context.read<FolderShelfBloc>().add(
               FolderShelfToggleComicSelection('${info.from.trim()}:${info.id}'),
             );
           case 'delete':
-            _confirmRemoveComic(context, info);
+            unawaited(_confirmRemoveComic(context, info));
         }
-      },
+      }),
     );
   }
 
@@ -1045,26 +1038,31 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
     BuildContext context,
     ComicSimplifyEntryInfo info,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(t.bookshelf.confirmRemoveComicTitle),
-          content: Text(
-            t.bookshelf.confirmRemoveComicContent(title: info.title),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(t.common.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(t.common.remove),
-            ),
-          ],
-        );
-      },
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: t.bookshelf.confirmRemoveComicTitle,
+      icon: Icons.delete_outline,
+      tone: CalmTone.danger,
+      bodyBuilder: (dialogContext) => Text(
+        t.bookshelf.confirmRemoveComicContent(title: info.title),
+        style: TextStyle(
+          fontSize: 12.5,
+          color: dialogContext.calm.text2,
+          height: 1.5,
+        ),
+      ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.remove,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
     if (confirmed == true && context.mounted) {
       final uniqueKey = '${info.from.trim()}:${info.id}';
@@ -1148,28 +1146,43 @@ ComicFolderType _folderTypeOf(ShelfPageMode mode) {
 }
 
 Future<void> _importExternalComic(BuildContext context) async {
-  final choice = await showModalBottomSheet<String>(
-    context: context,
-    builder: (sheetContext) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!Platform.isIOS && !isOhos)
-            ListTile(
-              leading: const Icon(Icons.folder_open_outlined),
-              title: Text(t.bookshelf.importExternalFolder),
-              subtitle: Text(t.bookshelf.importExternalFolderHint),
-              onTap: () => Navigator.of(sheetContext).pop('folder'),
+  final choice = await showCalmDialog<String>(
+    context,
+    title: t.bookshelf.importExternalComic,
+    icon: Icons.library_add_outlined,
+    bodyBuilder: (dialogContext) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!Platform.isIOS && !isOhos)
+          CalmListTile(
+            leading: Icon(
+              Icons.folder_open_outlined,
+              size: 17,
+              color: dialogContext.calm.accent,
             ),
-          ListTile(
-            leading: const Icon(Icons.archive_outlined),
-            title: Text(t.bookshelf.importExternalArchive),
-            subtitle: Text(t.bookshelf.importExternalArchiveHint),
-            onTap: () => Navigator.of(sheetContext).pop('archive'),
+            title: t.bookshelf.importExternalFolder,
+            subtitle: t.bookshelf.importExternalFolderHint,
+            onTap: () => Navigator.of(dialogContext).pop('folder'),
           ),
-        ],
-      ),
+        CalmListTile(
+          leading: Icon(
+            Icons.archive_outlined,
+            size: 17,
+            color: dialogContext.calm.accent,
+          ),
+          title: t.bookshelf.importExternalArchive,
+          subtitle: t.bookshelf.importExternalArchiveHint,
+          onTap: () => Navigator.of(dialogContext).pop('archive'),
+        ),
+      ],
     ),
+    actionsBuilder: (dialogContext) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(dialogContext).pop(),
+      ),
+    ],
   );
   if (choice == null) return;
 
@@ -1255,22 +1268,31 @@ Future<bool> _confirmComicImportOverwrite(
   BuildContext context,
   String title,
 ) async {
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(t.bookshelf.comicExists),
-      content: Text(t.bookshelf.confirmOverwriteImport(title: title)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: Text(t.common.cancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: Text(t.common.overwrite),
-        ),
-      ],
+  final result = await showCalmDialog<bool>(
+    context,
+    title: t.bookshelf.comicExists,
+    icon: Icons.file_download_outlined,
+    tone: CalmTone.warning,
+    bodyBuilder: (dialogContext) => Text(
+      t.bookshelf.confirmOverwriteImport(title: title),
+      style: TextStyle(
+        fontSize: 12.5,
+        color: dialogContext.calm.text2,
+        height: 1.5,
+      ),
     ),
+    actionsBuilder: (dialogContext) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(dialogContext).pop(false),
+      ),
+      CalmButton(
+        label: t.common.overwrite,
+        variant: CalmButtonVariant.primary,
+        onPressed: () => Navigator.of(dialogContext).pop(true),
+      ),
+    ],
   );
   return result ?? false;
 }
@@ -1286,8 +1308,7 @@ Future<void> _batchExportSelected(
       .toList();
 
   if (selectedComics.isEmpty) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(t.bookshelf.noExportableComics)));
+    showInfoToast(t.bookshelf.noExportableComics);
     return;
   }
 
@@ -1312,24 +1333,31 @@ Future<void> _batchExportSelected(
 }
 
 Future<void> _confirmDeleteSelected(BuildContext context) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) {
-      return AlertDialog(
-        title: Text(t.bookshelf.confirmDeleteSelectedTitle),
-        content: Text(t.bookshelf.confirmDeleteSelectedContent),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(t.common.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(t.common.delete),
-          ),
-        ],
-      );
-    },
+  final confirmed = await showCalmDialog<bool>(
+    context,
+    title: t.bookshelf.confirmDeleteSelectedTitle,
+    icon: Icons.delete_outline,
+    tone: CalmTone.danger,
+    bodyBuilder: (dialogContext) => Text(
+      t.bookshelf.confirmDeleteSelectedContent,
+      style: TextStyle(
+        fontSize: 12.5,
+        color: dialogContext.calm.text2,
+        height: 1.5,
+      ),
+    ),
+    actionsBuilder: (dialogContext) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(dialogContext).pop(false),
+      ),
+      CalmButton(
+        label: t.common.delete,
+        variant: CalmButtonVariant.danger,
+        onPressed: () => Navigator.of(dialogContext).pop(true),
+      ),
+    ],
   );
   if (confirmed == true && context.mounted) {
     context.read<FolderShelfBloc>().add(const FolderShelfDeleteSelected());

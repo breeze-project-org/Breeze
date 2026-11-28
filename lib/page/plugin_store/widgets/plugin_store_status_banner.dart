@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:zephyr/ui/ui.dart';
 
+/// 插件安装进度横幅：语义 info（accentSoft）+ 右侧轻量转圈。
 class PluginStoreStatusBanner extends StatelessWidget {
   const PluginStoreStatusBanner({super.key, required this.message});
 
@@ -12,40 +14,10 @@ class PluginStoreStatusBanner extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final colorScheme = Theme.of(context).colorScheme;
-    final backgroundColor = colorScheme.primaryContainer;
-    final foregroundColor = colorScheme.onPrimaryContainer;
-    final leading = SizedBox(
-      width: 18,
-      height: 18,
-      child: CircularProgressIndicator(
-        strokeWidth: 2.2,
-        color: foregroundColor,
-      ),
-    );
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          leading,
-          const SizedBox(width: 12),
-          Expanded(
-            child: SelectableText(
-              trimmedMessage,
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: foregroundColor),
-            ),
-          ),
-        ],
-      ),
+    return CalmStatusBanner(
+      title: trimmedMessage,
+      tone: CalmTone.info,
+      trailing: const CalmLoading(size: 14),
     );
   }
 }

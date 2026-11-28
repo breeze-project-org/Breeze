@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:markdown_widget/widget/markdown_block.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/page/setting/common/setting_ui.dart';
 import 'package:zephyr/page/webdav_sync/webdav_sync.dart';
 
 import 'package:zephyr/main.dart';
@@ -19,12 +20,6 @@ class WebDavSyncPage extends StatefulWidget {
 }
 
 class _WebDavSyncPageState extends State<WebDavSyncPage> {
-  static const WidgetStateProperty<Icon> _thumbIcon =
-      WidgetStateProperty<Icon>.fromMap(<WidgetStatesConstraint, Icon>{
-        WidgetState.selected: Icon(Icons.check),
-        WidgetState.any: Icon(Icons.close),
-      });
-
   final TextEditingController _webdavHost = TextEditingController();
   final TextEditingController _webdavUsername = TextEditingController();
   final TextEditingController _webdavPassword = TextEditingController();
@@ -73,171 +68,202 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
   @override
   Widget build(BuildContext context) {
     final globalSettingCubit = context.watch<GlobalSettingCubit>();
-    final syncServiceType =
-        globalSettingCubit.state.syncSetting.syncServiceType;
+    final syncServiceType = globalSettingCubit.state.syncSetting.syncServiceType;
     final title = syncServiceType == SyncServiceType.none
         ? t.webdavSync.title
         : t.webdavSync.serviceTitle(service: syncServiceType.label);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: <Widget>[
-            if (syncServiceType == SyncServiceType.none) ...[
-              _buildNoneTip(),
-            ] else if (syncServiceType == SyncServiceType.webdav) ...[
-              _buildWebDavForm(),
-            ] else ...[
-              _buildS3Form(),
-            ],
-            const SizedBox(height: 12),
-            if (syncServiceType != SyncServiceType.none)
-              Row(
-                children: [
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () => _clearConfig(syncServiceType),
-                    child: Text(t.webdavSync.deleteConfig),
+    return SettingPageShell(
+      title: title,
+      subtitle: t.settings.syncConfigSubtitle,
+      child: ListView(
+        padding: kSettingPagePadding,
+        children: <Widget>[
+          if (syncServiceType == SyncServiceType.none) ...[
+            _buildNoneTip(),
+          ] else if (syncServiceType == SyncServiceType.webdav) ...[
+            _buildWebDavForm(),
+          ] else ...[
+            _buildS3Form(),
+          ],
+          if (syncServiceType != SyncServiceType.none) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                CalmButton(
+                  label: t.webdavSync.deleteConfig,
+                  icon: Icons.delete_outline_rounded,
+                  variant: CalmButtonVariant.danger,
+                  onPressed: () => _clearConfig(syncServiceType),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: CalmButton(
+                      label: t.webdavSync.testAndSave,
+                      icon: Icons.cloud_done_outlined,
+                      variant: CalmButtonVariant.primary,
+                      onPressed: () => _testAndSave(syncServiceType),
+                    ),
                   ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () => _testAndSave(syncServiceType),
-                    child: Text(t.webdavSync.testAndSave),
-                  ),
-                  const Spacer(),
-                ],
-              ),
-            const SizedBox(height: 8),
-            Center(
-              child: TextButton(
-                onPressed: () => _showQA(context),
-                child: Text(t.webdavSync.faq),
-              ),
+                ),
+              ],
             ),
           ],
-        ),
+          const SizedBox(height: 12),
+          Center(
+            child: CalmButton(
+              label: t.webdavSync.faq,
+              icon: Icons.help_outline_rounded,
+              variant: CalmButtonVariant.ghost,
+              onPressed: () => _showQA(context),
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }
 
   Widget _buildNoneTip() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24),
-      child: Text(t.webdavSync.noneTip, style: const TextStyle(fontSize: 16)),
+    return CalmEmptyState(
+      icon: Icons.cloud_off_rounded,
+      title: t.webdavSync.noneTip,
+      subtitle: t.settings.syncServiceSubtitle,
     );
   }
 
   Widget _buildWebDavForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: _webdavHost,
-          decoration: InputDecoration(
-            labelText: t.webdavSync.webdavHost,
-            border: const OutlineInputBorder(),
+    return CalmCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _fieldLabel(t.webdavSync.webdavHost),
+          CalmTextField(
+            controller: _webdavHost,
+            hintText: t.webdavSync.webdavHost,
+            prefixIcon: Icons.cloud_outlined,
+            keyboardType: TextInputType.url,
           ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _webdavUsername,
-          decoration: InputDecoration(
-            labelText: t.webdavSync.username,
-            border: const OutlineInputBorder(),
+          const SizedBox(height: 14),
+          _fieldLabel(t.webdavSync.username),
+          CalmTextField(
+            controller: _webdavUsername,
+            hintText: t.webdavSync.username,
+            prefixIcon: Icons.person_outline_rounded,
           ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _webdavPassword,
-          decoration: InputDecoration(
-            labelText: t.webdavSync.password,
-            border: const OutlineInputBorder(),
+          const SizedBox(height: 14),
+          _fieldLabel(t.webdavSync.password),
+          CalmTextField(
+            controller: _webdavPassword,
+            hintText: t.webdavSync.password,
+            prefixIcon: Icons.lock_outline_rounded,
+            obscureText: true,
           ),
-          obscureText: true,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildS3Form() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: _s3Endpoint,
-          decoration: InputDecoration(
-            labelText: t.webdavSync.s3Endpoint,
-            hintText: t.webdavSync.s3EndpointHint,
-            border: const OutlineInputBorder(),
+    return CalmCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _fieldLabel(t.webdavSync.s3Endpoint),
+                CalmTextField(
+                  controller: _s3Endpoint,
+                  hintText: t.webdavSync.s3EndpointHint,
+                  prefixIcon: Icons.link_rounded,
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 14),
+                _fieldLabel('Access Key'),
+                CalmTextField(
+                  controller: _s3AccessKey,
+                  hintText: 'Access Key',
+                  prefixIcon: Icons.vpn_key_outlined,
+                ),
+                const SizedBox(height: 14),
+                _fieldLabel('Secret Key'),
+                CalmTextField(
+                  controller: _s3SecretKey,
+                  hintText: 'Secret Key',
+                  prefixIcon: Icons.password_rounded,
+                  obscureText: true,
+                ),
+                const SizedBox(height: 14),
+                _fieldLabel(t.webdavSync.s3Bucket),
+                CalmTextField(
+                  controller: _s3Bucket,
+                  hintText: t.webdavSync.s3Bucket,
+                  prefixIcon: Icons.folder_outlined,
+                ),
+                const SizedBox(height: 14),
+                _fieldLabel(t.webdavSync.s3Region),
+                CalmTextField(
+                  controller: _s3Region,
+                  hintText: t.webdavSync.s3Region,
+                  prefixIcon: Icons.public_rounded,
+                ),
+                const SizedBox(height: 14),
+                _fieldLabel(t.webdavSync.s3Port),
+                CalmTextField(
+                  controller: _s3Port,
+                  hintText: t.webdavSync.s3Port,
+                  prefixIcon: Icons.numbers_rounded,
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _s3AccessKey,
-          decoration: const InputDecoration(
-            labelText: 'Access Key',
-            border: OutlineInputBorder(),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: CalmDivider(),
           ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _s3SecretKey,
-          decoration: const InputDecoration(
-            labelText: 'Secret Key',
-            border: OutlineInputBorder(),
+          settingSwitchTile(
+            icon: Icons.lock_rounded,
+            title: t.webdavSync.useSsl,
+            value: _s3UseSSL,
+            onChanged: (value) {
+              setState(() {
+                _s3UseSSL = value;
+              });
+            },
           ),
-          obscureText: true,
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _s3Bucket,
-          decoration: InputDecoration(
-            labelText: t.webdavSync.s3Bucket,
-            border: const OutlineInputBorder(),
+          settingSwitchTile(
+            icon: Icons.route_outlined,
+            title: t.webdavSync.pathStyle,
+            subtitle: t.webdavSync.pathStyleSubtitle,
+            value: _s3PathStyle,
+            onChanged: (value) {
+              setState(() {
+                _s3PathStyle = value;
+              });
+            },
           ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _s3Region,
-          decoration: InputDecoration(
-            labelText: t.webdavSync.s3Region,
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _s3Port,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: t.webdavSync.s3Port,
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 4),
-        SwitchListTile(
-          title: Text(t.webdavSync.useSsl),
-          thumbIcon: _thumbIcon,
-          value: _s3UseSSL,
-          onChanged: (value) {
-            setState(() {
-              _s3UseSSL = value;
-            });
-          },
-        ),
-        SwitchListTile(
-          title: Text(t.webdavSync.pathStyle),
-          subtitle: Text(t.webdavSync.pathStyleSubtitle),
-          thumbIcon: _thumbIcon,
-          value: _s3PathStyle,
-          onChanged: (value) {
-            setState(() {
-              _s3PathStyle = value;
-            });
-          },
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _fieldLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 6),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11.5, color: context.calm.text2),
+      ),
     );
   }
 
@@ -293,23 +319,32 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
     }
   }
 
-  Future<void> _testWebDavServer() async {
-    showDialog(
-      context: context,
+  /// 显示不可中断的连接中弹窗，返回「精确关闭该弹窗」的回调。
+  ///
+  /// 关闭动作使用弹窗自身的 BuildContext（由 bodyBuilder 捕获），因此
+  /// `Navigator.of(ctx).pop()` 只会 pop 掉弹窗路由，绝不会误关本页。
+  VoidCallback _showConnectingDialog(String message) {
+    BuildContext? dialogContext;
+    showCalmDialog<void>(
+      context,
+      title: message,
+      icon: Icons.cloud_sync_outlined,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(t.webdavSync.connectingWebdav),
-            ],
-          ),
-        );
+      preventPop: true,
+      bodyBuilder: (ctx) {
+        dialogContext = ctx;
+        return const CalmProgressBar(height: 5);
       },
     );
+    return () {
+      final ctx = dialogContext;
+      if (ctx == null || !ctx.mounted) return;
+      Navigator.of(ctx).pop();
+    };
+  }
+
+  Future<void> _testWebDavServer() async {
+    final closeLoading = _showConnectingDialog(t.webdavSync.connectingWebdav);
 
     try {
       await testWebDavServer(
@@ -318,9 +353,7 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
         _webdavPassword.text,
       );
 
-      if (mounted) {
-        context.pop();
-      }
+      closeLoading();
 
       logger.d('WebDAV连接成功');
 
@@ -342,9 +375,7 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
       commonDialog(context, t.webdavSync.success, t.webdavSync.webdavConnected);
     } catch (e) {
       logger.e(e);
-      if (mounted) {
-        context.pop();
-      }
+      closeLoading();
 
       if (!mounted) return;
       commonDialog(
@@ -363,22 +394,7 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
       return;
     }
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(t.webdavSync.connectingS3),
-            ],
-          ),
-        );
-      },
-    );
+    final closeLoading = _showConnectingDialog(t.webdavSync.connectingS3);
 
     try {
       await testS3Server(
@@ -392,9 +408,7 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
         region: _s3Region.text.trim(),
       );
 
-      if (mounted) {
-        context.pop();
-      }
+      closeLoading();
 
       if (!mounted) return;
 
@@ -420,9 +434,7 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
       commonDialog(context, t.webdavSync.success, t.webdavSync.s3Connected);
     } catch (e) {
       logger.e(e);
-      if (mounted) {
-        context.pop();
-      }
+      closeLoading();
 
       if (!mounted) return;
       commonDialog(
@@ -436,23 +448,21 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
   void _showQA(BuildContext context) {
     final String disclaimerMarkdown = t.webdavSync.faqMarkdown;
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          content: SingleChildScrollView(
-            child: MarkdownBlock(data: disclaimerMarkdown),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                context.pop();
-              },
-              child: Text(t.webdavSync.close),
-            ),
-          ],
-        );
-      },
+    showCalmDialog<void>(
+      context,
+      title: t.webdavSync.faq,
+      icon: Icons.quiz_outlined,
+      maxWidth: 520,
+      bodyBuilder: (ctx) => MarkdownBlock(data: disclaimerMarkdown),
+      actionsBuilder: (ctx) => [
+        CalmButton(
+          label: t.webdavSync.close,
+          variant: CalmButtonVariant.primary,
+          onPressed: () {
+            Navigator.of(ctx).pop();
+          },
+        ),
+      ],
     );
   }
 }

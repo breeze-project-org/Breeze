@@ -1,9 +1,9 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:zephyr/page/search_result/widgets/bottom_loader.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_grid.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_info.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/type/enum.dart';
+import 'package:zephyr/ui/ui.dart';
 
 class PluginComicGridSliver extends StatelessWidget {
   const PluginComicGridSliver({
@@ -85,30 +85,21 @@ class PluginComicGridSliver extends StatelessWidget {
         ),
         if (hasReachedMax)
           SliverToBoxAdapter(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(30.0),
-                child: Text(
-                  t.oldHome.noMore,
-                  style: const TextStyle(fontSize: 20.0),
-                ),
-              ),
+            child: CalmBottomLoader(
+              status: CalmBottomLoaderStatus.noMore,
+              noMoreText: t.oldHome.noMore,
             ),
           ),
         if (isLoadingMore)
-          const SliverToBoxAdapter(child: Center(child: BottomLoader())),
+          SliverToBoxAdapter(
+            child: CalmBottomLoader(status: CalmBottomLoaderStatus.loading),
+          ),
         if (loadMoreFailed)
           SliverToBoxAdapter(
-            child: Center(
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: onRetryLoadMore,
-                    child: Text(t.oldHome.loadMoreFailed),
-                  ),
-                ],
-              ),
+            child: CalmBottomLoader(
+              status: CalmBottomLoaderStatus.error,
+              errorText: t.oldHome.loadMoreFailed,
+              onRetry: onRetryLoadMore,
             ),
           ),
         if (!hasReachedMax && !isLoadingMore && !loadMoreFailed)
@@ -116,10 +107,12 @@ class PluginComicGridSliver extends StatelessWidget {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 14, top: 6),
-                child: TextButton.icon(
+                child: CalmButton(
+                  label: t.oldHome.loadMore,
+                  icon: Icons.keyboard_arrow_down_rounded,
+                  variant: CalmButtonVariant.ghost,
+                  size: CalmButtonSize.sm,
                   onPressed: onLoadMore,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                  label: Text(t.oldHome.loadMore),
                 ),
               ),
             ),

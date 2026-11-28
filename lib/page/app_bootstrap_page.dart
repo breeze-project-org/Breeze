@@ -13,6 +13,7 @@ import 'package:zephyr/plugin/local_comic_plugin.dart';
 import 'package:zephyr/plugin/plugin_cloud_update_service.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
 import 'package:zephyr/service/lifecycle/foreground_task/foreground_task_service.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/gesture_lock.dart';
 import 'package:zephyr/widgets/toast.dart';
 
@@ -45,23 +46,19 @@ class _AppBootstrapViewState extends State<AppBootstrapView> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(
-              width: 36,
-              height: 36,
-              child: CircularProgressIndicator(strokeWidth: 3),
-            ),
-            const SizedBox(height: 14),
-            BlocBuilder<StringSelectCubit, String>(
+      backgroundColor: c.bg,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: BlocBuilder<StringSelectCubit, String>(
               builder: (context, state) {
-                return Text(state, style: const TextStyle(fontSize: 24));
+                return CalmLoading(label: state, size: 22);
               },
             ),
-          ],
+          ),
         ),
       ),
     );

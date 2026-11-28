@@ -6,7 +6,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
-import 'package:toastification/toastification.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
@@ -16,7 +15,7 @@ import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
 import 'package:zephyr/service/lifecycle/foreground_task/foreground_task_service.dart';
 import 'package:zephyr/service/lifecycle/notification_service.dart';
 import 'package:zephyr/service/update/check_update.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/error/error_filter.dart';
 import 'package:zephyr/util/storage/manage_cache.dart';
 import 'package:zephyr/widgets/memory/memory_overlay_widget.dart';
@@ -161,7 +160,7 @@ class _NavigationBarState extends State<NavigationBar> {
     }
     final pageList = _buildPageList(globalSettingState);
     final navBarItems = _navBarItems(globalSettingState);
-    final navRailDestinations = _navRailDestinations(globalSettingState);
+    final navItems = _navItems(globalSettingState);
     return MemoryOverlayWidget(
       enabled: globalSettingState.enableMemoryDebug,
       updateInterval: Duration(seconds: 1),
@@ -173,7 +172,7 @@ class _NavigationBarState extends State<NavigationBar> {
               Platform.isMacOS) {
             return _buildTabletLayout(
               pageList: pageList,
-              navRailDestinations: navRailDestinations,
+              navItems: navItems,
               visibleBaseIndexes: visibleBaseIndexes,
             );
           } else {
@@ -195,12 +194,13 @@ class _NavigationBarState extends State<NavigationBar> {
     required bool backPressExitEnabled,
     required List<int> visibleBaseIndexes,
   }) {
+    final c = context.calm;
     return PersistentTabView(
       context,
       controller: _controller,
       screens: pageList,
       items: navBarItems,
-      backgroundColor: context.backgroundColor,
+      backgroundColor: c.surface,
       // 由组件自身的 PopScope 接收返回事件。此前把 PopScope 包在组件外层，
       // 容易被每个 tab 的内部 Navigator 先消费，导致开关看起来没有效果。
       handleAndroidBackButtonPress: !backPressExitEnabled,
@@ -234,52 +234,43 @@ class _NavigationBarState extends State<NavigationBar> {
     return false;
   }
 
-  // 平板布局 (使用 NavigationRail)
+  // 平板 / 桌面布局：CalmUI 轻盈侧边导航轨
   Widget _buildTabletLayout({
     required List<Widget> pageList,
-    required List<NavigationRailDestination> navRailDestinations,
+    required List<CalmNavItem> navItems,
     required List<int> visibleBaseIndexes,
   }) {
+    final c = context.calm;
     final visibleIndex = visibleBaseIndexes.indexOf(_selectedBaseIndex);
     final selectedIndex = visibleIndex < 0 ? 0 : visibleIndex;
     return Scaffold(
-      backgroundColor: context.backgroundColor,
+      backgroundColor: c.bg,
       body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Column(
-            children: [
-              Expanded(
-                child: NavigationRail(
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: (int index) {
-                    setState(() {
-                      _selectedBaseIndex = visibleBaseIndexes[index];
-                      _controller.index = index;
-                    });
-                  },
-                  labelType: NavigationRailLabelType.all,
-                  backgroundColor: context.backgroundColor,
-                  destinations: navRailDestinations,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: IconButton(
-                  icon: Icon(Icons.search),
-                  tooltip: t.common.search,
-                  onPressed: () {
-                    context.pushRoute(
-                      SearchRoute(
-                        searchState: SearchStates.initial(),
-                        aggregateMode: true,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+          CalmNavRail(
+            items: navItems,
+            currentIndex: selectedIndex,
+            fullHeight: true,
+            onChanged: (int index) {
+              setState(() {
+                _selectedBaseIndex = visibleBaseIndexes[index];
+                _controller.index = index;
+              });
+            },
+            footer: CalmIconButton(
+              icon: Icons.search_rounded,
+              tooltip: t.common.search,
+              onPressed: () {
+                context.pushRoute(
+                  SearchRoute(
+                    searchState: SearchStates.initial(),
+                    aggregateMode: true,
+                  ),
+                );
+              },
+            ),
           ),
-          const VerticalDivider(thickness: 1, width: 1),
           Expanded(
             child: IndexedStack(index: selectedIndex, children: pageList),
           ),
@@ -290,46 +281,17 @@ class _NavigationBarState extends State<NavigationBar> {
 
   // 底部导航栏的配置项（按开关过滤，只保留可见 tab）
   List<PersistentBottomNavBarItem> _navBarItems(GlobalSettingState state) {
-    final activeColor = context.theme.colorScheme.primary;
-    final inactiveColor = context.textColor;
-
-    final homeItem = PersistentBottomNavBarItem(
-      icon: Icon(Icons.home_outlined),
-      title: t.navigation.home,
-      activeColorPrimary: activeColor,
-      inactiveColorPrimary: inactiveColor,
-    );
-    final cloudFavoriteItem = PersistentBottomNavBarItem(
-      icon: Icon(Icons.cloud_outlined),
-      title: t.oldHome.cloudFavorite,
-      activeColorPrimary: activeColor,
-      inactiveColorPrimary: inactiveColor,
-    );
-    final bookshelfItem = PersistentBottomNavBarItem(
-      icon: Icon(Icons.menu_book_sharp),
-      title: t.navigation.bookshelf,
-      activeColorPrimary: activeColor,
-      inactiveColorPrimary: inactiveColor,
-    );
-    final discoverItem = PersistentBottomNavBarItem(
-      icon: Icon(Icons.explore_outlined),
-      title: t.navigation.discover,
-      activeColorPrimary: activeColor,
-      inactiveColorPrimary: inactiveColor,
-    );
-    final moreItem = PersistentBottomNavBarItem(
-      icon: Icon(Icons.apps_outlined),
-      title: t.navigation.more,
-      activeColorPrimary: activeColor,
-      inactiveColorPrimary: inactiveColor,
-    );
-    return _pickVisible(state, [
-      homeItem,
-      cloudFavoriteItem,
-      bookshelfItem,
-      discoverItem,
-      moreItem,
-    ]);
+    final c = context.calm;
+    return [
+      for (final item in _navItems(state))
+        PersistentBottomNavBarItem(
+          icon: Icon(item.activeIcon ?? item.icon),
+          inactiveIcon: Icon(item.icon),
+          title: item.label,
+          activeColorPrimary: c.accent,
+          inactiveColorPrimary: c.text3,
+        ),
+    ];
   }
 
   /// 规范序号转可见位置；隐藏中的序号回退到最近的可见页。
@@ -369,35 +331,33 @@ class _NavigationBarState extends State<NavigationBar> {
     return [for (final baseIndex in visible) all[baseIndex]];
   }
 
-  // 为平板侧边导航栏生成 NavigationRailDestination（按开关过滤）
-  List<NavigationRailDestination> _navRailDestinations(
-    GlobalSettingState state,
-  ) {
+  // 平板 / 桌面侧边导航项（按开关过滤）
+  List<CalmNavItem> _navItems(GlobalSettingState state) {
     final all = [
-      NavigationRailDestination(
-        icon: Icon(Icons.home_outlined),
-        selectedIcon: Icon(Icons.home),
-        label: Text(t.navigation.home),
+      CalmNavItem(
+        label: t.navigation.home,
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
       ),
-      NavigationRailDestination(
-        icon: Icon(Icons.cloud_outlined),
-        selectedIcon: Icon(Icons.cloud),
-        label: Text(t.oldHome.cloudFavorite),
+      CalmNavItem(
+        label: t.oldHome.cloudFavorite,
+        icon: Icons.cloud_outlined,
+        activeIcon: Icons.cloud_rounded,
       ),
-      NavigationRailDestination(
-        icon: Icon(Icons.menu_book_outlined),
-        selectedIcon: Icon(Icons.menu_book_sharp),
-        label: Text(t.navigation.bookshelf),
+      CalmNavItem(
+        label: t.navigation.bookshelf,
+        icon: Icons.menu_book_outlined,
+        activeIcon: Icons.menu_book_rounded,
       ),
-      NavigationRailDestination(
-        icon: Icon(Icons.explore_outlined),
-        selectedIcon: Icon(Icons.explore),
-        label: Text(t.navigation.discover),
+      CalmNavItem(
+        label: t.navigation.discover,
+        icon: Icons.explore_outlined,
+        activeIcon: Icons.explore_rounded,
       ),
-      NavigationRailDestination(
-        icon: Icon(Icons.apps_outlined),
-        selectedIcon: Icon(Icons.apps),
-        label: Text(t.navigation.more),
+      CalmNavItem(
+        label: t.navigation.more,
+        icon: Icons.apps_outlined,
+        activeIcon: Icons.apps_rounded,
       ),
     ];
     return _pickVisible(state, all);
@@ -520,22 +480,27 @@ class _NavigationBarState extends State<NavigationBar> {
     if (!mounted) {
       return;
     }
-    final goLogin = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(t.navigation.needLoginTitle),
-        content: Text(message ?? t.navigation.loginExpired),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(t.navigation.goLogin),
-          ),
-        ],
+    final goLogin = await showCalmDialog<bool>(
+      context,
+      title: t.navigation.needLoginTitle,
+      icon: Icons.lock_outline_rounded,
+      tone: CalmTone.warning,
+      bodyBuilder: (ctx) => Text(
+        message ?? t.navigation.loginExpired,
+        style: TextStyle(fontSize: 12.5, color: ctx.calm.text2, height: 1.45),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.navigation.goLogin,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
     if (goLogin != true || !mounted) {
       return;
@@ -569,31 +534,22 @@ class _NavigationBarState extends State<NavigationBar> {
     _lastToastEvent = toastEvent;
     _lastToastShownAt = now;
 
-    ToastificationType type;
-    switch (event.type) {
-      case ToastType.success:
-        type = ToastificationType.success;
-        break;
-      case ToastType.error:
-        type = ToastificationType.error;
-        break;
-      case ToastType.warning:
-        type = ToastificationType.warning;
-        break;
-      case ToastType.info:
-        type = ToastificationType.info;
-        break;
-    }
+    final tone = switch (event.type) {
+      ToastType.success => CalmTone.success,
+      ToastType.error => CalmTone.danger,
+      ToastType.warning => CalmTone.warning,
+      ToastType.info => CalmTone.info,
+    };
 
     if (event.message.runes.length < 30) {
-      toastification.show(
-        context: context,
-        title: event.title == null ? null : Text(event.title!),
-        description: Text(event.message),
-        type: type,
-        style: ToastificationStyle.flatColored,
-        autoCloseDuration: event.duration,
-        showProgressBar: true,
+      // 有独立标题时标题在上、正文在下；否则把正文当成标题，避免重复两遍。
+      final hasTitle = event.title != null && event.title!.trim().isNotEmpty;
+      CalmToast.show(
+        context,
+        title: hasTitle ? event.title! : event.message,
+        description: hasTitle ? event.message : null,
+        tone: tone,
+        duration: event.duration,
       );
     } else {
       late String title;

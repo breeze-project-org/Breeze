@@ -6,10 +6,10 @@ import 'package:zephyr/page/comic_info/models/favorite_workflow.dart';
 import 'package:zephyr/page/comic_info/json/normal/normal_comic_all_info.dart';
 import 'package:zephyr/page/comic_info/models/collect_comic.dart';
 import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
 import 'package:zephyr/util/error/error_filter.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 
 import 'package:zephyr/widgets/dialog.dart';
 import 'package:zephyr/widgets/toast.dart';
@@ -133,15 +133,16 @@ class _ComicOperationWidgetState extends State<ComicOperationWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final detailSetting = context
         .watch<GlobalSettingCubit>()
         .state
         .comicDetailSetting;
     final localCollectItem = _OperationItemData(
-      icon: isCollected ? Icons.star : Icons.star_border,
+      icon: isCollected ? Icons.star_rounded : Icons.star_border_rounded,
       text: isCollected ? t.comicInfo.collected : t.comicInfo.collect,
       highlighted: isCollected,
-      accentColor: const Color(0xFFE6A700),
+      accentColor: c.warning,
       enabled: true,
       onTap: _toggleLocalFavorite,
       onLongPress: _chooseLocalFavoriteFolders,
@@ -152,17 +153,19 @@ class _ComicOperationWidgetState extends State<ComicOperationWidget> {
           ? t.comicInfo.cloudCollected
           : t.comicInfo.cloudCollect,
       highlighted: isCloudCollected,
-      accentColor: Colors.pink,
+      accentColor: c.accent,
       enabled: true,
       onTap: _toggleCloudFavorite,
     );
     final actions = <_OperationItemData>[
       if (detailSetting.showLikeAction)
         _OperationItemData(
-          icon: isLiked ? Icons.favorite : Icons.favorite_border,
+          icon: isLiked
+              ? Icons.favorite_rounded
+              : Icons.favorite_border_rounded,
           text: t.comicInfo.likes(count: normalInfo.totalLikes),
           highlighted: isLiked,
-          accentColor: Colors.red,
+          accentColor: c.danger,
           enabled: normalInfo.allowLike,
           onTap: _toggleCloudLike,
         ),
@@ -406,26 +409,33 @@ class _ComicOperationWidgetState extends State<ComicOperationWidget> {
   }
 
   Future<bool> _showUncollectConfirmDialog() async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(t.comicInfo.confirmUncollectTitle),
-          content: Text(t.comicInfo.confirmUncollectContent),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(t.common.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(t.common.confirm),
-            ),
-          ],
-        );
-      },
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: t.comicInfo.confirmUncollectTitle,
+      icon: Icons.star_border_rounded,
+      tone: CalmTone.warning,
+      bodyBuilder: (dialogContext) => Text(
+        t.comicInfo.confirmUncollectContent,
+        style: TextStyle(
+          fontSize: 12.5,
+          color: dialogContext.calm.text2,
+          height: 1.5,
+        ),
+      ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.confirm,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
-    return result == true;
+    return confirmed == true;
   }
 
   Future<void> _toggleCloudLike() async {
@@ -491,27 +501,28 @@ class _OperationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = item.accentColor ?? context.theme.colorScheme.primary;
+    final c = context.calm;
+    final accent = item.accentColor ?? c.accent;
     final background = item.highlighted
-        ? accent.withValues(alpha: 0.14)
-        : context.theme.colorScheme.surfaceContainerLowest;
+        ? accent.withValues(alpha: 0.12)
+        : c.surface;
     final foreground = !item.enabled
-        ? context.theme.colorScheme.onSurface.withValues(alpha: 0.38)
+        ? c.text3
         : item.highlighted
         ? accent
-        : context.textColor;
+        : c.text;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+    return MouseRegion(
+      cursor: item.enabled
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: item.onTap,
         onLongPress: item.onLongPress,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(12),
-          ),
+        child: CalmCard(
+          radius: 14,
+          color: background,
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 8 : 10,
             vertical: compact ? 10 : 11,
@@ -519,17 +530,22 @@ class _OperationCard extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(item.icon, size: compact ? 18 : 20, color: foreground),
-              const SizedBox(width: 8),
+              Icon(item.icon, size: compact ? 17 : 19, color: foreground),
+              const SizedBox(width: 7),
               Flexible(
                 child: Text(
                   item.text,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.theme.textTheme.labelLarge?.copyWith(
+                  textHeightBehavior: kCalmTextHeightBehavior,
+                  strutStyle: calmStrut(compact ? 12 : 12.5),
+                  style: TextStyle(
+                    fontSize: compact ? 12 : 12.5,
                     color: foreground,
-                    fontWeight: FontWeight.w700,
-                    fontSize: compact ? 13 : null,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                    leadingDistribution: TextLeadingDistribution.even,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),

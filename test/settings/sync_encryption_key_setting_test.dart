@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/setting/global/sync_setting_page.dart';
+import 'package:zephyr/ui/ui.dart';
 
 class _TestGlobalSettingCubit extends GlobalSettingCubit {
   @override
@@ -31,7 +32,7 @@ void main() {
     await tester.tap(find.text(t.settings.customEncryptionKey));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField), 'short');
+    await tester.enterText(find.byType(CalmTextField), 'short');
     await tester.tap(find.text(t.common.ok));
     await tester.pumpAndSettle();
     expect(
@@ -40,13 +41,13 @@ void main() {
     );
     expect(cubit.state.syncSetting.encryptionKey, isEmpty);
 
-    await tester.enterText(find.byType(TextFormField), 'has space');
+    await tester.enterText(find.byType(CalmTextField), 'has space');
     await tester.tap(find.text(t.common.ok));
     await tester.pumpAndSettle();
     expect(find.text(t.settings.customEncryptionKeyNoSpaces), findsOneWidget);
     expect(cubit.state.syncSetting.encryptionKey, isEmpty);
 
-    await tester.enterText(find.byType(TextFormField), 'valid-key-123');
+    await tester.enterText(find.byType(CalmTextField), 'valid-key-123');
     await tester.tap(find.text(t.common.ok));
     await tester.pumpAndSettle();
     expect(cubit.state.syncSetting.encryptionKey, 'valid-key-123');

@@ -11,6 +11,7 @@ import 'package:zephyr/page/search/widget/source_select_dialog.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
 import 'package:zephyr/plugin/local_comic_plugin.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/async/debouncer.dart';
 import 'package:zephyr/widgets/multi_choice_list_dialog.dart';
 import 'package:zephyr/widgets/toast.dart';
@@ -64,13 +65,16 @@ class _SearchBarState extends State<SearchBar> {
   Widget build(BuildContext context) {
     return BlocBuilder<SearchCubit, SearchStates>(
       builder: (context, state) => Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
+            CalmIconButton(
+              icon: Icons.arrow_back_rounded,
+              tooltip: t.common.back,
               onPressed: () => context.maybePop(),
             ),
+            const SizedBox(width: 6),
             Expanded(
               child: SearchQueryField(
                 query: state.searchKeyword,
@@ -111,8 +115,12 @@ class _SearchBarState extends State<SearchBar> {
                 },
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.tune),
+            const SizedBox(width: 6),
+            CalmIconButton(
+              icon: Icons.tune_rounded,
+              tooltip: widget.aggregateMode
+                  ? t.search.selectSourceTooltip
+                  : t.search.advancedSearchOptions,
               onPressed: () async {
                 // dialog 回写前丢弃残留输入同步，避免旧防抖把 dialog 回写盖掉。
                 _keywordDebouncer.cancel();
@@ -168,14 +176,15 @@ class _SearchBarState extends State<SearchBar> {
       return;
     }
 
-    final result = await showDialog<_SearchDialogResult>(
-      context: context,
-      builder: (context) =>
-          _PluginAdvancedSearchDialog(initialState: state, scheme: scheme),
+    final result = await showPluginAdvancedSearchDialog(
+      context,
+      initialState: state,
+      fields: scheme.fields,
+      values: scheme.values,
     );
 
     if (result == null || !context.mounted) return;
-    searchCubit.update(result.states);
+    searchCubit.update(result);
   }
 
   Future<_AdvancedSearchScheme?> _loadAdvancedSearchScheme(
@@ -253,86 +262,106 @@ class _AdvancedSearchScheme {
   final Map<String, dynamic> values;
 }
 
-/// 搜索页高级搜索对话框的返回：应用筛选。
-class _SearchDialogResult {
-  const _SearchDialogResult({required this.states});
+/// 插件高级搜索弹窗：按插件下发的 schema 渲染 switch / text /
+/// multiChoice / choice 四类字段，应用后回写 pluginExtern。
+Future<SearchStates?> showPluginAdvancedSearchDialog(
+  BuildContext context, {
+  required SearchStates initialState,
+  required List<Map<String, dynamic>> fields,
+  required Map<String, dynamic> values,
+}) {
+  // 弹窗内的编辑副本：点应用时才回写，取消则整体丢弃。
+  final draft = Map<String, dynamic>.from(values);
 
-  final SearchStates states;
+  return showCalmDialog<SearchStates>(
+    context,
+    title: t.search.advancedSearchOptions,
+    icon: Icons.tune_rounded,
+    maxWidth: 460,
+    bodyBuilder: (_) => _AdvancedSearchFields(fields: fields, values: draft),
+    actionsBuilder: (ctx) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(ctx).pop(),
+      ),
+      CalmButton(
+        label: t.common.apply,
+        variant: CalmButtonVariant.primary,
+        onPressed: () {
+          final nextExtern = <String, dynamic>{...initialState.pluginExtern};
+          for (final field in fields) {
+            final key = field['key']?.toString() ?? '';
+            final kind = field['kind']?.toString() ?? '';
+            if (key.isEmpty) continue;
+            if (kind == 'choice') {
+              nextExtern[key] = draft[key];
+            } else if (kind == 'multiChoice') {
+              nextExtern[key] = _multiValuesOf(draft[key]);
+            } else if (kind == 'switch') {
+              nextExtern[key] = _switchValueOf(draft[key]);
+            } else if (kind == 'text') {
+              nextExtern[key] = _textValueOf(draft[key]);
+            }
+          }
+          Navigator.of(ctx)
+              .pop(initialState.copyWith(pluginExtern: nextExtern));
+        },
+      ),
+    ],
+  );
 }
 
-class _PluginAdvancedSearchDialog extends StatefulWidget {
-  const _PluginAdvancedSearchDialog({
-    required this.initialState,
-    required this.scheme,
-  });
+class _AdvancedSearchFields extends StatefulWidget {
+  const _AdvancedSearchFields({required this.fields, required this.values});
 
-  final SearchStates initialState;
-  final _AdvancedSearchScheme scheme;
+  final List<Map<String, dynamic>> fields;
+
+  /// 与调用方共享的可变草稿：子控件改它，应用时读它。
+  final Map<String, dynamic> values;
 
   @override
-  State<_PluginAdvancedSearchDialog> createState() =>
-      _PluginAdvancedSearchDialogState();
+  State<_AdvancedSearchFields> createState() => _AdvancedSearchFieldsState();
 }
 
-class _PluginAdvancedSearchDialogState
-    extends State<_PluginAdvancedSearchDialog> {
-  late final Map<String, dynamic> _values;
+class _AdvancedSearchFieldsState extends State<_AdvancedSearchFields> {
+  late final Map<String, dynamic> _values = widget.values;
+  final Map<String, TextEditingController> _textControllers = {};
 
   @override
   void initState() {
     super.initState();
-    _values = Map<String, dynamic>.from(widget.scheme.values);
+    for (final field in widget.fields) {
+      if ((field['kind']?.toString() ?? 'choice') != 'text') continue;
+      final key = field['key']?.toString() ?? '';
+      if (key.isEmpty) continue;
+      _textControllers[key] = TextEditingController(
+        text: _textValueOf(_values[key]),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _textControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(t.search.advancedSearchOptions),
-      scrollable: true,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...widget.scheme.fields.map((field) => _buildField(context, field)),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
-        ),
-        FilledButton(
-          onPressed: () {
-            final nextExtern = <String, dynamic>{
-              ...widget.initialState.pluginExtern,
-            };
-            for (final field in widget.scheme.fields) {
-              final key = field['key']?.toString() ?? '';
-              final kind = field['kind']?.toString() ?? '';
-              if (key.isEmpty) continue;
-              if (kind == 'choice') {
-                nextExtern[key] = _values[key];
-              } else if (kind == 'multiChoice') {
-                nextExtern[key] = _multiValues(key);
-              } else if (kind == 'switch') {
-                nextExtern[key] = _switchValue(key);
-              } else if (kind == 'text') {
-                nextExtern[key] = _textValue(key);
-              }
-            }
-            Navigator.of(context).pop(
-              _SearchDialogResult(
-                states: widget.initialState.copyWith(pluginExtern: nextExtern),
-              ),
-            );
-          },
-          child: Text(t.common.apply),
-        ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final field in widget.fields) _buildField(context, field),
       ],
     );
   }
 
   Widget _buildField(BuildContext context, Map<String, dynamic> field) {
+    final c = context.calm;
     final key = field['key']?.toString() ?? '';
     final label = field['label']?.toString() ?? key;
     final kind = field['kind']?.toString() ?? 'choice';
@@ -341,18 +370,26 @@ class _PluginAdvancedSearchDialogState
     }
 
     if (kind == 'switch') {
-      final current = _switchValue(key);
       return Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: SwitchListTile(
-          value: current,
-          title: Text(label),
-          contentPadding: EdgeInsets.zero,
-          onChanged: (value) {
-            setState(() {
-              _values[key] = value;
-            });
-          },
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 12, color: c.text, height: 1.3),
+              ),
+            ),
+            const SizedBox(width: 12),
+            CalmSwitch(
+              value: _switchValueOf(_values[key]),
+              onChanged: (value) {
+                setState(() {
+                  _values[key] = value;
+                });
+              },
+            ),
+          ],
         ),
       );
     }
@@ -360,16 +397,19 @@ class _PluginAdvancedSearchDialogState
     if (kind == 'text') {
       return Padding(
         padding: const EdgeInsets.only(bottom: 14),
-        child: TextFormField(
-          initialValue: _textValue(key),
-          decoration: InputDecoration(
-            labelText: label,
-            border: const OutlineInputBorder(),
-            isDense: true,
-          ),
-          onChanged: (value) {
-            _values[key] = value;
-          },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionLabel(context, label),
+            const SizedBox(height: 6),
+            CalmTextField(
+              controller: _textControllers[key],
+              hintText: label,
+              onChanged: (value) {
+                _values[key] = value;
+              },
+            ),
+          ],
         ),
       );
     }
@@ -382,17 +422,13 @@ class _PluginAdvancedSearchDialogState
       return const SizedBox.shrink();
     }
     if (kind == 'multiChoice') {
-      final selected = _multiValues(key);
+      final selected = _multiValuesOf(_values[key]);
       return Padding(
         padding: const EdgeInsets.only(bottom: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
+            _sectionLabel(context, label),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -403,10 +439,14 @@ class _PluginAdvancedSearchDialogState
                         : t.search.selectedCount(count: selected.length),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11.5, color: c.text2),
                   ),
                 ),
                 const SizedBox(width: 10),
-                OutlinedButton(
+                CalmButton(
+                  label: t.common.select,
+                  size: CalmButtonSize.xs,
+                  variant: CalmButtonVariant.secondary,
                   onPressed: () async {
                     final values = await showMultiChoiceListDialog(
                       context,
@@ -435,7 +475,6 @@ class _PluginAdvancedSearchDialogState
                       _values[key] = values.toList();
                     });
                   },
-                  child: Text(t.common.select),
                 ),
               ],
             ),
@@ -455,11 +494,7 @@ class _PluginAdvancedSearchDialogState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
+          _sectionLabel(context, label),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -467,9 +502,8 @@ class _PluginAdvancedSearchDialogState
             children: options.map((option) {
               final value = option['value']?.toString() ?? '';
               final text = option['label']?.toString() ?? value;
-              return ChoiceChip(
-                showCheckmark: false,
-                label: Text(text),
+              return CalmFilterChip(
+                label: text,
                 selected: current == value,
                 onSelected: (selected) {
                   if (!selected) {
@@ -487,35 +521,43 @@ class _PluginAdvancedSearchDialogState
     );
   }
 
-  List<String> _multiValues(String key) {
-    final value = _values[key];
-    if (value is List) {
-      return value.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
-    }
-    if (value is Map) {
-      return value.entries
-          .where((entry) => entry.value == true)
-          .map((entry) => entry.key.toString())
-          .where((e) => e.isNotEmpty)
-          .toList();
-    }
-    return const <String>[];
+  Widget _sectionLabel(BuildContext context, String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: context.calm.text2,
+      ),
+    );
   }
+}
 
-  bool _switchValue(String key) {
-    final value = _values[key];
-    if (value is bool) {
-      return value;
-    }
-    if (value is num) {
-      return value != 0;
-    }
-    final text = value?.toString().toLowerCase();
-    return text == 'true' || text == '1';
+List<String> _multiValuesOf(dynamic value) {
+  if (value is List) {
+    return value.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
   }
+  if (value is Map) {
+    return value.entries
+        .where((entry) => entry.value == true)
+        .map((entry) => entry.key.toString())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+  return const <String>[];
+}
 
-  String _textValue(String key) {
-    final value = _values[key];
-    return value == null ? '' : value.toString();
+bool _switchValueOf(dynamic value) {
+  if (value is bool) {
+    return value;
   }
+  if (value is num) {
+    return value != 0;
+  }
+  final text = value?.toString().toLowerCase();
+  return text == 'true' || text == '1';
+}
+
+String _textValueOf(dynamic value) {
+  return value == null ? '' : value.toString();
 }

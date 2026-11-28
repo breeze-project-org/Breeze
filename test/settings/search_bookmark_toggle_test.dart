@@ -74,6 +74,8 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    // ensureVisible 只改滚动位置，需要一帧重新布局后条目才真正落到屏内。
+    await tester.pumpAndSettle();
     expect(find.text(t.settings.showSearchBookmark), findsOneWidget);
     await tester.tap(find.text(t.settings.showSearchBookmark));
     await tester.pump();

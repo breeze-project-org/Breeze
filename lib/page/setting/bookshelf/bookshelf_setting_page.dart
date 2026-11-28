@@ -30,43 +30,44 @@ class _BookshelfSettingPageState extends State<BookshelfSettingPage> {
     return SettingPageShell(
       title: t.settings.bookshelf,
       child: ListView(
+        padding: kSettingPagePadding,
         children: [
           settingSectionTitle(
             context,
             t.settings.bookshelf,
             icon: Icons.collections_bookmark_outlined,
           ),
-          _homePageTile(state, cubit),
-          const Divider(height: 1, thickness: 0.3),
-          _rememberSortTile(
-            icon: Icons.favorite_outline,
-            title: t.settings.bookshelfRememberFavoriteSort,
-            subtitle: t.settings.bookshelfRememberFavoriteSortSubtitle,
-            value: state.rememberFavoriteSort,
-            onChanged: (value) => cubit.updateBookshelfSetting(
-              (current) => current.copyWith(rememberFavoriteSort: value),
+          settingCardGroup([
+            _homePageTile(state, cubit),
+            _rememberSortTile(
+              icon: Icons.favorite_outline,
+              title: t.settings.bookshelfRememberFavoriteSort,
+              subtitle: t.settings.bookshelfRememberFavoriteSortSubtitle,
+              value: state.rememberFavoriteSort,
+              onChanged: (value) => cubit.updateBookshelfSetting(
+                (current) => current.copyWith(rememberFavoriteSort: value),
+              ),
             ),
-          ),
-          const Divider(height: 1, thickness: 0.3),
-          _rememberSortTile(
-            icon: Icons.history_outlined,
-            title: t.settings.bookshelfRememberHistorySort,
-            subtitle: t.settings.bookshelfRememberHistorySortSubtitle,
-            value: state.rememberHistorySort,
-            onChanged: (value) => cubit.updateBookshelfSetting(
-              (current) => current.copyWith(rememberHistorySort: value),
+            _rememberSortTile(
+              icon: Icons.history_outlined,
+              title: t.settings.bookshelfRememberHistorySort,
+              subtitle: t.settings.bookshelfRememberHistorySortSubtitle,
+              value: state.rememberHistorySort,
+              onChanged: (value) => cubit.updateBookshelfSetting(
+                (current) => current.copyWith(rememberHistorySort: value),
+              ),
             ),
-          ),
-          const Divider(height: 1, thickness: 0.3),
-          _rememberSortTile(
-            icon: Icons.download_outlined,
-            title: t.settings.bookshelfRememberDownloadSort,
-            subtitle: t.settings.bookshelfRememberDownloadSortSubtitle,
-            value: state.rememberDownloadSort,
-            onChanged: (value) => cubit.updateBookshelfSetting(
-              (current) => current.copyWith(rememberDownloadSort: value),
+            _rememberSortTile(
+              icon: Icons.download_outlined,
+              title: t.settings.bookshelfRememberDownloadSort,
+              subtitle: t.settings.bookshelfRememberDownloadSortSubtitle,
+              value: state.rememberDownloadSort,
+              onChanged: (value) => cubit.updateBookshelfSetting(
+                (current) => current.copyWith(rememberDownloadSort: value),
+              ),
             ),
-          ),
+          ]),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -78,10 +79,10 @@ class _BookshelfSettingPageState extends State<BookshelfSettingPage> {
       for (var i = 0; i < _homePageLabels.length; i++) i: _homePageLabels[i],
     };
 
-    return ListTile(
-      leading: const Icon(Icons.home_outlined),
-      title: Text(t.settings.bookshelfHomePage),
-      subtitle: Text(t.settings.bookshelfHomePageSubtitle),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.home_outlined),
+      title: t.settings.bookshelfHomePage,
+      subtitle: t.settings.bookshelfHomePageSubtitle,
       trailing: FluentDropdown<int>(
         value: index,
         displayValue: _homePageLabels[index],
@@ -104,11 +105,10 @@ class _BookshelfSettingPageState extends State<BookshelfSettingPage> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return SwitchListTile(
-      secondary: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
       value: value,
       onChanged: (bool newValue) {
         onChanged(newValue);

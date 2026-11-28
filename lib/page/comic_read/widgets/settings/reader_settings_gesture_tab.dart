@@ -67,57 +67,53 @@ class _TapPageTurnModeSection extends StatelessWidget {
     return _SettingsSection(
       title: t.reader.pageMode,
       children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _SettingsChoiceChip(
-              title: t.reader.fullscreen,
-              selected: mode == ReaderTapPageTurnMode.fullScreen,
-              onTap: () {
-                if (mode == ReaderTapPageTurnMode.fullScreen) {
-                  return;
-                }
-                context.updateEffectiveReadSetting(
-                  effective,
-                  (current) => current.copyWith(
-                    tapPageTurnMode: ReaderTapPageTurnMode.fullScreen,
-                  ),
-                );
-              },
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.leftHandMode,
-              selected: mode == ReaderTapPageTurnMode.leftHand,
-              onTap: () {
-                if (mode == ReaderTapPageTurnMode.leftHand) {
-                  return;
-                }
-                context.updateEffectiveReadSetting(
-                  effective,
-                  (current) => current.copyWith(
-                    tapPageTurnMode: ReaderTapPageTurnMode.leftHand,
-                  ),
-                );
-              },
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.rightHandMode,
-              selected: mode == ReaderTapPageTurnMode.rightHand,
-              onTap: () {
-                if (mode == ReaderTapPageTurnMode.rightHand) {
-                  return;
-                }
-                context.updateEffectiveReadSetting(
-                  effective,
-                  (current) => current.copyWith(
-                    tapPageTurnMode: ReaderTapPageTurnMode.rightHand,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+        _SettingsChipRow([
+          _SettingsChoiceChip(
+            title: t.reader.fullscreen,
+            selected: mode == ReaderTapPageTurnMode.fullScreen,
+            onTap: () {
+              if (mode == ReaderTapPageTurnMode.fullScreen) {
+                return;
+              }
+              context.updateEffectiveReadSetting(
+                effective,
+                (current) => current.copyWith(
+                  tapPageTurnMode: ReaderTapPageTurnMode.fullScreen,
+                ),
+              );
+            },
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.leftHandMode,
+            selected: mode == ReaderTapPageTurnMode.leftHand,
+            onTap: () {
+              if (mode == ReaderTapPageTurnMode.leftHand) {
+                return;
+              }
+              context.updateEffectiveReadSetting(
+                effective,
+                (current) => current.copyWith(
+                  tapPageTurnMode: ReaderTapPageTurnMode.leftHand,
+                ),
+              );
+            },
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.rightHandMode,
+            selected: mode == ReaderTapPageTurnMode.rightHand,
+            onTap: () {
+              if (mode == ReaderTapPageTurnMode.rightHand) {
+                return;
+              }
+              context.updateEffectiveReadSetting(
+                effective,
+                (current) => current.copyWith(
+                  tapPageTurnMode: ReaderTapPageTurnMode.rightHand,
+                ),
+              );
+            },
+          ),
+        ]),
         _SettingsSwitchTile(
           title: t.reader.reverseHorizontalPageTurn,
           subtitle: t.reader.reverseHorizontalPageTurnSubtitle,

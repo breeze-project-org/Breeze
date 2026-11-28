@@ -9,6 +9,7 @@ import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
 import 'package:zephyr/page/comic_read/widgets/layout/read_layout.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/ohos/platform.dart';
 import 'package:zephyr/util/ohos/file_bridge.dart';
 
@@ -335,6 +336,14 @@ class _PageCountWidgetState extends State<PageCountWidget> {
       batteryIcon: getBatteryIcon(),
       opacityPercent: opacityPercent,
       fontSize: fontSize,
+      // 信息浮层直接压在漫画上：底色/字色都要尊重阅读器自己的前景与背景色，
+      // 透明度按用户设置平滑地“漏”出底下的画面。
+      readerBackgroundColor: readSetting.resolveReaderBackgroundColor(
+        Theme.of(context).brightness,
+      ),
+      readerForegroundColor: readSetting.resolveReaderForegroundColor(
+        Theme.of(context).brightness,
+      ),
     );
 
     final isTop =
@@ -383,6 +392,8 @@ class _PageInfoPanel extends StatelessWidget {
   final IconData batteryIcon;
   final int opacityPercent;
   final double fontSize;
+  final Color readerBackgroundColor;
+  final Color readerForegroundColor;
 
   const _PageInfoPanel({
     required this.pageText,
@@ -396,57 +407,85 @@ class _PageInfoPanel extends StatelessWidget {
     required this.batteryIcon,
     required this.opacityPercent,
     required this.fontSize,
+    required this.readerBackgroundColor,
+    required this.readerForegroundColor,
   });
+
+  /// 胶囊里的字色：在 CalmUI 正文色与阅读器前景色之间取对比更强的那个。
+  ///
+  /// 阅读器允许“浅色主题 + 纯黑底”这类反主题组合，单靠 [CalmColors.text]
+  /// 在低不透明度时可能糊在底上；阅读器前景色是用户自己选定的对比色，
+  /// 两个候选都来自配置，不会出现写死的黑白。
+  Color _pickInk(CalmColors c, Color capsule) {
+    final calmContrast = _contrastRatio(c.text, capsule);
+    final readerContrast = _contrastRatio(readerForegroundColor, capsule);
+    return readerContrast > calmContrast ? readerForegroundColor : c.text;
+  }
+
+  static double _contrastRatio(Color a, Color b) {
+    final la = a.computeLuminance();
+    final lb = b.computeLuminance();
+    final lighter = la > lb ? la : lb;
+    final darker = la > lb ? lb : la;
+    return (lighter + 0.05) / (darker + 0.05);
+  }
 
   @override
   Widget build(BuildContext context) {
-    const textStyle = TextStyle(
-      color: Colors.white,
-      fontFamily: 'JetBrainsMonoNL-Regular',
+    final c = context.calm;
+    final alpha = (opacityPercent / 100).clamp(0.2, 1.0);
+    final capsuleColor = Color.alphaBlend(
+      c.surface.withValues(alpha: alpha),
+      readerBackgroundColor,
     );
+    final ink = _pickInk(c, capsuleColor);
+    final mutedInk = Color.alphaBlend(
+      ink.withValues(alpha: 0.74),
+      capsuleColor,
+    );
+    final borderColor = Color.alphaBlend(
+      ink.withValues(alpha: 0.14),
+      capsuleColor,
+    );
+
+    final textStyle = TextStyle(
+      color: ink,
+      fontSize: fontSize,
+      fontWeight: FontWeight.w500,
+      height: 1.2,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    final iconSize = (fontSize + 1).clamp(10.0, 24.0);
 
     final items = <Widget>[];
     if (showPage) {
-      items.add(Text(pageText, style: textStyle.copyWith(fontSize: fontSize)));
+      items.add(Text(pageText, style: textStyle));
     }
     if (showNetwork) {
-      items.add(
-        Icon(
-          networkIcon,
-          color: Colors.white,
-          size: (fontSize + 1).clamp(10, 24),
-        ),
-      );
+      items.add(Icon(networkIcon, color: mutedInk, size: iconSize));
     }
     if (showBattery) {
       items.add(
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              batteryIcon,
-              color: Colors.white,
-              size: (fontSize + 1).clamp(10, 24),
-            ),
-            const SizedBox(width: 2),
-            Text(
-              '$batteryLevel%',
-              style: textStyle.copyWith(fontSize: fontSize),
-            ),
+            Icon(batteryIcon, color: mutedInk, size: iconSize),
+            const SizedBox(width: 3),
+            Text('$batteryLevel%', style: textStyle),
           ],
         ),
       );
     }
     if (showTime) {
-      items.add(
-        Text(currentTime, style: textStyle.copyWith(fontSize: fontSize)),
-      );
+      items.add(Text(currentTime, style: textStyle));
     }
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: opacityPercent / 100),
+        color: capsuleColor,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
+        boxShadow: c.shadowSm,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

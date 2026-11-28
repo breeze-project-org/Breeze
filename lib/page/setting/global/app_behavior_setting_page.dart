@@ -70,21 +70,29 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
     return SettingPageShell(
       title: t.settings.appBehavior,
       child: ListView(
+        padding: kSettingPagePadding,
         children: [
           settingSectionTitle(
             context,
             t.settings.appBehavior,
             icon: Icons.settings_outlined,
           ),
-          _splashPage(state, cubit),
-          if (isDesktop) _desktopCloseBehaviorTile(),
-          if (Platform.isAndroid) _androidKeepAlive(state, cubit),
-          if (Platform.isAndroid) _backPressExit(state, cubit),
-          _appLockSetting(state, cubit),
-          _autoFollowOnCollect(state, cubit),
-          _autoCloudCollectOnLocalFavorite(state, cubit),
-          _leftHandMode(state, cubit),
-          _clickCoverToStartReading(state, cubit),
+          settingCardGroup([
+            _splashPage(state, cubit),
+            if (isDesktop) _desktopCloseBehaviorTile(),
+            if (Platform.isAndroid) _androidKeepAlive(state, cubit),
+            if (Platform.isAndroid) _backPressExit(state, cubit),
+            _autoFollowOnCollect(state, cubit),
+            _autoCloudCollectOnLocalFavorite(state, cubit),
+            _leftHandMode(state, cubit),
+            _clickCoverToStartReading(state, cubit),
+          ]),
+          settingSectionTitle(
+            context,
+            t.settings.appLock,
+            icon: Icons.lock_outline,
+          ),
+          settingCardGroup(_appLockTiles(state, cubit)),
           const SizedBox(height: 32),
         ],
       ),
@@ -103,10 +111,10 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
 
     final splashPageItems = {for (final page in splashPageList) page: page};
 
-    return ListTile(
-      leading: const Icon(Icons.rocket_launch_outlined),
-      title: Text(t.settings.splashPage),
-      subtitle: Text(t.settings.splashPageSubtitle),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.rocket_launch_outlined),
+      title: t.settings.splashPage,
+      subtitle: t.settings.splashPageSubtitle,
       trailing: FluentDropdown<String>(
         value: selectedLabel,
         displayValue: selectedLabel,
@@ -126,11 +134,10 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.notifications_active_outlined),
-      title: Text(t.settings.autoFollowOnCollect),
-      subtitle: Text(t.settings.autoFollowOnCollectSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.notifications_active_outlined,
+      title: t.settings.autoFollowOnCollect,
+      subtitle: t.settings.autoFollowOnCollectSubtitle,
       value: state.autoFollowOnCollect,
       onChanged: (bool value) {
         cubit.updateState(
@@ -145,11 +152,10 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.cloud_sync_outlined),
-      title: Text(t.settings.autoCloudCollectOnLocalFavorite),
-      subtitle: Text(t.settings.autoCloudCollectOnLocalFavoriteSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.cloud_sync_outlined,
+      title: t.settings.autoCloudCollectOnLocalFavorite,
+      subtitle: t.settings.autoCloudCollectOnLocalFavoriteSubtitle,
       value: state.autoCloudCollectOnLocalFavorite,
       onChanged: (bool value) {
         cubit.updateState(
@@ -161,11 +167,10 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
   }
 
   Widget _leftHandMode(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.back_hand_outlined),
-      title: Text(t.settings.leftHandMode),
-      subtitle: Text(t.settings.leftHandModeSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.back_hand_outlined,
+      title: t.settings.leftHandMode,
+      subtitle: t.settings.leftHandModeSubtitle,
       value: state.leftHandModeEnabled,
       onChanged: (bool value) {
         cubit.updateState(
@@ -180,11 +185,10 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.touch_app_outlined),
-      title: Text(t.settings.clickCoverToStartReading),
-      subtitle: Text(t.settings.clickCoverToStartReadingSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.touch_app_outlined,
+      title: t.settings.clickCoverToStartReading,
+      subtitle: t.settings.clickCoverToStartReadingSubtitle,
       value: state.clickCoverToStartReading,
       onChanged: (bool value) {
         cubit.updateState(
@@ -196,11 +200,10 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
   }
 
   Widget _androidKeepAlive(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.battery_charging_full_outlined),
-      title: Text(t.settings.androidKeepAlive),
-      subtitle: Text(t.settings.androidKeepAliveSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.battery_charging_full_outlined,
+      title: t.settings.androidKeepAlive,
+      subtitle: t.settings.androidKeepAliveSubtitle,
       value: state.androidKeepAliveEnabled,
       onChanged: (bool value) async {
         cubit.updateState(
@@ -225,11 +228,10 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
   }
 
   Widget _backPressExit(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.exit_to_app_outlined),
-      title: Text(t.settings.backPressExit),
-      subtitle: Text(t.settings.backPressExitSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.exit_to_app_outlined,
+      title: t.settings.backPressExit,
+      subtitle: t.settings.backPressExitSubtitle,
       value: state.backPressExitEnabled,
       onChanged: (bool value) {
         cubit.updateState(
@@ -247,10 +249,10 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
       DesktopCloseBehavior.close: t.settings.desktopCloseClose,
     };
 
-    return ListTile(
-      leading: const Icon(Icons.close_fullscreen_outlined),
-      title: Text(t.settings.desktopCloseBehavior),
-      subtitle: Text(t.settings.desktopCloseBehaviorSubtitle),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.close_fullscreen_outlined),
+      title: t.settings.desktopCloseBehavior,
+      subtitle: t.settings.desktopCloseBehaviorSubtitle,
       trailing: FluentDropdown<DesktopCloseBehavior>(
         value: _desktopCloseBehavior,
         displayValue: closeBehaviorItems[_desktopCloseBehavior]!,
@@ -266,45 +268,22 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
     );
   }
 
-  Widget _appLockSetting(GlobalSettingState state, GlobalSettingCubit cubit) {
+  /// 应用锁分组：启用开关 + 手势重设 + 重置 PIN + 删除锁定。
+  List<Widget> _appLockTiles(
+    GlobalSettingState state,
+    GlobalSettingCubit cubit,
+  ) {
     final lockSetting = state.appLockSetting;
     final isReady = lockSetting.isReady;
 
-    return Column(
-      children: [
-        SwitchListTile(
-          secondary: const Icon(Icons.lock_outline),
-          title: Text(t.settings.appLock),
-          subtitle: Text(t.settings.appLockSubtitle),
-          thumbIcon: kSettingSwitchThumbIcon,
-          value: lockSetting.enabled,
-          onChanged: (bool value) async {
-            if (value && !isReady) {
-              final nextSetting = await _configureAppLock();
-              if (nextSetting == null) {
-                return;
-              }
-              cubit.updateState(
-                (current) => current.copyWith(appLockSetting: nextSetting),
-              );
-              showSuccessToast(t.common.settingSaved);
-              return;
-            }
-
-            cubit.updateState(
-              (current) => current.copyWith(
-                appLockSetting: current.appLockSetting.copyWith(enabled: value),
-              ),
-            );
-            showSuccessToast(t.common.settingSaved);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.gesture_outlined),
-          title: Text(t.settings.appLock),
-          subtitle: Text(t.settings.appLockSubtitle),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () async {
+    return [
+      settingSwitchTile(
+        icon: Icons.lock_outline,
+        title: t.settings.appLock,
+        subtitle: t.settings.appLockSubtitle,
+        value: lockSetting.enabled,
+        onChanged: (bool value) async {
+          if (value && !isReady) {
             final nextSetting = await _configureAppLock();
             if (nextSetting == null) {
               return;
@@ -313,70 +292,99 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
               (current) => current.copyWith(appLockSetting: nextSetting),
             );
             showSuccessToast(t.common.settingSaved);
+            return;
+          }
+
+          cubit.updateState(
+            (current) => current.copyWith(
+              appLockSetting: current.appLockSetting.copyWith(enabled: value),
+            ),
+          );
+          showSuccessToast(t.common.settingSaved);
+        },
+      ),
+      settingActionTile(
+        icon: Icons.gesture_outlined,
+        title: t.settings.appLock,
+        subtitle: t.settings.appLockSubtitle,
+        onTap: () async {
+          final nextSetting = await _configureAppLock();
+          if (nextSetting == null) {
+            return;
+          }
+          cubit.updateState(
+            (current) => current.copyWith(appLockSetting: nextSetting),
+          );
+          showSuccessToast(t.common.settingSaved);
+        },
+      ),
+      if (isReady)
+        settingActionTile(
+          icon: Icons.pin_outlined,
+          title: t.gestureLock.pinTitle,
+          subtitle: t.gestureLock.pinHint,
+          onTap: () async {
+            final pin = await showPinCodeSetupDialog(
+              context,
+              title: t.gestureLock.pinTitle,
+              confirmTitle: t.gestureLock.pinHint,
+            );
+            if (pin == null) {
+              return;
+            }
+            cubit.updateState(
+              (current) => current.copyWith(
+                appLockSetting: current.appLockSetting.copyWith(
+                  resetPinHash: hashPinCode(pin),
+                ),
+              ),
+            );
+            showSuccessToast(t.common.settingSaved);
           },
         ),
-        if (isReady)
-          ListTile(
-            leading: const Icon(Icons.pin_outlined),
-            title: Text(t.gestureLock.pinTitle),
-            subtitle: Text(t.gestureLock.pinHint),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              final pin = await showPinCodeSetupDialog(
-                context,
-                title: t.gestureLock.pinTitle,
-                confirmTitle: t.gestureLock.pinHint,
-              );
-              if (pin == null) {
-                return;
-              }
-              cubit.updateState(
-                (current) => current.copyWith(
-                  appLockSetting: current.appLockSetting.copyWith(
-                    resetPinHash: hashPinCode(pin),
-                  ),
+      if (isReady)
+        settingActionTile(
+          icon: Icons.delete_outline,
+          title: t.common.delete,
+          subtitle: t.settings.appLock,
+          onTap: () async {
+            final shouldDelete = await showCalmDialog<bool>(
+              context,
+              title: t.common.delete,
+              icon: Icons.lock_open_rounded,
+              tone: CalmTone.danger,
+              bodyBuilder: (dialogContext) => Text(
+                t.settings.appLockSubtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: dialogContext.calm.text2,
                 ),
-              );
-              showSuccessToast(t.common.settingSaved);
-            },
-          ),
-        if (isReady)
-          ListTile(
-            leading: const Icon(Icons.delete_outline),
-            title: Text(t.common.delete),
-            subtitle: Text(t.settings.appLock),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              final shouldDelete = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(t.common.delete),
-                  content: Text(t.settings.appLockSubtitle),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: Text(t.common.cancel),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: Text(t.common.delete),
-                    ),
-                  ],
+              ),
+              actionsBuilder: (dialogContext) => [
+                CalmButton(
+                  label: t.common.cancel,
+                  variant: CalmButtonVariant.ghost,
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
                 ),
-              );
-              if (shouldDelete != true) {
-                return;
-              }
-              cubit.updateState(
-                (current) => current.copyWith(
-                  appLockSetting: const AppLockSettingState(),
+                CalmButton(
+                  label: t.common.delete,
+                  variant: CalmButtonVariant.danger,
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
                 ),
-              );
-              showSuccessToast(t.common.settingSaved);
-            },
-          ),
-      ],
-    );
+              ],
+            );
+            if (shouldDelete != true) {
+              return;
+            }
+            cubit.updateState(
+              (current) => current.copyWith(
+                appLockSetting: const AppLockSettingState(),
+              ),
+            );
+            showSuccessToast(t.common.settingSaved);
+          },
+        ),
+    ];
   }
 
   Future<AppLockSettingState?> _configureAppLock() async {

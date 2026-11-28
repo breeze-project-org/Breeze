@@ -6,6 +6,7 @@ import 'package:zephyr/page/donwload_task/bloc/dowload_task_bloc.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/service/download/download_queue_manager.dart';
 import 'package:zephyr/service/download/download_task_progress.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/widgets/toast.dart';
 import 'package:zephyr/main.dart';
 
@@ -27,32 +28,25 @@ class _DownloadTaskView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(t.download.title)),
+    return CalmPageScaffold(
+      title: t.download.title,
+      maxContentWidth: 768,
       body: BlocBuilder<DowloadTaskBloc, DowloadTaskState>(
         builder: (context, state) {
           return state.when(
-            initial: () => const Center(child: CircularProgressIndicator()),
+            initial: () => const Center(child: CalmLoading()),
             loaded: (tasks, pendingCount) {
               if (tasks.isEmpty) {
                 return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.download_outlined,
-                        size: 64,
-                        color: Colors.grey,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: CalmEmptyState(
+                        icon: Icons.download_outlined,
+                        title: t.download.noTasks,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        t.download.noTasks,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 );
               }
@@ -69,14 +63,10 @@ class _DownloadTaskView extends StatelessWidget {
                   if (downloadingTasks.isNotEmpty) ...[
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text(
-                          t.download.downloading,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                        child: CalmSectionHeader(
+                          title: t.download.downloading,
+                          countText: '${downloadingTasks.length}',
                         ),
                       ),
                     ),
@@ -93,14 +83,10 @@ class _DownloadTaskView extends StatelessWidget {
                   if (pendingTasks.isNotEmpty) ...[
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text(
-                          t.download.pending(count: pendingTasks.length),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
+                        child: CalmSectionHeader(
+                          title: t.download.pending(count: pendingTasks.length),
+                          accentColor: context.calm.text3,
                         ),
                       ),
                     ),
@@ -127,6 +113,7 @@ class _DownloadTaskView extends StatelessWidget {
                       }, childCount: pendingTasks.length),
                     ),
                   ],
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
               );
             },
@@ -144,6 +131,7 @@ class _DownloadingTaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final payload = task.taskInfo;
     final progress = payload == null
         ? null
@@ -155,80 +143,126 @@ class _DownloadingTaskTile extends StatelessWidget {
     // 避免两次数据库更新之间蓝色状态文字短暂出现造成闪烁。
     final statusMessage = progressMessage.isEmpty ? task.status : '';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blue,
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              value: progress,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ),
-        ),
-        title: Text(_chapterTaskTitle(task)),
-        subtitle: Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 5, 16, 5),
+      child: CalmCard(
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            if (statusMessage.isNotEmpty)
-              Text(
-                statusMessage,
-                style: const TextStyle(color: Colors.blue),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: c.accentSoft,
+                shape: BoxShape.circle,
               ),
-            if (progressMessage.isNotEmpty)
-              Text(
-                progressMessage,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            if (progress != null) ...[
-              const SizedBox(height: 4),
-              LinearProgressIndicator(value: progress),
-            ],
-          ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.cancel_outlined, color: Colors.blue),
-          onPressed: () {
-            final bloc = context.read<DowloadTaskBloc>();
-            showDialog(
-              context: context,
-              builder: (dialogContext) => AlertDialog(
-                title: Text(t.download.cancelTask),
-                content: Text(
-                  t.download.cancelTaskConfirm(comicName: task.comicName),
+              alignment: Alignment.center,
+              child: SizedBox(
+                width: 15,
+                height: 15,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  strokeCap: StrokeCap.round,
+                  value: progress,
+                  valueColor: AlwaysStoppedAnimation<Color>(c.accent),
+                  backgroundColor: c.accent.withValues(alpha: 0.18),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: Text(
-                      t.common.cancel,
-                      style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _taskTitle(context, task),
+                  if (statusMessage.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      statusMessage,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textHeightBehavior: kCalmTextHeightBehavior,
+                      strutStyle: calmStrut(11),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: c.accent,
+                        height: 1.2,
+                        leadingDistribution: TextLeadingDistribution.even,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      bloc.add(const DowloadTaskEvent.cancelCurrentTask());
-                      Navigator.of(dialogContext).pop();
-                    },
-                    child: Text(
-                      t.common.ok,
-                      style: const TextStyle(color: Colors.red),
+                  ],
+                  if (progressMessage.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      progressMessage,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textHeightBehavior: kCalmTextHeightBehavior,
+                      strutStyle: calmStrut(11),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: c.text2,
+                        height: 1.2,
+                        leadingDistribution: TextLeadingDistribution.even,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
-                  ),
+                  ],
+                  if (progress != null) ...[
+                    const SizedBox(height: 7),
+                    CalmProgressBar(value: progress, height: 4),
+                  ],
                 ],
               ),
-            );
-          },
+            ),
+            const SizedBox(width: 6),
+            CalmIconButton(
+              icon: Icons.close_rounded,
+              tooltip: t.download.cancelTask,
+              size: 28,
+              iconSize: 15,
+              onPressed: () => _confirmCancel(context),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmCancel(BuildContext context) async {
+    final bloc = context.read<DowloadTaskBloc>();
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: t.download.cancelTask,
+      icon: Icons.cancel_outlined,
+      tone: CalmTone.danger,
+      bodyBuilder: (dialogContext) => Text(
+        t.download.cancelTaskConfirm(comicName: task.comicName),
+        style: TextStyle(
+          fontSize: 12.5,
+          color: dialogContext.calm.text2,
+          height: 1.5,
+        ),
+      ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
+    );
+    if (confirmed == true) {
+      bloc.add(const DowloadTaskEvent.cancelCurrentTask());
+    }
   }
 }
 
@@ -246,66 +280,132 @@ class _PendingTaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final payload = task.taskInfo;
     final progressMessage = payload == null
         ? ''
         : downloadTaskPayloadProgressMessage(payload);
     final statusMessage = task.status == progressMessage ? '' : task.status;
-    final failureMessage = payload?.stateCode == 'failed'
-        ? payload?.lastErrorMessage.trim() ?? ''
-        : '';
+    final failed = payload?.stateCode == 'failed';
+    final failureMessage = failed ? payload?.lastErrorMessage.trim() ?? '' : '';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.orange,
-          child: Icon(Icons.hourglass_empty, color: Colors.white),
-        ),
-        title: Text(_chapterTaskTitle(task)),
-        subtitle: Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 5, 16, 5),
+      child: CalmCard(
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            if (statusMessage.isNotEmpty)
-              Text(
-                statusMessage,
-                style: const TextStyle(color: Colors.grey),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: failed ? c.dangerSoft : c.warningSoft,
+                shape: BoxShape.circle,
               ),
-            if (progressMessage.isNotEmpty)
-              Text(
-                progressMessage,
-                style: Theme.of(context).textTheme.bodySmall,
+              alignment: Alignment.center,
+              child: Icon(
+                failed
+                    ? Icons.error_outline_rounded
+                    : Icons.hourglass_empty_rounded,
+                size: 16,
+                color: failed ? c.danger : c.warning,
               ),
-            if (failureMessage.isNotEmpty)
-              InkWell(
-                onTap: () =>
-                    _showDownloadFailureDetails(context, failureMessage),
-                child: Text(
-                  failureMessage,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _taskTitle(context, task),
+                  if (statusMessage.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      statusMessage,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textHeightBehavior: kCalmTextHeightBehavior,
+                      strutStyle: calmStrut(11),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: c.text3,
+                        height: 1.2,
+                        leadingDistribution: TextLeadingDistribution.even,
+                      ),
+                    ),
+                  ],
+                  if (progressMessage.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      progressMessage,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textHeightBehavior: kCalmTextHeightBehavior,
+                      strutStyle: calmStrut(11),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: c.text2,
+                        height: 1.2,
+                        leadingDistribution: TextLeadingDistribution.even,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                  if (failureMessage.isNotEmpty) ...[
+                    const SizedBox(height: 5),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _showDownloadFailureDetails(
+                          context,
+                          failureMessage,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CalmBadge(
+                              label: t.common.detail,
+                              tone: CalmBadgeTone.danger,
+                              icon: Icons.info_outline_rounded,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                failureMessage,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: c.danger,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+            ),
+            const SizedBox(width: 6),
             if (onRetry != null)
-              IconButton(
+              CalmIconButton(
+                icon: Icons.refresh_rounded,
                 tooltip: t.common.retry,
-                icon: const Icon(Icons.refresh),
+                size: 28,
+                iconSize: 15,
                 onPressed: onRetry,
               ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
+            const SizedBox(width: 4),
+            CalmIconButton(
+              icon: Icons.delete_outline_rounded,
+              tooltip: t.common.delete,
+              size: 28,
+              iconSize: 15,
               onPressed: onDelete,
             ),
           ],
@@ -313,6 +413,25 @@ class _PendingTaskTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 单行任务标题：漫画名 + 章节名（宽度不足时省略，不再撑高整张卡片）。
+Widget _taskTitle(BuildContext context, DownloadTask task) {
+  final c = context.calm;
+  return Text(
+    _chapterTaskTitle(task),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    textHeightBehavior: kCalmTextHeightBehavior,
+    strutStyle: calmStrut(12.5),
+    style: TextStyle(
+      fontSize: 12.5,
+      fontWeight: FontWeight.w600,
+      color: c.text,
+      height: 1.25,
+      leadingDistribution: TextLeadingDistribution.even,
+    ),
+  );
 }
 
 /// 单章节任务标题：漫画名 + 章节名（老任务无章节名时只显示漫画名）。
@@ -329,20 +448,26 @@ String _chapterTaskTitle(DownloadTask task) {
 }
 
 void _showDownloadFailureDetails(BuildContext context, String message) {
-  showDialog<void>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(t.download.notificationFailedTitle),
-      content: SizedBox(
-        width: 720,
-        child: SingleChildScrollView(child: SelectableText(message)),
+  showCalmDialog<void>(
+    context,
+    title: t.download.notificationFailedTitle,
+    icon: Icons.error_outline_rounded,
+    tone: CalmTone.danger,
+    maxWidth: 720,
+    bodyBuilder: (dialogContext) => SelectableText(
+      message,
+      style: TextStyle(
+        fontSize: 12,
+        color: dialogContext.calm.text2,
+        height: 1.5,
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: Text(t.common.ok),
-        ),
-      ],
     ),
+    actionsBuilder: (dialogContext) => [
+      CalmButton(
+        label: t.common.ok,
+        variant: CalmButtonVariant.primary,
+        onPressed: () => Navigator.of(dialogContext).pop(),
+      ),
+    ],
   );
 }

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 
 class SearchQueryField extends StatefulWidget {
   const SearchQueryField({
@@ -55,6 +56,7 @@ class _SearchQueryFieldState extends State<SearchQueryField>
   OverlayState? _overlayState;
   Timer? _autoExpandFallbackTimer;
   bool _isExpanded = false;
+  bool _hovered = false;
 
   /// 最近一次读到的所在 tab 是否活跃。切 tab 时本页不卸载、
   /// 收不到路由回调：桌面端 IndexedStack 只翻转 Visibility
@@ -430,43 +432,51 @@ class _SearchQueryFieldState extends State<SearchQueryField>
   }
 
   Widget _buildCollapsedField(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final c = context.calm;
     final isEmpty = widget.query.isEmpty;
 
     return Semantics(
       button: true,
       label: widget.semanticLabel ?? widget.hintText ?? t.search.title,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: widget.onTap ?? _openOverlay,
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(24),
+              color: _hovered ? c.surfaceHover : c.surface2,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: _hovered ? c.accentBorder : Colors.transparent,
+                width: 1.4,
+              ),
             ),
             child: Row(
               children: [
                 Icon(
-                  Icons.search,
-                  color: isEmpty
-                      ? colorScheme.onSurfaceVariant
-                      : colorScheme.onSurface,
+                  Icons.search_rounded,
+                  size: 17,
+                  color: isEmpty ? c.text3 : c.text2,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 9),
                 Expanded(
                   child: Text(
                     isEmpty ? (widget.hintText ?? '') : widget.query,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    textHeightBehavior: kCalmTextHeightBehavior,
+                    strutStyle: calmStrut(13.5),
                     style: TextStyle(
-                      fontSize: 16,
-                      color: isEmpty
-                          ? colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
-                          : colorScheme.onSurface,
+                      fontSize: 13.5,
+                      color: isEmpty ? c.text3 : c.text,
+                      height: 1.2,
+                      leadingDistribution: TextLeadingDistribution.even,
                     ),
                   ),
                 ),
@@ -479,7 +489,7 @@ class _SearchQueryFieldState extends State<SearchQueryField>
   }
 
   Widget _buildExpandedField(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final c = context.calm;
     final hasText = _controller.text.isNotEmpty;
 
     return TweenAnimationBuilder<double>(
@@ -497,71 +507,76 @@ class _SearchQueryFieldState extends State<SearchQueryField>
         // 真正点到浮层外部仍走 onTapOutside 收起。
         onTapOutside: (_) => _dismissOverlay(),
         child: Material(
-          color: colorScheme.surfaceContainerHighest,
-          elevation: 3,
-          shadowColor: colorScheme.shadow.withValues(alpha: 0.28),
-          borderRadius: BorderRadius.circular(24),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 14, right: 6),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 48),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(Icons.search, color: colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        autofocus: true,
-                        // 多行展示 + 回车即搜：keyboardType 必须用 text，不能用 multiline。
-                        // multiline 会让 Android IME 直接忽略 textInputAction.search、
-                        // 把回车当换行（且各家输入法行为不一致），这就是 a45ae20 回退单行的原因；
-                        // 但单行只能显示一行，长词只能左右滚，展示需求就没了。
-                        // text + maxLines 6：engine 下发 inputType=TYPE_CLASS_TEXT
-                        // （无 MULTILINE flag）+ imeOptions=actionSearch，
-                        // 软键盘回车即 search（桌面端硬件回车同样走 performAction）；
-                        // 长文本靠软换行撑到最多 6 行展示，singleLineFormatter 只拦硬换行
-                        // （粘贴带 \n 时），不影响软换行。
-                        keyboardType: TextInputType.text,
-                        textInputAction: TextInputAction.search,
-                        minLines: 1,
-                        maxLines: 6,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.singleLineFormatter,
-                        ],
-                        textAlignVertical: TextAlignVertical.center,
-                        onChanged: (value) {
-                          widget.onChanged?.call(value);
-                          _overlayEntry?.markNeedsBuild();
-                        },
-                        onSubmitted: (_) => _submit(),
-                        decoration: InputDecoration(
-                          hintText: widget.hintText ?? t.search.searchHint,
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                          ),
-                          hintStyle: TextStyle(
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.7,
-                            ),
-                          ),
+          color: c.surface,
+          elevation: 6,
+          shadowColor: c.shadowColor.withValues(alpha: 0.16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+            side: BorderSide(color: c.accentBorder, width: 1.4),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 14, right: 5),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(Icons.search_rounded, size: 17, color: c.text3),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      focusNode: _focusNode,
+                      autofocus: true,
+                      // 多行展示 + 回车即搜：keyboardType 必须用 text，不能用 multiline。
+                      // multiline 会让 Android IME 直接忽略 textInputAction.search、
+                      // 把回车当换行（且各家输入法行为不一致），这就是 a45ae20 回退单行的原因；
+                      // 但单行只能显示一行，长词只能左右滚，展示需求就没了。
+                      // text + maxLines 6：engine 下发 inputType=TYPE_CLASS_TEXT
+                      // （无 MULTILINE flag）+ imeOptions=actionSearch，
+                      // 软键盘回车即 search（桌面端硬件回车同样走 performAction）；
+                      // 长文本靠软换行撑到最多 6 行展示，singleLineFormatter 只拦硬换行
+                      // （粘贴带 \n 时），不影响软换行。
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.search,
+                      minLines: 1,
+                      maxLines: 6,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.singleLineFormatter,
+                      ],
+                      textAlignVertical: TextAlignVertical.center,
+                      onChanged: (value) {
+                        widget.onChanged?.call(value);
+                        _overlayEntry?.markNeedsBuild();
+                      },
+                      onSubmitted: (_) => _submit(),
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: c.text,
+                        height: 1.4,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: widget.hintText ?? t.search.searchHint,
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                        hintStyle: TextStyle(
+                          fontSize: 13.5,
+                          color: c.text3,
+                          height: 1.4,
                         ),
                       ),
                     ),
-                    IconButton(
-                      tooltip: hasText ? t.common.clear : t.common.close,
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(hasText ? Icons.clear : Icons.close),
-                      onPressed: hasText ? _clear : _dismissOverlay,
-                    ),
-                  ],
-                ),
+                  ),
+                  CalmIconButton(
+                    icon: hasText ? Icons.clear_rounded : Icons.close_rounded,
+                    tooltip: hasText ? t.common.clear : t.common.close,
+                    size: 30,
+                    iconSize: 16,
+                    onPressed: hasText ? _clear : _dismissOverlay,
+                  ),
+                ],
               ),
             ),
           ),

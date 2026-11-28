@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/setting/global/sync_setting_page.dart';
+import 'package:zephyr/ui/ui.dart';
 
 class _TestGlobalSettingCubit extends GlobalSettingCubit {
   @override
@@ -74,9 +75,9 @@ void main() {
 
     await tester.tap(find.text(t.settings.syncInterval));
     await tester.pumpAndSettle();
-    expect(find.byType(TextFormField), findsOneWidget);
+    expect(find.byType(CalmTextField), findsOneWidget);
 
-    await tester.enterText(find.byType(TextFormField), '30');
+    await tester.enterText(find.byType(CalmTextField), '30');
     await tester.tap(find.text(t.settings.syncIntervalUnitMinute));
     await tester.pumpAndSettle();
     await tester.tap(find.text(t.settings.syncIntervalUnitSecond).last);
@@ -104,7 +105,7 @@ void main() {
 
     await tester.tap(find.text(t.settings.syncInterval));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField), '0');
+    await tester.enterText(find.byType(CalmTextField), '0');
     await tester.tap(find.text(t.common.ok));
     await tester.pumpAndSettle();
 

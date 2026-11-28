@@ -5,11 +5,13 @@ import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/network/http/plugin/unified_plugin_envelope.dart';
 import 'package:zephyr/network/http/plugin/unified_comic_plugin.dart';
 import 'package:zephyr/database/plugin_config.dart';
+import 'package:zephyr/page/setting/common/setting_ui.dart';
 import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 import 'package:zephyr/util/json/json_value.dart';
 import 'package:zephyr/main.dart';
 
+/// 插件 schema 驱动的设置区（完全保留原有动态字段渲染与保存逻辑，仅替换外观）。
 class PluginSettingSchemeSection extends StatefulWidget {
   const PluginSettingSchemeSection({
     super.key,
@@ -56,14 +58,19 @@ class _PluginSettingSchemeSectionState
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return ListTile(title: Text(t.plugin.pluginSettingsLoading));
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: CalmLoading(label: t.plugin.pluginSettingsLoading),
+          );
         }
         if (snapshot.hasError || !snapshot.hasData) {
-          return ListTile(
-            title: Text(t.plugin.pluginSettingsLoadFailed),
-            subtitle: Text(snapshot.error.toString()),
-            trailing: IconButton(
-              icon: const Icon(Icons.refresh),
+          return CalmStatusBanner(
+            title: t.plugin.pluginSettingsLoadFailed,
+            tone: CalmTone.danger,
+            trailing: CalmIconButton(
+              icon: Icons.refresh_rounded,
+              size: 26,
+              iconSize: 14,
               onPressed: () => setState(() => _future = _load()),
             ),
           );
@@ -79,21 +86,23 @@ class _PluginSettingSchemeSectionState
         for (final section in sections) {
           final title = section['title']?.toString() ?? '';
           if (title.isNotEmpty) {
-            widgets.add(
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Text(title, style: const TextStyle(fontSize: 13)),
-              ),
-            );
+            widgets.add(settingSectionTitle(context, title));
           }
-          final fields = asJsonList(section['fields'])
-              .map((item) => asJsonMap(item));
-          for (final field in fields) {
-            widgets.add(_buildField(field, values));
-          }
+          final fields = asJsonList(
+            section['fields'],
+          ).map((item) => asJsonMap(item));
+          widgets.add(
+            settingCardGroup([
+              for (final field in fields) _buildField(field, values),
+            ]),
+          );
         }
 
-        return Column(children: widgets);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: widgets,
+        );
       },
     );
   }
@@ -113,8 +122,9 @@ class _PluginSettingSchemeSectionState
       final effectiveValue = options.contains(current)
           ? current
           : (options.isEmpty ? '' : options.first);
-      return ListTile(
-        title: Text(label),
+      return CalmListTile(
+        leading: settingTileIcon(Icons.tune_rounded),
+        title: label,
         trailing: FluentDropdown<String>(
           value: effectiveValue,
           displayValue: effectiveValue,
@@ -130,8 +140,9 @@ class _PluginSettingSchemeSectionState
 
     if (kind == 'switch') {
       final current = value == true;
-      return SwitchListTile(
-        title: Text(label),
+      return settingSwitchTile(
+        icon: Icons.toggle_on_outlined,
+        title: label,
         value: current,
         onChanged: (next) async {
           await _persistField(key, next);
@@ -139,10 +150,10 @@ class _PluginSettingSchemeSectionState
       );
     }
 
-    return ListTile(
-      title: Text(label),
-      subtitle: Text(value?.toString() ?? ''),
-      trailing: const Icon(Icons.edit_outlined),
+    return settingActionTile(
+      icon: Icons.edit_outlined,
+      title: label,
+      subtitle: value?.toString() ?? '',
       onTap: () async {
         final next = await _showInputDialog(
           context,
@@ -206,7 +217,10 @@ class _PluginAdvancedActionSectionState
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const ListTile(title: Text('高级能力加载中...'));
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: CalmLoading(label: t.plugin.pluginSettingsLoading),
+          );
         }
         if (snapshot.hasError || !snapshot.hasData) {
           return const SizedBox.shrink();
@@ -219,14 +233,20 @@ class _PluginAdvancedActionSectionState
           return const SizedBox.shrink();
         }
 
-        return Column(
-          children: actions.map((action) {
-            final title = action['title']?.toString() ?? t.plugin.unnamedAction;
+        return settingCardGroup(
+          actions.map((action) {
+            final title =
+                action['title']?.toString() ?? t.plugin.unnamedAction;
             final fnPath = action['fnPath']?.toString() ?? '';
-            return ListTile(
-              leading: const Icon(Icons.extension_outlined),
-              title: Text(title),
-              subtitle: Text(fnPath),
+            return CalmListTile(
+              leading: settingTileIcon(Icons.extension_outlined),
+              title: title,
+              subtitle: fnPath,
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: context.calm.text3,
+              ),
               onTap: () async {
                 if (fnPath.isEmpty) {
                   showInfoToast(t.plugin.actionNotExecutable);
@@ -234,7 +254,7 @@ class _PluginAdvancedActionSectionState
                 }
 
                 try {
-                  final dialogContext = this.context;
+                  final pageContext = context;
                   final result = await callUnifiedComicPlugin(
                     from: widget.from,
                     fnPath: fnPath,
@@ -242,23 +262,39 @@ class _PluginAdvancedActionSectionState
                     extern: const <String, dynamic>{},
                   );
 
-                  if (!dialogContext.mounted) return;
-                  await showDialog<void>(
-                    context: dialogContext,
-                    builder: (context) => AlertDialog(
-                      title: Text(title),
-                      content: SingleChildScrollView(
-                        child: SelectableText(
-                          const JsonEncoder.withIndent('  ').convert(result),
+                  if (!pageContext.mounted) return;
+                  final pretty = const JsonEncoder.withIndent(
+                    '  ',
+                  ).convert(result);
+                  await showCalmDialog<void>(
+                    pageContext,
+                    title: title,
+                    subtitle: fnPath,
+                    icon: Icons.extension_outlined,
+                    maxWidth: 520,
+                    bodyBuilder: (dialogContext) => Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: dialogContext.calm.bg,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: SelectableText(
+                        pretty,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          height: 1.45,
+                          color: dialogContext.calm.text2,
+                          fontFamily: 'monospace',
                         ),
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text(t.common.close),
-                        ),
-                      ],
                     ),
+                    actionsBuilder: (dialogContext) => [
+                      CalmButton(
+                        label: t.common.close,
+                        variant: CalmButtonVariant.primary,
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                      ),
+                    ],
                   );
                 } catch (e) {
                   logger.e(e);
@@ -280,26 +316,29 @@ Future<String?> _showInputDialog(
   required bool obscure,
 }) async {
   final controller = TextEditingController(text: initialValue);
-  final value = await showDialog<String>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        obscureText: obscure,
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(controller.text),
-          child: Text(t.common.save),
-        ),
-      ],
+  final value = await showCalmDialog<String>(
+    context,
+    title: title,
+    icon: Icons.edit_outlined,
+    bodyBuilder: (dialogContext) => CalmTextField(
+      controller: controller,
+      hintText: title,
+      obscureText: obscure,
+      prefixIcon: obscure ? Icons.lock_outline_rounded : Icons.edit_outlined,
+      onSubmitted: (text) => Navigator.of(dialogContext).pop(text),
     ),
+    actionsBuilder: (dialogContext) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(dialogContext).pop(),
+      ),
+      CalmButton(
+        label: t.common.save,
+        variant: CalmButtonVariant.primary,
+        onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+      ),
+    ],
   );
   controller.dispose();
   return value;

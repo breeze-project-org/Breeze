@@ -1,94 +1,70 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:zephyr/page/setting/common/setting_ui.dart';
 
+/// 插件设置分组卡（CalmUI 版）：轻盈分组头 + 零内边距浮空卡片 + 柔和分割线。
+///
+/// 颜色全部由 `context.calm` 令牌决定（不再吃 Material ColorScheme），
+/// 保证 6 套主题色与深浅色切换零割裂。
 class PluginSettingsSectionCard extends StatelessWidget {
   const PluginSettingsSectionCard({
     super.key,
     required this.title,
-    required this.colorScheme,
     required this.children,
   });
 
   final String title;
-  final ColorScheme colorScheme;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty && children.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (title.trim().isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 8, top: 16),
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.primary,
-              ),
-            ),
-          ),
-        ...children,
+        if (trimmed.isNotEmpty) settingSectionTitle(context, trimmed),
+        if (children.isNotEmpty) settingCardGroup(children),
       ],
     );
   }
 }
 
+/// 插件设置行（CalmUI 版）：左侧可选语义图标底 + 标题/副标题 + 尾部任意控件。
+///
+/// 旧签名 `(title, subtitle, trailing, onTap)` 仍然兼容：
+/// [subtitle] 与 [trailing] 现在都可省略，[icon] 为新增可选语义。
 class PluginSettingsFieldRow extends StatelessWidget {
   const PluginSettingsFieldRow({
     super.key,
     required this.title,
-    required this.subtitle,
-    required this.trailing,
-    required this.onTap,
+    this.subtitle = '',
+    this.trailing,
+    this.onTap,
+    this.icon,
   });
 
   final String title;
   final String subtitle;
-  final Widget trailing;
+  final Widget? trailing;
   final VoidCallback? onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    final c = context.calm;
+    return CalmListTile(
+      title: title,
+      subtitle: subtitle.trim().isEmpty ? null : subtitle,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.bodyMedium),
-                  if (subtitle.trim().isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            trailing,
-          ],
-        ),
-      ),
+      leading: icon == null ? null : settingTileIcon(icon!),
+      trailing:
+          trailing ??
+          (onTap == null
+              ? null
+              : Icon(Icons.chevron_right_rounded, size: 18, color: c.text3)),
     );
   }
 }

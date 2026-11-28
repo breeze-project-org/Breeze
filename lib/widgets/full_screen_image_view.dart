@@ -10,6 +10,7 @@ import 'package:zephyr/config/global/global.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/page/comic_info/method/export_comic.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/error/error_filter.dart';
 import 'package:zephyr/util/ohos/file_bridge.dart';
 import 'package:zephyr/util/ohos/platform.dart';
@@ -23,8 +24,15 @@ class FullScreenImagePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
+    // 看图沉浸底色：跟随主题色相压到极暗，避免纯黑割裂感，也不刺眼。
+    final immersiveBg = Color.alphaBlend(
+      Colors.black.withValues(alpha: 0.92),
+      c.bg,
+    );
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: immersiveBg,
       body: Stack(
         children: [
           // 图片部分
@@ -35,52 +43,105 @@ class FullScreenImagePage extends StatelessWidget {
             initialScale: PhotoViewComputedScale.contained,
           ),
 
-          // 关闭按钮
+          // 顶部柔和渐隐浮层 + 胶囊关闭按钮
           Positioned(
-            top: 40,
-            left: 20,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => context.pop(),
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.42),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                  child: Row(
+                    children: [
+                      CalmIconButton(
+                        icon: Icons.close_rounded,
+                        tooltip: t.common.close,
+                        size: 34,
+                        iconSize: 18,
+                        onPressed: () => context.pop(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
 
-          // 下载按钮
+          // 底部柔和渐隐浮层 + 胶囊保存按钮
           Positioned(
-            bottom: 20,
-            right: 20,
-            child: IconButton(
-              icon: const Icon(Icons.download, color: Colors.white),
-              onPressed: () async {
-                logger.d("download image");
-
-                if (Platform.isWindows ||
-                    Platform.isLinux ||
-                    Platform.isMacOS) {
-                  // 桌面端使用文件选择器
-                  try {
-                    var result = await _saveImageWithSelector(imagePath);
-                    if (result.isNotEmpty) {
-                      showSuccessToast(t.reader.imageSavedTo(path: result));
-                    }
-                  } catch (e, s) {
-                    logger.e("桌面端保存图片失败", error: e, stackTrace: s);
-                    showErrorToast(
-                      t.reader.imageSaveFailedWithError(
-                        error: normalizeSearchErrorMessage(e),
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.42),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      CalmButton(
+                        label: t.common.save,
+                        icon: Icons.download_rounded,
+                        variant: CalmButtonVariant.tonal,
+                        size: CalmButtonSize.sm,
+                        onPressed: _saveImage,
                       ),
-                    );
-                  }
-                } else if (Platform.isAndroid || Platform.isIOS || isOhos) {
-                  // 移动端 (iOS & Android) 使用 gal 插件保存到相册
-                  await _saveImageMobile(imagePath);
-                }
-              },
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _saveImage() async {
+    logger.d("download image");
+
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      // 桌面端使用文件选择器
+      try {
+        final result = await _saveImageWithSelector(imagePath);
+        if (result.isNotEmpty) {
+          showSuccessToast(t.reader.imageSavedTo(path: result));
+        }
+      } catch (e, s) {
+        logger.e("桌面端保存图片失败", error: e, stackTrace: s);
+        showErrorToast(
+          t.reader.imageSaveFailedWithError(
+            error: normalizeSearchErrorMessage(e),
+          ),
+        );
+      }
+    } else if (Platform.isAndroid || Platform.isIOS || isOhos) {
+      // 移动端 (iOS & Android) 使用 gal 插件保存到相册
+      await _saveImageMobile(imagePath);
+    }
   }
 
   // 桌面端保存逻辑：弹出目录选择器

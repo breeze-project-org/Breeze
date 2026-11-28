@@ -9,6 +9,7 @@ import 'package:zephyr/page/bookshelf/bloc/folder_shelf_bloc.dart';
 import 'package:zephyr/page/bookshelf/cubit/bookshelf_search_cubit.dart';
 import 'package:zephyr/page/bookshelf/models/shelf_page_mode.dart';
 import 'package:zephyr/page/bookshelf/service/comic_folder_service.dart';
+import 'package:zephyr/page/bookshelf/widgets/folder_shelf_item.dart';
 import 'package:zephyr/page/bookshelf/widgets/folder_shelf_page.dart';
 
 import '../test_helper.dart';
@@ -36,29 +37,52 @@ void main() {
   });
   tearDown(TestDatabaseHelper.cleanComicFolderBoxes);
 
+  /// 等指定 finder 出现/消失的通用轮询（真实等待 + pump 刷重建）。
+  Future<void> waitFor(
+    WidgetTester tester,
+    Finder finder,
+    String timeoutMessage,
+  ) async {
+    for (var i = 0; i < 150; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pump();
+      if (finder.evaluate().isNotEmpty) return;
+    }
+    throw StateError(timeoutMessage);
+  }
+
   /// 等指定文案出现：真实等待让后台查询回包，pump 刷重建。
   /// loading 态有 shimmer 无限动画，不能用 pumpAndSettle。
   Future<void> waitForText(WidgetTester tester, String text) async {
-    for (var i = 0; i < 150; i++) {
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 200)),
-      );
-      await tester.pump();
-      if (find.text(text).evaluate().isNotEmpty) return;
-    }
-    throw StateError('等待 "$text" 出现超时');
+    await waitFor(tester, find.text(text), '等待 "$text" 出现超时');
   }
 
-  /// 等指定文案消失（load 完成后文件夹行不再出现）。
-  Future<void> waitForTextGone(WidgetTester tester, String text) async {
+  /// 列表区域（[FolderShelfItem] 行）内的文案。
+  ///
+  /// 进子文件夹后面包屑（CalmBreadcrumb）会显示当前文件夹名，直接 find.text
+  /// 会命中面包屑而不是列表行，所以文件夹行的断言必须限定到列表项子树。
+  Finder itemText(String text) => find.descendant(
+    of: find.byType(FolderShelfItem),
+    matching: find.text(text),
+  );
+
+  /// 等列表行文案出现（面包屑里的同名路径段不算）。
+  Future<void> waitForItemText(WidgetTester tester, String text) async {
+    await waitFor(tester, itemText(text), '等待列表项 "$text" 出现超时');
+  }
+
+  /// 等列表行文案消失（load 完成后文件夹行不再出现；面包屑不算）。
+  Future<void> waitForItemTextGone(WidgetTester tester, String text) async {
     for (var i = 0; i < 150; i++) {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 200)),
       );
       await tester.pump();
-      if (find.text(text).evaluate().isEmpty) return;
+      if (itemText(text).evaluate().isEmpty) return;
     }
-    throw StateError('等待 "$text" 消失超时');
+    throw StateError('等待列表项 "$text" 消失超时');
   }
 
   Future<void> pumpShelf(WidgetTester tester) async {
@@ -102,32 +126,34 @@ void main() {
     });
 
     await pumpShelf(tester);
-    await waitForText(tester, 'parent');
+    await waitForItemText(tester, 'parent');
 
     // 进 parent，再进 child。
-    await tester.tap(find.text('parent'));
-    await waitForText(tester, 'child');
-    expect(find.text('parent'), findsNothing);
+    // 下面全部断言限定在列表行（FolderShelfItem）：进子文件夹后面包屑
+    // CalmBreadcrumb 会同时显示当前文件夹名，未限定的 find.text 会误命中。
+    await tester.tap(itemText('parent'));
+    await waitForItemText(tester, 'child');
+    expect(itemText('parent'), findsNothing);
 
-    await tester.tap(find.text('child'));
+    await tester.tap(itemText('child'));
     // child 为空文件夹：load 完成后文件夹行消失（显示空态）。
-    await waitForTextGone(tester, 'child');
+    await waitForItemTextGone(tester, 'child');
 
     // 第一次返回：child -> parent（entry 消费，路由仍在）。
     var consumed = await tester.binding.handlePopRoute();
     expect(consumed, isTrue);
-    await waitForText(tester, 'child');
+    await waitForItemText(tester, 'child');
 
     // 第二次返回：parent -> 根。
     consumed = await tester.binding.handlePopRoute();
     expect(consumed, isTrue);
-    await waitForText(tester, 'parent');
+    await waitForItemText(tester, 'parent');
 
     // 到根：entry 已清，不再拦截，放行给导航（路由本身不被 pop）。
     consumed = await tester.binding.handlePopRoute();
     expect(consumed, isFalse);
     await tester.pump();
-    expect(find.text('parent'), findsOneWidget);
+    expect(itemText('parent'), findsOneWidget);
     // 放行测试体结束时的 FakeAsync 检查：把一次性 Timer 跑完。
     await tester.pump(const Duration(seconds: 5));
   });

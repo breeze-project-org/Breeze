@@ -6,8 +6,13 @@ import 'package:zephyr/plugin/plugin_registry_service.dart';
 import 'package:zephyr/plugin/local_comic_plugin.dart';
 import 'package:zephyr/type/pipe.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 
+/// 高级搜索弹窗（数据源切换）。
+///
+/// 外部通过 `showDialog` 挂载时请用透明 `Dialog` 包一层，
+/// 本组件自带 [CalmDialogSurface] 卡片（标题 / 主体 / 底部按钮齐全）。
 class AdvancedSearchDialog extends StatefulWidget {
   final SearchStates initialState;
   final bool allowSourceSwitch;
@@ -33,41 +38,43 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(t.search.advancedSearchOptions),
-      scrollable: true,
-      content: Column(
+    return CalmDialogSurface(
+      title: t.search.advancedSearchOptions,
+      icon: Icons.tune_rounded,
+      onClose: () => Navigator.of(context).pop(),
+      body: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (widget.allowSourceSwitch) ...[
             _buildSectionTitle(t.search.dataSource),
+            const SizedBox(height: 8),
             _buildSourceRow(),
           ],
         ],
       ),
       actions: [
-        TextButton(
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
         ),
-        FilledButton(
+        CalmButton(
+          label: t.common.apply,
+          variant: CalmButtonVariant.primary,
           onPressed: () => Navigator.of(context).pop(_tempState),
-          child: Text(t.common.apply),
         ),
       ],
     );
   }
 
   Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.bold,
-        ),
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: context.calm.accent,
       ),
     );
   }
@@ -85,10 +92,11 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
 
     return Wrap(
       spacing: 8,
+      runSpacing: 8,
       children: sources.map((plugin) {
         final name = registry.pluginName(plugin.uuid);
-        return ChoiceChip(
-          label: Text(name.let(convertChineseForDisplay)),
+        return CalmFilterChip(
+          label: name.let(convertChineseForDisplay),
           selected: _tempState.from == plugin.uuid,
           onSelected: (selected) {
             if (selected) {

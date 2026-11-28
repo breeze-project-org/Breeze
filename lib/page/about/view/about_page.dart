@@ -3,18 +3,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/network/utils/github_proxy.dart';
+import 'package:zephyr/page/setting/common/setting_ui.dart';
 
 import 'package:zephyr/service/update/check_update.dart';
 import 'package:zephyr/util/system/external_link.dart';
-
-// --- 风格常量 ---
-const Color kBgColor = Color(0xFF12121C); // --bg-color
-const Color kCardBgColor = Color(0xCC232332); // --card-bg-color (80% opacity)
-const Color kPrimaryText = Color(0xFFE0E0E0); // --primary-text-color
-const Color kSecondaryText = Color(0xFFA0A0C0); // --secondary-text-color
-const Color kAccentColor = Color(0xFF00FFFF); // --accent-color
-const Color kAccentHover = Color(0xFF00E6E6);
-const double kBorderRadius = 15.0;
 
 @RoutePage()
 class AboutPage extends StatefulWidget {
@@ -97,323 +89,205 @@ class _AboutPageState extends State<AboutPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent, // 配合渐变背景
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const BackButton(color: kPrimaryText),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          // CSS: background: linear-gradient(135deg, #1a1a2e 0%, #12121c 100%);
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1A2E), Color(0xFF12121C)],
+    final c = context.calm;
+    return SettingPageShell(
+      title: t.about.title,
+      badge: _appVersion,
+      child: ListView(
+        padding: kSettingPagePadding,
+        children: [
+          const SizedBox(height: 8),
+          _buildHeader(),
+          const SizedBox(height: 22),
+          _buildSection(
+            icon: Icons.folder_special_outlined,
+            title: t.about.projectAddress,
+            desc: t.about.projectAddressDesc,
+            linkText: t.about.projectLink,
+            url: 'https://github.com/breeze-project-org/Breeze',
           ),
-        ),
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                20,
-                80,
-                20,
-                60,
-              ), // Top padding for AppBar
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 600,
-                  ), // container max-width
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // --- Header ---
-                      _buildHeader(),
-                      const SizedBox(height: 30),
-
-                      // --- Sections ---
-                      _buildSection(
-                        icon: "🚀",
-                        title: t.about.projectAddress,
-                        desc: t.about.projectAddressDesc,
-                        linkText: t.about.projectLink,
-                        url: "https://github.com/breeze-project-org/Breeze",
-                        delay: 200,
-                      ),
-
-                      // --- Contributors Section ---
-                      _buildContributorsSection(),
-
-                      _buildSection(
-                        icon: "💬",
-                        title: t.about.contact,
-                        desc: t.about.contactDesc,
-                        linkText: "Telegram: @breeze_zh_cn",
-                        url: "https://t.me/breeze_zh_cn",
-                        delay: 400,
-                      ),
-                      _buildSection(
-                        icon: "🛠️",
-                        title: t.about.feedback,
-                        desc: t.about.feedbackDesc,
-                        linkText: t.about.feedbackLink,
-                        url: "https://github.com/breeze-project-org/Breeze/issues",
-                        delay: 600,
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      // --- Disclaimer Button ---
-                      OutlinedButton(
-                        onPressed: _showDisclaimerDialog,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: kAccentColor,
-                          side: const BorderSide(color: kAccentColor, width: 2),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 30,
-                            vertical: 15,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(kBorderRadius),
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        child: Text(t.about.disclaimer),
-                      ),
-                      const SizedBox(height: 50),
-                    ],
-                  ),
-                ),
+          const SizedBox(height: 12),
+          _buildContributorsSection(),
+          const SizedBox(height: 12),
+          _buildSection(
+            icon: Icons.chat_bubble_outline_rounded,
+            title: t.about.contact,
+            desc: t.about.contactDesc,
+            linkText: 'Telegram: @breeze_zh_cn',
+            url: 'https://t.me/breeze_zh_cn',
+          ),
+          const SizedBox(height: 12),
+          _buildSection(
+            icon: Icons.build_outlined,
+            title: t.about.feedback,
+            desc: t.about.feedbackDesc,
+            linkText: t.about.feedbackLink,
+            url: 'https://github.com/breeze-project-org/Breeze/issues',
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: CalmButton(
+              label: t.about.disclaimer,
+              icon: Icons.gavel_rounded,
+              variant: CalmButtonVariant.secondary,
+              onPressed: _showDisclaimerDialog,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: Text(
+              t.about.version(version: _appVersion),
+              textHeightBehavior: kCalmTextHeightBehavior,
+              strutStyle: calmStrut(11.5),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: c.text3,
+                height: 1.2,
+                leadingDistribution: TextLeadingDistribution.even,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
-
-            // --- Bottom Version Bar ---
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                color: const Color(0xE612121C), // slightly transparent
-                alignment: Alignment.center,
-                child: Text(
-                  t.about.version(version: _appVersion),
-                  style: const TextStyle(color: kSecondaryText, fontSize: 14),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 28),
+        ],
       ),
     );
   }
 
   // --- 组件构建方法 ---
 
+  /// 顶部品牌区：圆角应用图标 + 标题 + 版本胶囊。
   Widget _buildHeader() {
+    final c = context.calm;
     return Column(
       children: [
-        // Avatar with glow
         Container(
-          width: 120,
-          height: 120,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: kAccentColor, width: 4),
-            boxShadow: [
-              BoxShadow(
-                color: kAccentColor.withValues(alpha: 0.7),
-                blurRadius: 20,
-              ),
-            ],
-            image: const DecorationImage(
-              // 如果网络图片加载慢，可以换成 asset/image/app-icon.png
-              image: NetworkImage(
-                "https://avatars.githubusercontent.com/u/81013544",
-              ),
-              fit: BoxFit.cover,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: c.shadowMd,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Image.asset(
+              'asset/image/app-icon.png',
+              width: 84,
+              height: 84,
             ),
           ),
         ),
-        const SizedBox(height: 20),
-        // Name
-        const Text(
-          "windy",
+        const SizedBox(height: 14),
+        Text(
+          'Breeze',
+          textHeightBehavior: kCalmTextHeightBehavior,
+          strutStyle: calmStrut(21),
           style: TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            shadows: [Shadow(color: kAccentColor, blurRadius: 10)],
+            fontSize: 21,
+            fontWeight: FontWeight.w700,
+            color: c.text,
+            height: 1.2,
+            leadingDistribution: TextLeadingDistribution.even,
           ),
         ),
-        const SizedBox(height: 5),
-        const Text(
-          "BREEZE PROJECT",
-          style: TextStyle(
-            fontSize: 18,
-            color: kAccentColor,
-            letterSpacing: 2,
-            fontWeight: FontWeight.w400,
-          ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            CalmBadge(
+              label: t.about.version(version: _appVersion),
+              tone: CalmBadgeTone.tonal,
+              icon: Icons.sell_outlined,
+            ),
+            const SizedBox(width: 6),
+            CalmBadge(
+              label: 'windy',
+              tone: CalmBadgeTone.neutral,
+              icon: Icons.person_outline_rounded,
+            ),
+          ],
         ),
       ],
     );
   }
 
   Widget _buildSection({
-    required String icon,
+    required IconData icon,
     required String title,
     required String desc,
     required String linkText,
     required String url,
-    required int delay,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 25),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: kCardBgColor,
-        borderRadius: BorderRadius.circular(kBorderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 25,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(kBorderRadius),
-          onTap: () => _launchURL(url),
-          hoverColor: kAccentColor.withValues(alpha: 0.05),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(icon, style: const TextStyle(fontSize: 20)),
-                    const SizedBox(width: 10),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        color: kAccentColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Divider(color: Color(0x4D00FFFF), height: 1),
-                const SizedBox(height: 10),
-                Text(
-                  desc,
-                  style: const TextStyle(color: kPrimaryText, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  linkText,
-                  style: const TextStyle(
-                    color: kAccentColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+    return CalmCard(
+      padding: EdgeInsets.zero,
+      child: _LinkCard(
+        icon: icon,
+        title: title,
+        desc: desc,
+        linkText: linkText,
+        onTap: () => _launchURL(url),
       ),
     );
   }
 
   Widget _buildContributorsSection() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 25),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: kCardBgColor,
-        borderRadius: BorderRadius.circular(kBorderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 25,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Text("❤️", style: TextStyle(fontSize: 20)),
-                const SizedBox(width: 10),
-                Text(
+    final c = context.calm;
+    return CalmCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.favorite_border_rounded, size: 15, color: c.accent),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
                   t.about.contributors,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    color: kAccentColor,
-                    fontWeight: FontWeight.bold,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: c.text,
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  t.about.contributorsCount(count: _contributors.length),
-                  style: const TextStyle(color: kSecondaryText, fontSize: 14),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            const Divider(color: Color(0x4D00FFFF), height: 1),
-            const SizedBox(height: 15),
-            if (_contributorsLoading)
-              const Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: kAccentColor,
-                  ),
-                ),
-              )
-            else if (_contributorsError != null)
-              Center(
+              ),
+              CalmBadge(
+                label: t.about.contributorsCount(count: _contributors.length),
+                tone: CalmBadgeTone.neutral,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const CalmDivider(),
+          const SizedBox(height: 12),
+          if (_contributorsLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(child: CalmLoading()),
+            )
+          else if (_contributorsError != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Center(
                 child: Text(
                   _contributorsError!,
-                  style: const TextStyle(color: kSecondaryText),
+                  style: TextStyle(fontSize: 11.5, color: c.text3),
                 ),
-              )
-            else
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: _contributors.map((contributor) {
-                  return _buildContributorAvatar(
-                    avatarUrl: contributor['avatar_url'] ?? '',
-                    login: contributor['login'] ?? '',
-                    contributions: contributor['contributions'] ?? 0,
-                    htmlUrl: contributor['html_url'] ?? '',
-                  );
-                }).toList(),
               ),
-          ],
-        ),
+            )
+          else
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _contributors.map((contributor) {
+                return _buildContributorAvatar(
+                  avatarUrl: contributor['avatar_url'] ?? '',
+                  login: contributor['login'] ?? '',
+                  contributions: contributor['contributions'] ?? 0,
+                  htmlUrl: contributor['html_url'] ?? '',
+                );
+              }).toList(),
+            ),
+        ],
       ),
     );
   }
@@ -425,24 +299,15 @@ class _AboutPageState extends State<AboutPage> {
     required String htmlUrl,
   }) {
     return Tooltip(
-      message: t.about.contributionsTooltip(login: login, count: contributions),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(25),
-        onTap: () => _launchURL(htmlUrl),
-        child: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: kAccentColor.withValues(alpha: 0.5),
-              width: 2,
-            ),
-            image: DecorationImage(
-              image: NetworkImage(avatarUrl),
-              fit: BoxFit.cover,
-            ),
-          ),
+      message: t.about.contributionsTooltip(
+        login: login,
+        count: contributions,
+      ),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => _launchURL(htmlUrl),
+          child: _ContributorAvatar(avatarUrl: avatarUrl, login: login),
         ),
       ),
     );
@@ -450,107 +315,180 @@ class _AboutPageState extends State<AboutPage> {
 
   // --- 免责声明弹窗 ---
   void _showDisclaimerDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: const Color(0xFF1E1E2C), // 深色弹窗背景
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kBorderRadius),
-          side: const BorderSide(color: kAccentColor, width: 1), // 边框
+    showCalmDialog<void>(
+      context,
+      title: t.about.disclaimerTitle,
+      subtitle: t.about.disclaimer,
+      icon: Icons.gavel_rounded,
+      maxWidth: 560,
+      bodyBuilder: (ctx) {
+        final c = ctx.calm;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _DisclaimerItem(
+              t.about.disclaimerItem1Title,
+              t.about.disclaimerItem1Content,
+            ),
+            _DisclaimerItem(
+              t.about.disclaimerItem2Title,
+              t.about.disclaimerItem2Content,
+            ),
+            _DisclaimerItem(
+              t.about.disclaimerItem3Title,
+              t.about.disclaimerItem3Content,
+            ),
+            _DisclaimerItem(
+              t.about.disclaimerItem4Title,
+              t.about.disclaimerItem4Content,
+            ),
+            _DisclaimerItem(
+              t.about.disclaimerItem5Title,
+              t.about.disclaimerItem5Content,
+            ),
+            _DisclaimerItem(
+              t.about.disclaimerItem6Title,
+              t.about.disclaimerItem6Content,
+            ),
+            _DisclaimerItem(
+              t.about.disclaimerItem7Title,
+              t.about.disclaimerItem7Content,
+            ),
+            _DisclaimerItem(
+              t.about.disclaimerItem8Title,
+              t.about.disclaimerItem8Content,
+            ),
+            const SizedBox(height: 8),
+            CalmStatusBanner(
+              title: t.about.disclaimerImportantContent,
+              tone: CalmTone.warning,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              t.about.disclaimerImportant,
+              style: TextStyle(fontSize: 11, color: c.text3),
+            ),
+          ],
+        );
+      },
+      actionsBuilder: (ctx) => [
+        CalmButton(
+          label: t.common.close,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(ctx).pop(),
         ),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
-          padding: const EdgeInsets.all(25),
-          child: Column(
+      ],
+    );
+  }
+
+  Future<void> _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await openExternalUrl(uri)) {
+      logger.e('无法打开链接: $url');
+    }
+  }
+}
+
+// 辅助组件：项目信息卡片（图标 + 标题 + 描述 + 可点击链接行）
+class _LinkCard extends StatefulWidget {
+  const _LinkCard({
+    required this.icon,
+    required this.title,
+    required this.desc,
+    required this.linkText,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String desc;
+  final String linkText;
+  final VoidCallback onTap;
+
+  @override
+  State<_LinkCard> createState() => _LinkCardState();
+}
+
+class _LinkCardState extends State<_LinkCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: c.rowVPadding),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? c.surface2.withValues(alpha: 0.7)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    t.about.disclaimer,
-                    style: const TextStyle(
-                      color: kAccentColor,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: kSecondaryText),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: c.accentSoft,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Icon(widget.icon, size: 16, color: c.accent),
               ),
-              const Divider(color: Color(0x4D00FFFF)),
-
-              // Body (Scrollable)
+              const SizedBox(width: 11),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 10),
-                      Text(
-                        t.about.disclaimerTitle,
-                        style: const TextStyle(
-                          color: kAccentColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: c.text,
+                        height: 1.3,
                       ),
-                      SizedBox(height: 10),
-
-                      _DisclaimerItem(
-                        t.about.disclaimerItem1Title,
-                        t.about.disclaimerItem1Content,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      widget.desc,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: c.text2,
+                        height: 1.45,
                       ),
-                      _DisclaimerItem(
-                        t.about.disclaimerItem2Title,
-                        t.about.disclaimerItem2Content,
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      widget.linkText,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: c.accent,
+                        height: 1.35,
                       ),
-                      _DisclaimerItem(
-                        t.about.disclaimerItem3Title,
-                        t.about.disclaimerItem3Content,
-                      ),
-                      _DisclaimerItem(
-                        t.about.disclaimerItem4Title,
-                        t.about.disclaimerItem4Content,
-                      ),
-                      _DisclaimerItem(
-                        t.about.disclaimerItem5Title,
-                        t.about.disclaimerItem5Content,
-                      ),
-                      _DisclaimerItem(
-                        t.about.disclaimerItem6Title,
-                        t.about.disclaimerItem6Content,
-                      ),
-                      _DisclaimerItem(
-                        t.about.disclaimerItem7Title,
-                        t.about.disclaimerItem7Content,
-                      ),
-                      _DisclaimerItem(
-                        t.about.disclaimerItem8Title,
-                        t.about.disclaimerItem8Content,
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        t.about.disclaimerImportant,
-                        style: const TextStyle(
-                          color: kAccentColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        t.about.disclaimerImportantContent,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Icon(
+                  Icons.open_in_new_rounded,
+                  size: 15,
+                  color: c.text3,
                 ),
               ),
             ],
@@ -559,12 +497,43 @@ class _AboutPageState extends State<AboutPage> {
       ),
     );
   }
+}
 
-  Future<void> _launchURL(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (!await openExternalUrl(uri)) {
-      logger.e("无法打开链接: $url");
-    }
+// 辅助组件：贡献者头像（网络头像 + 首字兜底 + 柔和描边环）
+class _ContributorAvatar extends StatelessWidget {
+  const _ContributorAvatar({required this.avatarUrl, required this.login});
+
+  final String avatarUrl;
+  final String login;
+
+  static const double _size = 42;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    final fallback = CalmAvatar(
+      text: login,
+      size: _size,
+      backgroundColor: c.surface2,
+      foregroundColor: c.text2,
+    );
+    if (avatarUrl.trim().isEmpty) return fallback;
+
+    return Container(
+      width: _size,
+      height: _size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: c.surface2,
+        border: Border.all(color: c.accentBorder, width: 1.5),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Image.network(
+        avatarUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback,
+      ),
+    );
   }
 }
 
@@ -576,23 +545,25 @@ class _DisclaimerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: kPrimaryText,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: c.text,
+              height: 1.35,
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 3),
           Text(
             content,
-            style: const TextStyle(color: kSecondaryText, fontSize: 14),
+            style: TextStyle(fontSize: 11.5, color: c.text2, height: 1.5),
           ),
         ],
       ),

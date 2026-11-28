@@ -33,6 +33,18 @@ class _ReaderSettingsPerComicTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 编辑目标徽章：一眼看出这里改的是本漫覆盖，不是全局。
+            // “跟随全局”（删整行覆盖）仍留在阅读模式分组头右侧，见 _ReadModeSection。
+            Row(
+              children: [
+                CalmBadge(
+                  label: t.reader.perComicThisComic,
+                  tone: CalmBadgeTone.tonal,
+                  icon: Icons.bookmark_added_outlined,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
             _ReadModeSection(
               changePageIndex: changePageIndex,
               onLandscapeChanged: onLandscapeChanged,

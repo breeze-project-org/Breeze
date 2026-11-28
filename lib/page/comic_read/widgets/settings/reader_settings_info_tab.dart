@@ -79,7 +79,11 @@ class _PageInfoVisibilitySection extends StatelessWidget {
             );
           },
         ),
-        if (allHidden) _SettingsNoticeCard(text: t.reader.allHiddenNotice),
+        if (allHidden)
+          _SettingsNoticeCard(
+            text: t.reader.allHiddenNotice,
+            tone: CalmTone.warning,
+          ),
       ],
     );
   }
@@ -98,40 +102,36 @@ class _PageInfoPlacementSection extends StatelessWidget {
     return _SettingsSection(
       title: t.reader.infoBarPosition,
       children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _SettingsChoiceChip(
-              title: t.reader.verticalPositionTop,
-              selected:
-                  effective.pageInfoVerticalPosition ==
-                  ReaderInfoVerticalPosition.top,
-              onTap: () {
-                context.updateEffectiveReadSetting(
-                  effective,
-                  (current) => current.copyWith(
-                    pageInfoVerticalPosition: ReaderInfoVerticalPosition.top,
-                  ),
-                );
-              },
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.verticalPositionBottom,
-              selected:
-                  effective.pageInfoVerticalPosition ==
-                  ReaderInfoVerticalPosition.bottom,
-              onTap: () {
-                context.updateEffectiveReadSetting(
-                  effective,
-                  (current) => current.copyWith(
-                    pageInfoVerticalPosition: ReaderInfoVerticalPosition.bottom,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+        _SettingsChipRow([
+          _SettingsChoiceChip(
+            title: t.reader.verticalPositionTop,
+            selected:
+                effective.pageInfoVerticalPosition ==
+                ReaderInfoVerticalPosition.top,
+            onTap: () {
+              context.updateEffectiveReadSetting(
+                effective,
+                (current) => current.copyWith(
+                  pageInfoVerticalPosition: ReaderInfoVerticalPosition.top,
+                ),
+              );
+            },
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.verticalPositionBottom,
+            selected:
+                effective.pageInfoVerticalPosition ==
+                ReaderInfoVerticalPosition.bottom,
+            onTap: () {
+              context.updateEffectiveReadSetting(
+                effective,
+                (current) => current.copyWith(
+                  pageInfoVerticalPosition: ReaderInfoVerticalPosition.bottom,
+                ),
+              );
+            },
+          ),
+        ]),
         if (effective.pageInfoVerticalPosition ==
             ReaderInfoVerticalPosition.top)
           _SettingsSwitchTile(
@@ -146,57 +146,52 @@ class _PageInfoPlacementSection extends StatelessWidget {
               );
             },
           ),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _SettingsChoiceChip(
-              title: t.reader.horizontalPositionLeft,
-              selected:
-                  effective.pageInfoHorizontalPosition ==
-                  ReaderInfoHorizontalPosition.left,
-              onTap: () {
-                context.updateEffectiveReadSetting(
-                  effective,
-                  (current) => current.copyWith(
-                    pageInfoHorizontalPosition:
-                        ReaderInfoHorizontalPosition.left,
-                  ),
-                );
-              },
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.horizontalPositionCenter,
-              selected:
-                  effective.pageInfoHorizontalPosition ==
-                  ReaderInfoHorizontalPosition.center,
-              onTap: () {
-                context.updateEffectiveReadSetting(
-                  effective,
-                  (current) => current.copyWith(
-                    pageInfoHorizontalPosition:
-                        ReaderInfoHorizontalPosition.center,
-                  ),
-                );
-              },
-            ),
-            _SettingsChoiceChip(
-              title: t.reader.horizontalPositionRight,
-              selected:
-                  effective.pageInfoHorizontalPosition ==
-                  ReaderInfoHorizontalPosition.right,
-              onTap: () {
-                context.updateEffectiveReadSetting(
-                  effective,
-                  (current) => current.copyWith(
-                    pageInfoHorizontalPosition:
-                        ReaderInfoHorizontalPosition.right,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+        _SettingsChipRow([
+          _SettingsChoiceChip(
+            title: t.reader.horizontalPositionLeft,
+            selected:
+                effective.pageInfoHorizontalPosition ==
+                ReaderInfoHorizontalPosition.left,
+            onTap: () {
+              context.updateEffectiveReadSetting(
+                effective,
+                (current) => current.copyWith(
+                  pageInfoHorizontalPosition: ReaderInfoHorizontalPosition.left,
+                ),
+              );
+            },
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.horizontalPositionCenter,
+            selected:
+                effective.pageInfoHorizontalPosition ==
+                ReaderInfoHorizontalPosition.center,
+            onTap: () {
+              context.updateEffectiveReadSetting(
+                effective,
+                (current) => current.copyWith(
+                  pageInfoHorizontalPosition:
+                      ReaderInfoHorizontalPosition.center,
+                ),
+              );
+            },
+          ),
+          _SettingsChoiceChip(
+            title: t.reader.horizontalPositionRight,
+            selected:
+                effective.pageInfoHorizontalPosition ==
+                ReaderInfoHorizontalPosition.right,
+            onTap: () {
+              context.updateEffectiveReadSetting(
+                effective,
+                (current) => current.copyWith(
+                  pageInfoHorizontalPosition:
+                      ReaderInfoHorizontalPosition.right,
+                ),
+              );
+            },
+          ),
+        ]),
         _SettingsSliderCard(
           title: t.reader.edgePadding,
           value: effective.pageInfoEdgePadding.clamp(0, 48),

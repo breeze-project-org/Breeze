@@ -6,7 +6,7 @@ import 'package:zephyr/page/comic_info/json/normal/normal_comic_all_info.dart';
 import 'package:zephyr/page/comic_info/models/comic_info_action.dart';
 import 'package:zephyr/platform/desktop/window_logic.dart';
 import 'package:zephyr/type/pipe.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/widgets/toast.dart';
 
@@ -102,16 +102,33 @@ class _LabelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = context.textColor;
+    final c = context.calm;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: context.backgroundColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: textColor),
+        color: c.bg,
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label, style: TextStyle(fontSize: 12, color: textColor)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(11.5),
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: c.text3,
+              height: 1.2,
+              leadingDistribution: TextLeadingDistribution.even,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -136,8 +153,8 @@ class _ClickableChipState extends State<_ClickableChip> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = context.theme.colorScheme.primary;
-    final background = context.backgroundColor;
+    final c = context.calm;
+    final fg = _hovering ? c.accent : c.text2;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -150,26 +167,23 @@ class _ClickableChipState extends State<_ClickableChip> {
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOut,
           decoration: BoxDecoration(
-            color: _hovering ? primary.withValues(alpha: 0.08) : background,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: primary.withValues(alpha: _hovering ? 0.9 : 0.55),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: context.textColor.withValues(
-                  alpha: _hovering ? 0.28 : 0.18,
-                ),
-                blurRadius: _hovering ? 10 : 6,
-                offset: Offset(0, _hovering ? 3 : 2),
-                spreadRadius: _hovering ? 0.5 : 0,
-              ),
-            ],
+            color: _hovering ? c.accentSoft : c.surface2,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: _hovering ? c.shadowSm : const [],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
           child: Text(
             widget.label,
-            style: TextStyle(fontSize: 12, color: primary),
+            textHeightBehavior: kCalmTextHeightBehavior,
+            strutStyle: calmStrut(11.5),
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: _hovering ? FontWeight.w600 : FontWeight.w500,
+              color: fg,
+              height: 1.2,
+              leadingDistribution: TextLeadingDistribution.even,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
         ),
       ),

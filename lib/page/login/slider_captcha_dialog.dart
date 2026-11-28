@@ -3,9 +3,10 @@ import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
-import 'package:zephyr/network/http/plugin/unified_comic_plugin.dart';
-import 'package:zephyr/util/error/error_filter.dart';
 import 'package:zephyr/main.dart';
+import 'package:zephyr/network/http/plugin/unified_comic_plugin.dart';
+import 'package:zephyr/ui/ui.dart';
+import 'package:zephyr/util/error/error_filter.dart';
 
 /// 拼图滑块题目（插件 createFnPath 返回）。
 class SliderChallenge {
@@ -72,7 +73,7 @@ class SliderChallenge {
 typedef SliderTrackPoint = List<num>;
 
 /// 生成拟人拖动轨迹（首点固定 `[0,0,0]`，与网页端 slider-captcha.js 一致）。
-/// 供单测/无手势场景使用；真实拖动由 [_SliderCaptchaDialogState] 逐点记录。
+/// 供单测/无手势场景使用；真实拖动由 [_SliderCaptchaBodyState] 逐点记录。
 List<SliderTrackPoint> buildSliderTrack({
   required double targetX,
   required int durationMs,
@@ -106,7 +107,9 @@ List<SliderTrackPoint> buildSliderTrack({
 ///
 /// 网络层可注入（widget test 用 fake 覆盖拖动→verify→pop 全交互）；
 /// 缺省走插件 `createFnPath`/`verifyFnPath`。
-class SliderCaptchaDialog extends StatefulWidget {
+///
+/// 视觉走 CalmUI：外框 [CalmDialogSurface]，滑轨与按钮统一 `context.calm` 令牌。
+class SliderCaptchaDialog extends StatelessWidget {
   const SliderCaptchaDialog({
     super.key,
     required this.from,
@@ -149,10 +152,12 @@ class SliderCaptchaDialog extends StatefulWidget {
     String refreshText = '',
     Map<String, dynamic> values = const <String, dynamic>{},
   }) {
-    return showDialog<String>(
-      context: context,
+    return showCalmDialog<String>(
+      context,
+      title: t.login.sliderTitle,
+      icon: Icons.verified_user_outlined,
       barrierDismissible: false,
-      builder: (_) => SliderCaptchaDialog(
+      bodyBuilder: (_) => _SliderCaptchaBody(
         from: from,
         createFnPath: createFnPath,
         verifyFnPath: verifyFnPath,
@@ -163,12 +168,69 @@ class SliderCaptchaDialog extends StatefulWidget {
   }
 
   @override
-  State<SliderCaptchaDialog> createState() => _SliderCaptchaDialogState();
+  Widget build(BuildContext context) {
+    final isPhone = MediaQuery.sizeOf(context).width < 600;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      // 直接 showDialog 构造时：手机贴底滑出、平板/桌面居中，贴近 showCalmDialog。
+      alignment: isPhone ? Alignment.bottomCenter : Alignment.center,
+      insetPadding: isPhone
+          ? const EdgeInsets.all(8)
+          : const EdgeInsets.all(24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: CalmDialogSurface(
+          title: t.login.sliderTitle,
+          icon: Icons.verified_user_outlined,
+          isBottomSheet: isPhone,
+          body: _SliderCaptchaBody(
+            from: from,
+            createFnPath: createFnPath,
+            verifyFnPath: verifyFnPath,
+            refreshText: refreshText,
+            values: values,
+            createChallenge: createChallenge,
+            verifyChallenge: verifyChallenge,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 enum _SliderPhase { loading, ready, verifying, failed }
 
-class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
+/// 拼图交互主体（取题 / 拖动 / 校验 / 换题），不依赖具体弹窗外壳。
+class _SliderCaptchaBody extends StatefulWidget {
+  const _SliderCaptchaBody({
+    required this.from,
+    required this.createFnPath,
+    required this.verifyFnPath,
+    this.createChallenge,
+    this.verifyChallenge,
+    this.refreshText = '',
+    this.values = const <String, dynamic>{},
+  });
+
+  final String from;
+  final String createFnPath;
+  final String verifyFnPath;
+  final Future<Map<String, dynamic>> Function()? createChallenge;
+  final Future<String> Function({
+    required String token,
+    required double x,
+    required List<SliderTrackPoint> track,
+  })?
+  verifyChallenge;
+  final String refreshText;
+  final Map<String, dynamic> values;
+
+  @override
+  State<_SliderCaptchaBody> createState() => _SliderCaptchaBodyState();
+}
+
+class _SliderCaptchaBodyState extends State<_SliderCaptchaBody> {
   static const double _knobWidth = 52;
   static const double _barHeight = 40;
 
@@ -233,7 +295,7 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
   }
 
   /// 内容区实际渲染宽度（bg 图实测，替代屏宽公式预估）。
-  /// AlertDialog content 有 24px 内边距，直接按屏宽算会在窄屏下偏大，
+  /// 弹窗 content 有内边距，直接按屏宽算会在窄屏下偏大，
   /// 导致拼块显示位置与上报 x 系统性偏大约 8%。
   /// 注意：content 包在 IntrinsicWidth 里，LayoutBuilder 会直接抛异常，
   /// 这里用 GlobalKey 在 build 后测 bg 图实际尺寸。
@@ -366,6 +428,7 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final width = _displayWidth;
     final challenge = _challenge;
     final height = challenge == null
@@ -374,41 +437,50 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
     // content 不定宽：占满 dialog 可用宽；bg 图挂 key 实测回写 _renderWidth，
     // 下一帧起拼图/滑杆/上报 x 全按实测缩放算。首帧 width 用屏宽公式回退。
     _scheduleMeasure();
-    return AlertDialog(
-      title: Text(t.login.sliderTitle),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildImage(width, height),
-          const SizedBox(height: 10),
-          _buildBar(),
-          if (_error.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              _error,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
+    final busy =
+        _phase == _SliderPhase.loading || _phase == _SliderPhase.verifying;
+    final ready = _phase == _SliderPhase.ready && !busy;
+    final refreshLabel = widget.refreshText.trim().isNotEmpty
+        ? widget.refreshText.trim()
+        : t.login.retry;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildImage(width, height),
+        const SizedBox(height: 10),
+        _buildBar(c, busy: busy, ready: ready),
+        if (_error.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          CalmStatusBanner(title: _error, tone: CalmTone.danger),
         ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: _phase == _SliderPhase.verifying
-              ? null
-              : () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
-        ),
-        TextButton(
-          onPressed:
-              (_phase == _SliderPhase.loading ||
-                  _phase == _SliderPhase.verifying)
-              ? null
-              : () => _load(),
-          child: Text(
-            widget.refreshText.trim().isNotEmpty
-                ? widget.refreshText.trim()
-                : t.login.retry,
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              CalmButton(
+                label: t.common.cancel,
+                variant: CalmButtonVariant.ghost,
+                size: CalmButtonSize.xs,
+                onPressed: _phase == _SliderPhase.verifying
+                    ? null
+                    : () => Navigator.of(context).maybePop(),
+              ),
+              CalmButton(
+                label: refreshLabel,
+                icon: Icons.refresh_rounded,
+                variant: CalmButtonVariant.tonal,
+                size: CalmButtonSize.xs,
+                loading: busy,
+                onPressed: busy ? null : () => _load(),
+              ),
+            ],
           ),
         ),
       ],
@@ -416,20 +488,38 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
   }
 
   Widget _buildImage(double width, double height) {
+    final c = context.calm;
     final challenge = _challenge;
-    // 宽不定死：跟 content 可用宽走（实测值），窄屏 dialog 内边距压缩时不错位。
+    final radius = BorderRadius.circular(12);
+    // 宽不定死：跟 content 可用宽走（实测值），窄屏弹窗内边距压缩时不错位。
     if (_phase == _SliderPhase.loading || challenge == null) {
-      return SizedBox(
+      return Container(
+        key: _imageKey,
         width: double.infinity,
         height: height,
-        child: Center(child: Text(t.login.sliderLoading)),
+        decoration: BoxDecoration(color: c.surface2, borderRadius: radius),
+        alignment: Alignment.center,
+        child: CalmLoading(label: t.login.sliderLoading),
       );
     }
     if (_phase == _SliderPhase.failed && _error.isNotEmpty) {
-      return SizedBox(
+      return Container(
+        key: _imageKey,
         width: double.infinity,
         height: height,
-        child: Center(child: Text(t.login.sliderLoadFailed)),
+        decoration: BoxDecoration(color: c.dangerSoft, borderRadius: radius),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.broken_image_outlined, size: 22, color: c.danger),
+            const SizedBox(height: 6),
+            Text(
+              t.login.sliderLoadFailed,
+              style: TextStyle(fontSize: 11.5, color: c.danger),
+            ),
+          ],
+        ),
       );
     }
     final pieceDisplay = challenge.pieceSize * _scale;
@@ -437,10 +527,7 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
       key: _imageKey,
       width: double.infinity,
       height: height,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(6),
-      ),
+      decoration: BoxDecoration(color: c.surface2, borderRadius: radius),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
@@ -465,16 +552,12 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
     );
   }
 
-  Widget _buildBar() {
-    final busy =
-        _phase == _SliderPhase.loading || _phase == _SliderPhase.verifying;
-    final ready = _phase == _SliderPhase.ready && !busy;
+  Widget _buildBar(CalmColors c, {required bool busy, required bool ready}) {
     return Container(
       height: _barHeight,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        color: c.surface2,
+        borderRadius: BorderRadius.circular(999),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -484,16 +567,18 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
             top: 0,
             bottom: 0,
             width: _knobDx + _knobWidth / 2,
-            child: Container(
-              color: Theme.of(context).colorScheme.primary
-                  .withValues(alpha: 0.18),
-            ),
+            child: ColoredBox(color: c.accent.withValues(alpha: 0.18)),
           ),
           Center(
             child: Text(
               busy ? t.login.sliderVerifying : t.login.sliderHint,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              textHeightBehavior: kCalmTextHeightBehavior,
+              strutStyle: calmStrut(11.5),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: c.text2,
+                height: 1.2,
+                leadingDistribution: TextLeadingDistribution.even,
               ),
             ),
           ),
@@ -510,23 +595,24 @@ class _SliderCaptchaDialogState extends State<SliderCaptchaDialog> {
                 height: _barHeight,
                 decoration: BoxDecoration(
                   color: _phase == _SliderPhase.verifying
-                      ? Theme.of(context).colorScheme.secondary
-                      : Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(20),
+                      ? c.accent.withValues(alpha: 0.72)
+                      : c.accent,
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 alignment: Alignment.center,
                 child: _phase == _SliderPhase.verifying
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          strokeCap: StrokeCap.round,
+                          color: c.accentFg,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         '➜',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
+                        style: TextStyle(fontSize: 18, color: c.accentFg),
                       ),
               ),
             ),

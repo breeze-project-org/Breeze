@@ -108,22 +108,27 @@ class _CacheSettingPageState extends State<CacheSettingPage> {
   }
 
   Future<void> _handleClearCache() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.cache.clearCache),
-        content: Text(t.cache.clearCacheConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(t.common.ok),
-          ),
-        ],
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: t.cache.clearCache,
+      icon: Icons.delete_sweep_outlined,
+      tone: CalmTone.danger,
+      bodyBuilder: (dialogContext) => Text(
+        t.cache.clearCacheConfirm,
+        style: TextStyle(fontSize: 12, color: dialogContext.calm.text2),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.ok,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
 
     if (confirmed != true) return;
@@ -143,119 +148,91 @@ class _CacheSettingPageState extends State<CacheSettingPage> {
   Widget build(BuildContext context) {
     final cubit = context.watch<GlobalSettingCubit>();
     final state = cubit.state;
+    final effectiveCacheLimit =
+        _cacheLimitOptions.contains(state.cacheSetting.cacheSizeLimit)
+        ? state.cacheSetting.cacheSizeLimit
+        : 1073741824;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          t.cache.title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        centerTitle: false,
-        scrolledUnderElevation: 0,
-      ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 768),
-          child: ListView(
-            children: [
-              _buildSectionTitle(context, t.cache.currentCache),
-              ListTile(
-                leading: const Icon(Icons.storage_outlined),
-                title: Text(t.cache.cacheSize),
-                subtitle: Text(
-                  _calculating
-                      ? t.cache.calculating
-                      : _formatSize(_cacheSizeBytes),
-                ),
-                trailing: _calculating
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.refresh, size: 20),
-                        tooltip: t.cache.recalculate,
-                        onPressed: _calculateCacheSize,
-                      ),
+    return SettingPageShell(
+      title: t.cache.title,
+      child: ListView(
+        padding: kSettingPagePadding,
+        children: [
+          settingSectionTitle(
+            context,
+            t.cache.currentCache,
+            icon: Icons.storage_outlined,
+          ),
+          settingCardGroup([
+            CalmListTile(
+              leading: settingTileIcon(Icons.storage_outlined),
+              title: t.cache.cacheSize,
+              subtitle: _calculating
+                  ? t.cache.calculating
+                  : _formatSize(_cacheSizeBytes),
+              trailing: _calculating
+                  ? const CalmLoading(size: 16)
+                  : CalmIconButton(
+                      icon: Icons.refresh_rounded,
+                      tooltip: t.cache.recalculate,
+                      onPressed: _calculateCacheSize,
+                    ),
+            ),
+            CalmListTile(
+              leading: settingTileIcon(Icons.cleaning_services_outlined),
+              title: t.cache.manualClear,
+              subtitle: t.cache.manualClearSubtitle,
+              trailing: CalmButton(
+                label: t.cache.clear,
+                icon: Icons.delete_outline_rounded,
+                variant: CalmButtonVariant.tonal,
+                size: CalmButtonSize.xs,
+                onPressed: _handleClearCache,
               ),
-              const Divider(height: 1, thickness: 0.3),
-              ListTile(
-                leading: const Icon(Icons.cleaning_services_outlined),
-                title: Text(t.cache.manualClear),
-                subtitle: Text(t.cache.manualClearSubtitle),
-                trailing: FilledButton.tonalIcon(
-                  onPressed: _handleClearCache,
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: Text(t.cache.clear),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-              const Divider(height: 1, thickness: 0.3),
-              _buildSectionTitle(context, t.cache.cacheLimit),
-              ListTile(
-                leading: const Icon(Icons.data_thresholding_outlined),
-                title: Text(t.cache.sizeLimit),
-                subtitle: Text(t.cache.sizeLimitSubtitle),
-                trailing: Builder(
-                  builder: (context) {
-                    final effectiveCacheLimit =
-                        _cacheLimitOptions.contains(
-                          state.cacheSetting.cacheSizeLimit,
-                        )
-                        ? state.cacheSetting.cacheSizeLimit
-                        : 1073741824;
-                    return FluentDropdown<int>(
-                      value: effectiveCacheLimit,
-                      displayValue: _cacheLimitLabels[effectiveCacheLimit]!,
-                      items: _cacheLimitLabels,
-                      onChanged: (int value) {
-                        cubit.updateCacheSetting(
-                          (current) => current.copyWith(cacheSizeLimit: value),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 8),
-              const Divider(height: 1, thickness: 0.3),
-              _buildSectionTitle(context, t.cache.autoClean),
-              SwitchListTile(
-                secondary: const Icon(Icons.auto_delete_outlined),
-                title: Text(t.cache.autoClean),
-                subtitle: Text(t.cache.autoCleanSubtitle),
-                thumbIcon: kSettingSwitchThumbIcon,
-                value: state.cacheSetting.autoCleanCache,
-                onChanged: (bool value) {
+            ),
+          ]),
+          settingSectionTitle(
+            context,
+            t.cache.cacheLimit,
+            icon: Icons.data_thresholding_outlined,
+          ),
+          settingCardGroup([
+            CalmListTile(
+              leading: settingTileIcon(Icons.data_thresholding_outlined),
+              title: t.cache.sizeLimit,
+              subtitle: t.cache.sizeLimitSubtitle,
+              trailing: FluentDropdown<int>(
+                value: effectiveCacheLimit,
+                displayValue: _cacheLimitLabels[effectiveCacheLimit]!,
+                items: _cacheLimitLabels,
+                onChanged: (int value) {
                   cubit.updateCacheSetting(
-                    (current) => current.copyWith(autoCleanCache: value),
+                    (current) => current.copyWith(cacheSizeLimit: value),
                   );
                 },
               ),
-
-              const SizedBox(height: 32),
-            ],
+            ),
+          ]),
+          settingSectionTitle(
+            context,
+            t.cache.autoClean,
+            icon: Icons.auto_delete_outlined,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.primary,
-          letterSpacing: 0.5,
-        ),
+          settingCardGroup([
+            settingSwitchTile(
+              icon: Icons.auto_delete_outlined,
+              title: t.cache.autoClean,
+              subtitle: t.cache.autoCleanSubtitle,
+              value: state.cacheSetting.autoCleanCache,
+              onChanged: (bool value) {
+                cubit.updateCacheSetting(
+                  (current) => current.copyWith(autoCleanCache: value),
+                );
+              },
+            ),
+          ]),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }

@@ -2,23 +2,26 @@ import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_reorderable_grid_view/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pool/pool.dart';
-import 'package:zephyr/util/ohos/platform.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/network/http/picture/picture.dart';
-import 'package:zephyr/page/comic_edit/cubit/comic_edit_cubit.dart';
 import 'package:zephyr/page/bookshelf/method/local_comic_picker.dart';
+import 'package:zephyr/page/comic_edit/cubit/comic_edit_cubit.dart';
 import 'package:zephyr/page/comic_edit/method/comic_edit_debug.dart';
 import 'package:zephyr/page/comic_edit/method/comic_edit_document.dart';
 import 'package:zephyr/service/download/download_asset_store.dart';
 import 'package:zephyr/type/enum.dart';
+import 'package:zephyr/ui/ui.dart';
+import 'package:zephyr/util/ohos/platform.dart';
+import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 const double _kWideBreakpoint = 900;
+const double _kCompactMaxWidth = 840;
+const double _kWideMaxWidth = 1180;
 
 @RoutePage()
 class ComicEditPage extends StatelessWidget {
@@ -36,101 +39,118 @@ class ComicEditPage extends StatelessWidget {
   }
 }
 
-class _ComicEditView extends StatelessWidget {
+class _ComicEditView extends StatefulWidget {
   const _ComicEditView();
 
   @override
+  State<_ComicEditView> createState() => _ComicEditViewState();
+}
+
+class _ComicEditViewState extends State<_ComicEditView> {
+  final TextEditingController _titleController = TextEditingController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  /// 文档里的标题变化时同步输入框，但不覆盖用户正在输入的相同内容。
+  void _syncTitle(String title) {
+    if (_titleController.text != title) {
+      _titleController.text = title;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ComicEditCubit, ComicEditState>(
+    return BlocListener<ComicEditCubit, ComicEditState>(
       listenWhen: (previous, next) =>
           next.error.isNotEmpty && previous.error != next.error,
       listener: (context, state) => showErrorToast(state.error),
-      builder: (context, state) {
-        return Scaffold(
-          appBar: AppBar(title: Text(t.comicEdit.title)),
-          body: _buildBody(context, state),
-        );
-      },
+      child: BlocListener<ComicEditCubit, ComicEditState>(
+        listenWhen: (previous, next) => previous.title != next.title,
+        listener: (context, state) => _syncTitle(state.title),
+        child: BlocBuilder<ComicEditCubit, ComicEditState>(
+          builder: (context, state) {
+            final cubit = context.read<ComicEditCubit>();
+            final canEdit = !state.busy && !state.loading && !state.locked;
+            return CalmPageScaffold(
+              title: t.comicEdit.title,
+              maxContentWidth: null,
+              actions: [
+                CalmIconButton(
+                  icon: Icons.refresh_rounded,
+                  tooltip: t.common.reload,
+                  onPressed: state.busy ? null : cubit.load,
+                ),
+                CalmButton(
+                  label: t.comicEdit.saveTitle,
+                  icon: Icons.check_rounded,
+                  variant: CalmButtonVariant.primary,
+                  size: CalmButtonSize.sm,
+                  loading: state.busy,
+                  onPressed: canEdit
+                      ? () => cubit.saveTitle(_titleController.text)
+                      : null,
+                ),
+              ],
+              body: _buildBody(state),
+            );
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildBody(BuildContext context, ComicEditState state) {
+  Widget _buildBody(ComicEditState state) {
     if (state.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CalmLoading(size: 22));
     }
     if (state.locked) {
       return const _LockedView();
     }
     if (state.document == null) {
-      return Center(child: Text(t.comicEdit.loadFailed));
-    }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= _kWideBreakpoint) {
-          return _WideEditLayout(state: state);
-        }
-        return _CompactEditLayout(state: state);
-      },
-    );
-  }
-}
-
-class _CompactEditLayout extends StatelessWidget {
-  const _CompactEditLayout({required this.state});
-
-  final ComicEditState state;
-
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          TabBar(
-            tabs: [
-              Tab(text: t.comicEdit.basicInfo),
-              Tab(text: t.comicEdit.chapters),
-              Tab(text: t.comicEdit.images),
-            ],
-          ),
-          if (state.busy) const LinearProgressIndicator(minHeight: 2),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _BasicInfoTab(state: state),
-                _ChaptersTab(state: state),
-                _ImagesTab(state: state),
-              ],
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: CalmEmptyState(
+              icon: Icons.cloud_off_rounded,
+              title: t.comicEdit.loadFailed,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
+        ),
+      );
+    }
 
-class _WideEditLayout extends StatelessWidget {
-  const _WideEditLayout({required this.state});
-
-  final ComicEditState state;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Column(
       children: [
-        SizedBox(width: 320, child: _ChapterListPane(state: state)),
-        const VerticalDivider(width: 1),
+        if (state.busy) const CalmProgressBar(height: 2),
         Expanded(
-          child: Column(
-            children: [
-              if (state.busy) const LinearProgressIndicator(minHeight: 2),
-              _BasicInfoPanel(state: state),
-              const Divider(height: 1),
-              Expanded(
-                child: _ImageGridPane(state: state, showChapterTitle: true),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= _kWideBreakpoint;
+              final layout = wide
+                  ? _WideEditLayout(
+                      state: state,
+                      titleController: _titleController,
+                    )
+                  : _CompactEditLayout(
+                      state: state,
+                      titleController: _titleController,
+                    );
+              return Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: wide ? _kWideMaxWidth : _kCompactMaxWidth,
+                  ),
+                  child: SizedBox(width: double.infinity, child: layout),
+                ),
+              );
+            },
           ),
         ),
       ],
@@ -144,74 +164,128 @@ class _LockedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.lock_outline, size: 48),
-            const SizedBox(height: 12),
-            Text(
-              t.comicEdit.lockedTitle,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(t.comicEdit.lockedMessage, textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            FilledButton(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: CalmEmptyState(
+            icon: Icons.lock_outline_rounded,
+            title: t.comicEdit.lockedTitle,
+            subtitle: t.comicEdit.lockedMessage,
+            action: CalmButton(
+              label: t.common.back,
+              variant: CalmButtonVariant.secondary,
               onPressed: () => Navigator.of(context).maybePop(),
-              child: Text(t.common.back),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _BasicInfoTab extends StatelessWidget {
-  const _BasicInfoTab({required this.state});
+/// 窄屏：胶囊分段切换「基本信息 / 章节 / 图片」。
+class _CompactEditLayout extends StatefulWidget {
+  const _CompactEditLayout({
+    required this.state,
+    required this.titleController,
+  });
 
   final ComicEditState state;
+  final TextEditingController titleController;
+
+  @override
+  State<_CompactEditLayout> createState() => _CompactEditLayoutState();
+}
+
+class _CompactEditLayoutState extends State<_CompactEditLayout> {
+  int _index = 0;
+
+  void _openImagesTab() {
+    if (!mounted) return;
+    setState(() => _index = 2);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<ComicEditCubit>();
-    final cover = state.cover;
-    final coverPath = cover['path']?.toString().trim() ?? '';
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    final state = widget.state;
+    return Column(
       children: [
-        _TitleEditor(state: state),
-        const SizedBox(height: 24),
-        Text(
-          t.comicEdit.changeCover,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: _CoverPreview(
-            from: cubit.from,
-            comicId: cubit.comicId,
-            path: coverPath,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: CalmSegmentedControl<int>(
+              value: _index,
+              options: [
+                (
+                  value: 0,
+                  label: t.comicEdit.basicInfo,
+                  icon: Icons.info_outline_rounded,
+                ),
+                (
+                  value: 1,
+                  label: t.comicEdit.chapters,
+                  icon: Icons.list_alt_rounded,
+                ),
+                (
+                  value: 2,
+                  label: t.comicEdit.images,
+                  icon: Icons.photo_library_outlined,
+                ),
+              ],
+              onChanged: (value) => setState(() => _index = value),
+            ),
           ),
         ),
-        const SizedBox(height: 12),
-        Center(
-          child: OutlinedButton.icon(
-            onPressed: state.busy ? null : () => _pickCover(cubit),
-            icon: const Icon(Icons.image_outlined),
-            label: Text(t.comicEdit.changeCover),
-          ),
+        Expanded(
+          child: switch (_index) {
+            1 => _ChaptersSection(state: state, onOpenImages: _openImagesTab),
+            2 => _ImagesTab(state: state),
+            _ => _BasicInfoTab(
+              state: state,
+              titleController: widget.titleController,
+            ),
+          },
         ),
-        const SizedBox(height: 8),
-        Center(
-          child: OutlinedButton.icon(
-            onPressed: state.busy
-                ? null
-                : () => _pickCoverFromComic(context, cubit, state),
-            icon: const Icon(Icons.collections_outlined),
-            label: Text(t.comicEdit.chooseFromComic),
+      ],
+    );
+  }
+}
+
+/// 宽屏：左侧章节栏 + 右侧封面/信息与图片宫格分栏。
+class _WideEditLayout extends StatelessWidget {
+  const _WideEditLayout({required this.state, required this.titleController});
+
+  final ComicEditState state;
+  final TextEditingController titleController;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(width: 340, child: _ChapterListPane(state: state)),
+        VerticalDivider(width: 1, color: c.border),
+        Expanded(
+          child: Column(
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                  child: _BasicInfoSection(
+                    state: state,
+                    titleController: titleController,
+                  ),
+                ),
+              ),
+              const CalmDivider(),
+              Expanded(
+                child: _ImageGridPane(state: state, showChapterTitle: true),
+              ),
+            ],
           ),
         ),
       ],
@@ -219,166 +293,94 @@ class _BasicInfoTab extends StatelessWidget {
   }
 }
 
-class _BasicInfoPanel extends StatelessWidget {
-  const _BasicInfoPanel({required this.state});
+class _BasicInfoTab extends StatelessWidget {
+  const _BasicInfoTab({required this.state, required this.titleController});
 
   final ComicEditState state;
+  final TextEditingController titleController;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        _BasicInfoSection(state: state, titleController: titleController),
+      ],
+    );
+  }
+}
+
+/// 封面预览 + 标题输入 + 更换封面动作（桌面与手机共用一套）。
+class _BasicInfoSection extends StatelessWidget {
+  const _BasicInfoSection({required this.state, required this.titleController});
+
+  final ComicEditState state;
+  final TextEditingController titleController;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<ComicEditCubit>();
-    final cover = state.cover;
-    final coverPath = cover['path']?.toString().trim() ?? '';
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _CoverPreview(
-            from: cubit.from,
-            comicId: cubit.comicId,
-            path: coverPath,
-            width: 120,
-            height: 165,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
+    final coverPath = state.cover['path']?.toString().trim() ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CalmSectionHeader(title: t.comicEdit.comicTitle),
+        const SizedBox(height: 8),
+        CalmCard(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _CoverPreview(
+                from: cubit.from,
+                comicId: cubit.comicId,
+                path: coverPath,
+                width: 104,
+                height: 143,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _TitleEditor(state: state, horizontal: true),
-                    const SizedBox(height: 12),
+                    CalmTextArea(
+                      controller: titleController,
+                      hintText: t.comicEdit.titleHint,
+                      minLines: 1,
+                      maxLines: 6,
+                    ),
+                    const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        OutlinedButton.icon(
+                        CalmButton(
+                          label: t.comicEdit.changeCover,
+                          icon: Icons.image_outlined,
+                          variant: CalmButtonVariant.secondary,
+                          size: CalmButtonSize.sm,
                           onPressed: state.busy
                               ? null
                               : () => _pickCover(cubit),
-                          icon: const Icon(Icons.image_outlined),
-                          label: Text(t.comicEdit.changeCover),
                         ),
-                        OutlinedButton.icon(
+                        CalmButton(
+                          label: t.comicEdit.chooseFromComic,
+                          icon: Icons.collections_outlined,
+                          variant: CalmButtonVariant.secondary,
+                          size: CalmButtonSize.sm,
                           onPressed: state.busy
                               ? null
                               : () =>
                                     _pickCoverFromComic(context, cubit, state),
-                          icon: const Icon(Icons.collections_outlined),
-                          label: Text(t.comicEdit.chooseFromComic),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TitleEditor extends StatefulWidget {
-  const _TitleEditor({required this.state, this.horizontal = false});
-
-  final ComicEditState state;
-  final bool horizontal;
-
-  @override
-  State<_TitleEditor> createState() => _TitleEditorState();
-}
-
-class _TitleEditorState extends State<_TitleEditor> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.state.title);
-  }
-
-  @override
-  void didUpdateWidget(covariant _TitleEditor oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.state.title != oldWidget.state.title &&
-        _controller.text != widget.state.title) {
-      _controller.text = widget.state.title;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<ComicEditCubit>();
-    final field = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          t.comicEdit.comicTitle,
-          style: Theme.of(context).textTheme.labelLarge,
-        ),
-        const SizedBox(height: 6),
-        Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: TextField(
-            controller: _controller,
-            minLines: 1,
-            maxLines: 6,
-            keyboardType: TextInputType.text,
-            textInputAction: TextInputAction.done,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.singleLineFormatter,
             ],
-            textAlignVertical: TextAlignVertical.center,
-            decoration: InputDecoration(
-              hintText: t.comicEdit.titleHint,
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-            onSubmitted: cubit.saveTitle,
           ),
         ),
-      ],
-    );
-    final button = FilledButton.icon(
-      onPressed: widget.state.busy
-          ? null
-          : () => cubit.saveTitle(_controller.text),
-      icon: const Icon(Icons.save),
-      label: Text(t.comicEdit.saveTitle),
-    );
-
-    if (widget.horizontal) {
-      return Row(
-        children: [
-          Expanded(child: field),
-          const SizedBox(width: 8),
-          button,
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        field,
-        const SizedBox(height: 12),
-        Align(alignment: Alignment.centerRight, child: button),
       ],
     );
   }
@@ -401,117 +403,61 @@ class _CoverPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        width: width,
-        height: height,
-        child: path.isEmpty
-            ? const ColoredBox(
-                color: Colors.black12,
-                child: Icon(Icons.image_outlined, size: 48),
-              )
-            : FutureBuilder<String>(
-                future: findCachedPicturePath(
-                  from: from,
-                  path: path,
-                  cartoonId: comicId,
-                  pictureType: PictureType.cover,
-                ),
-                builder: (context, snapshot) {
-                  final local = snapshot.data ?? '';
-                  if (local.isEmpty) {
-                    return const ColoredBox(
-                      color: Colors.black12,
-                      child: Icon(Icons.image_outlined, size: 48),
-                    );
-                  }
-                  return Image.file(File(local), fit: BoxFit.cover);
-                },
-              ),
+    final c = context.calm;
+    final placeholder = Container(
+      color: c.surface2,
+      alignment: Alignment.center,
+      child: Icon(Icons.image_outlined, size: 32, color: c.text3),
+    );
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: c.shadowSm,
       ),
+      clipBehavior: Clip.antiAlias,
+      child: path.isEmpty
+          ? placeholder
+          : FutureBuilder<String>(
+              future: findCachedPicturePath(
+                from: from,
+                path: path,
+                cartoonId: comicId,
+                pictureType: PictureType.cover,
+              ),
+              builder: (context, snapshot) {
+                final local = snapshot.data ?? '';
+                if (local.isEmpty) {
+                  return placeholder;
+                }
+                return Image.file(File(local), fit: BoxFit.cover);
+              },
+            ),
     );
   }
 }
 
-class _ChaptersTab extends StatelessWidget {
-  const _ChaptersTab({required this.state});
+class _ChaptersSection extends StatelessWidget {
+  const _ChaptersSection({required this.state, this.onOpenImages});
 
   final ComicEditState state;
+  final VoidCallback? onOpenImages;
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<ComicEditCubit>();
-    final chapters = state.chapters;
-    return Scaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                TextButton.icon(
-                  onPressed: state.busy
-                      ? null
-                      : () => _importChapters(context, cubit),
-                  icon: const Icon(Icons.playlist_add),
-                  label: Text(t.comicEdit.importChapters),
-                ),
-                TextButton.icon(
-                  onPressed: state.busy
-                      ? null
-                      : () => _importImages(context, cubit, state),
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
-                  label: Text(t.comicEdit.importImages),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: chapters.isEmpty
-                ? Center(child: Text(t.comicEdit.noChapters))
-                : ReorderableListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
-                    itemCount: chapters.length,
-                    buildDefaultDragHandles: false,
-                    onReorderItem: (oldIndex, newIndex) =>
-                        cubit.reorderChapters(oldIndex, newIndex),
-                    itemBuilder: (context, index) {
-                      final chapter = chapters[index];
-                      final id = comicEditChapterId(chapter);
-                      return _ChapterTile(
-                        key: ValueKey(id),
-                        chapter: chapter,
-                        index: index,
-                        selected: id == state.selectedChapterId,
-                        onTap: () {
-                          cubit.selectChapter(id);
-                          DefaultTabController.of(context).animateTo(2);
-                        },
-                        onRename: () => _renameChapter(context, cubit, chapter),
-                        onEditVolume: () =>
-                            _editChapterVolume(context, cubit, chapter),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _addChapter(
-          context,
-          cubit,
-          onAdded: () {
-            if (context.mounted) {
-              DefaultTabController.of(context).animateTo(2);
-            }
-          },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: _ChaptersToolbar(state: state, onOpenImages: onOpenImages),
         ),
-        icon: const Icon(Icons.add),
-        label: Text(t.comicEdit.addChapter),
-      ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _ChaptersList(state: state, onOpenImages: onOpenImages),
+        ),
+      ],
     );
   }
 }
@@ -523,70 +469,132 @@ class _ChapterListPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<ComicEditCubit>();
-    final chapters = state.chapters;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  t.comicEdit.chapters,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              IconButton(
-                tooltip: t.comicEdit.importChapters,
-                icon: const Icon(Icons.playlist_add),
-                onPressed: state.busy
-                    ? null
-                    : () => _importChapters(context, cubit),
-              ),
-              IconButton(
-                tooltip: t.comicEdit.importImages,
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                onPressed: state.busy
-                    ? null
-                    : () => _importImages(context, cubit, state),
-              ),
-              IconButton(
-                tooltip: t.comicEdit.addChapter,
-                icon: const Icon(Icons.add),
-                onPressed: () => _addChapter(context, cubit),
-              ),
-            ],
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: _ChaptersToolbar(state: state, onOpenImages: null),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _ChaptersList(
+            state: state,
+            onOpenImages: null,
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
           ),
         ),
-        const Divider(height: 1),
-        Expanded(
-          child: chapters.isEmpty
-              ? Center(child: Text(t.comicEdit.noChapters))
-              : ReorderableListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  itemCount: chapters.length,
-                  buildDefaultDragHandles: false,
-                  onReorderItem: (oldIndex, newIndex) =>
-                      cubit.reorderChapters(oldIndex, newIndex),
-                  itemBuilder: (context, index) {
-                    final chapter = chapters[index];
-                    final id = comicEditChapterId(chapter);
-                    return _ChapterTile(
-                      key: ValueKey(id),
-                      chapter: chapter,
-                      index: index,
-                      selected: id == state.selectedChapterId,
-                      onTap: () => cubit.selectChapter(id),
-                      onRename: () => _renameChapter(context, cubit, chapter),
-                      onEditVolume: () =>
-                          _editChapterVolume(context, cubit, chapter),
-                    );
-                  },
-                ),
+      ],
+    );
+  }
+}
+
+/// 章节区标题 + 导入/新增动作。
+class _ChaptersToolbar extends StatelessWidget {
+  const _ChaptersToolbar({required this.state, this.onOpenImages});
+
+  final ComicEditState state;
+  final VoidCallback? onOpenImages;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<ComicEditCubit>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CalmSectionHeader(
+          title: t.comicEdit.chapters,
+          countText: '${state.chapters.length}',
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            CalmButton(
+              label: t.comicEdit.importChapters,
+              icon: Icons.playlist_add,
+              variant: CalmButtonVariant.secondary,
+              size: CalmButtonSize.sm,
+              onPressed: state.busy
+                  ? null
+                  : () => _importChapters(context, cubit),
+            ),
+            CalmButton(
+              label: t.comicEdit.importImages,
+              icon: Icons.add_photo_alternate_outlined,
+              variant: CalmButtonVariant.secondary,
+              size: CalmButtonSize.sm,
+              onPressed: state.busy
+                  ? null
+                  : () => _importImages(context, cubit, state),
+            ),
+            CalmButton(
+              label: t.comicEdit.addChapter,
+              icon: Icons.add_rounded,
+              variant: CalmButtonVariant.tonal,
+              size: CalmButtonSize.sm,
+              onPressed: state.busy
+                  ? null
+                  : () => _addChapter(context, cubit, onAdded: onOpenImages),
+            ),
+          ],
         ),
       ],
+    );
+  }
+}
+
+class _ChaptersList extends StatelessWidget {
+  const _ChaptersList({
+    required this.state,
+    this.onOpenImages,
+    this.padding = const EdgeInsets.fromLTRB(16, 4, 16, 24),
+  });
+
+  final ComicEditState state;
+  final VoidCallback? onOpenImages;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<ComicEditCubit>();
+    final chapters = state.chapters;
+    if (chapters.isEmpty) {
+      return Padding(
+        padding: padding,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: CalmEmptyState(
+            icon: Icons.list_alt_rounded,
+            title: t.comicEdit.noChapters,
+          ),
+        ),
+      );
+    }
+
+    return ReorderableListView.builder(
+      padding: padding,
+      itemCount: chapters.length,
+      buildDefaultDragHandles: false,
+      onReorderItem: (oldIndex, newIndex) =>
+          cubit.reorderChapters(oldIndex, newIndex),
+      itemBuilder: (context, index) {
+        final chapter = chapters[index];
+        final id = comicEditChapterId(chapter);
+        return _ChapterTile(
+          key: ValueKey(id),
+          chapter: chapter,
+          index: index,
+          selected: id == state.selectedChapterId,
+          onTap: () {
+            cubit.selectChapter(id);
+            onOpenImages?.call();
+          },
+          onRename: () => _renameChapter(context, cubit, chapter),
+          onEditVolume: () => _editChapterVolume(context, cubit, chapter),
+        );
+      },
     );
   }
 }
@@ -611,6 +619,7 @@ class _ChapterTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final name = chapter['name']?.toString() ?? '';
     final volume = chapter['groupTitle']?.toString().trim() ?? '';
     final count = ((chapter['images'] as List?) ?? const []).length;
@@ -618,42 +627,115 @@ class _ChapterTile extends StatelessWidget {
         ? t.comicEdit.pagesCount(count: count)
         : '${t.comicEdit.volumeLabel(name: volume)} · '
               '${t.comicEdit.pagesCount(count: count)}';
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          selected: selected,
-          leading: CircleAvatar(child: Text('${index + 1}')),
-          title: Text(name.isEmpty ? t.comicEdit.chapterName : name),
-          subtitle: Text(subtitle),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.edit_outlined),
-                tooltip: t.comicEdit.renameChapter,
-                onPressed: onRename,
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.book_outlined),
-                tooltip: t.comicEdit.editVolume,
-                onPressed: onEditVolume,
-              ),
-              ReorderableDragStartListener(
-                index: index,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                  child: Icon(Icons.drag_handle),
-                ),
-              ),
-            ],
-          ),
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+            decoration: BoxDecoration(
+              color: selected ? c.accentSoft : c.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: selected ? c.accentBorder : c.border),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected ? c.surface : c.surface2,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${index + 1}',
+                    textHeightBehavior: kCalmTextHeightBehavior,
+                    strutStyle: calmStrut(11),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? c.accent : c.text2,
+                      height: 1.2,
+                      leadingDistribution: TextLeadingDistribution.even,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        name.isEmpty ? t.comicEdit.chapterName : name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                          color: c.text,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: c.text3,
+                          height: 1.3,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                CalmIconButton(
+                  icon: Icons.edit_outlined,
+                  tooltip: t.comicEdit.renameChapter,
+                  size: 26,
+                  iconSize: 14,
+                  onPressed: onRename,
+                ),
+                const SizedBox(width: 4),
+                CalmIconButton(
+                  icon: Icons.book_outlined,
+                  tooltip: t.comicEdit.editVolume,
+                  size: 26,
+                  iconSize: 14,
+                  onPressed: onEditVolume,
+                ),
+                const SizedBox(width: 4),
+                ReorderableDragStartListener(
+                  index: index,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 6,
+                    ),
+                    child: Icon(
+                      Icons.drag_handle_rounded,
+                      size: 18,
+                      color: c.text3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        const Divider(height: 1),
-      ],
+      ),
     );
   }
 }
@@ -668,38 +750,36 @@ class _ImagesTab extends StatelessWidget {
     final cubit = context.read<ComicEditCubit>();
     final chapter = state.selectedChapter;
     if (state.chapters.isEmpty || chapter == null) {
-      return Center(child: Text(t.comicEdit.noChapters));
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: CalmEmptyState(
+              icon: Icons.list_alt_rounded,
+              title: t.comicEdit.noChapters,
+            ),
+          ),
+        ),
+      );
     }
-    final chapterId = comicEditChapterId(chapter);
 
+    final currentId = comicEditChapterId(chapter);
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-          child: DropdownButtonFormField<String>(
-            key: ValueKey(chapterId),
-            initialValue: chapterId,
-            decoration: InputDecoration(
-              labelText: t.comicEdit.selectChapter,
-              border: const OutlineInputBorder(),
-              isDense: true,
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FluentDropdown<String>(
+              value: currentId,
+              displayValue: _chapterDisplayName(chapter),
+              items: {
+                for (final item in state.chapters)
+                  comicEditChapterId(item): _chapterDisplayName(item),
+              },
+              onChanged: state.busy ? null : cubit.selectChapter,
             ),
-            items: state.chapters.map((item) {
-              final id = comicEditChapterId(item);
-              final name = item['name']?.toString() ?? '';
-              return DropdownMenuItem<String>(
-                value: id,
-                child: Text(
-                  name.isEmpty ? t.comicEdit.chapterName : name,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }).toList(),
-            onChanged: state.busy
-                ? null
-                : (value) {
-                    if (value != null) cubit.selectChapter(value);
-                  },
           ),
         ),
         Expanded(child: _ImageGridPane(state: state)),
@@ -847,14 +927,26 @@ class _ImageGridPaneState extends State<_ImageGridPane> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final state = widget.state;
     final cubit = context.read<ComicEditCubit>();
     final chapter = state.selectedChapter;
     if (state.chapters.isEmpty || chapter == null) {
-      return Center(child: Text(t.comicEdit.noChapters));
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: CalmEmptyState(
+              icon: Icons.list_alt_rounded,
+              title: t.comicEdit.noChapters,
+            ),
+          ),
+        ),
+      );
     }
 
-    final chapterName = chapter['name']?.toString() ?? '';
+    final chapterName = _chapterDisplayName(chapter);
     final images = state.selectedImages;
     final paths = images
         .map((image) => image['path']?.toString() ?? '')
@@ -868,47 +960,64 @@ class _ImageGridPaneState extends State<_ImageGridPane> {
       children: [
         Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-              child: Row(
-                children: [
-                  if (widget.showChapterTitle)
+            if (widget.showChapterTitle)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+                child: Row(
+                  children: [
                     Expanded(
                       child: Text(
-                        chapterName.isEmpty
-                            ? t.comicEdit.chapterName
-                            : chapterName,
-                        style: Theme.of(context).textTheme.titleSmall,
+                        chapterName,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: c.text,
+                        ),
                       ),
                     ),
-                  Expanded(
-                    child: Text(
+                    const SizedBox(width: 8),
+                    Text(
                       t.comicEdit.reorderHint,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: widget.showChapterTitle
-                          ? TextAlign.end
-                          : TextAlign.start,
+                      style: TextStyle(fontSize: 10.5, color: c.text3),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             Expanded(
               child: images.isEmpty
-                  ? Center(child: Text(t.comicEdit.emptyChapter))
+                  ? Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: CalmEmptyState(
+                            icon: Icons.photo_library_outlined,
+                            title: t.comicEdit.emptyChapter,
+                          ),
+                        ),
+                      ),
+                    )
                   : FutureBuilder<List<_ResolvedImage>>(
                       future: _imagesFuture,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState != ConnectionState.done) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
+                          return const Center(child: CalmLoading(size: 22));
                         }
                         if (snapshot.hasError) {
-                          return Center(child: Text(t.comicEdit.loadFailed));
+                          return Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: CalmEmptyState(
+                                  icon: Icons.broken_image_outlined,
+                                  title: t.comicEdit.loadFailed,
+                                ),
+                              ),
+                            ),
+                          );
                         }
                         final resolvedByPath = {
                           for (final item
@@ -925,13 +1034,13 @@ class _ImageGridPaneState extends State<_ImageGridPane> {
                           childBuilder: (itemBuilder) {
                             return GridView.builder(
                               controller: _scrollController,
-                              padding: const EdgeInsets.fromLTRB(8, 8, 8, 88),
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                               itemCount: images.length,
                               gridDelegate:
                                   const SliverGridDelegateWithMaxCrossAxisExtent(
-                                    maxCrossAxisExtent: 160,
-                                    mainAxisSpacing: 6,
-                                    crossAxisSpacing: 6,
+                                    maxCrossAxisExtent: 150,
+                                    mainAxisSpacing: 8,
+                                    crossAxisSpacing: 8,
                                     childAspectRatio: 0.68,
                                   ),
                               itemBuilder: (context, index) {
@@ -959,9 +1068,9 @@ class _ImageGridPaneState extends State<_ImageGridPane> {
           ],
         ),
         Positioned(
-          bottom: 8 + bottomInset,
-          left: 8,
-          right: 8,
+          bottom: 10 + bottomInset,
+          left: 12,
+          right: 12,
           child: IgnorePointer(
             ignoring: !hasSelection,
             child: AnimatedSlide(
@@ -973,64 +1082,84 @@ class _ImageGridPaneState extends State<_ImageGridPane> {
                 opacity: hasSelection ? 1 : 0,
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
-                    child: Material(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      elevation: 4,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 6,
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          reverse: true,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                tooltip: t.comicEdit.clearSelection,
-                                onPressed: cubit.clearSelection,
-                                icon: const Icon(Icons.close),
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: c.surface,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: c.borderStrong),
+                        boxShadow: c.shadowMd,
+                      ),
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              t.comicEdit.selectedCount(
+                                count: state.selectedImagePaths.length,
                               ),
-                              Text(
-                                t.comicEdit.selectedCount(
-                                  count: state.selectedImagePaths.length,
-                                ),
+                              textHeightBehavior: kCalmTextHeightBehavior,
+                              strutStyle: calmStrut(12),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: c.accent,
+                                height: 1.2,
+                                leadingDistribution:
+                                    TextLeadingDistribution.even,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              TextButton(
-                                onPressed: state.busy
-                                    ? null
-                                    : cubit.selectAllImages,
-                                child: Text(t.comicEdit.selectAll),
-                              ),
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                tooltip: t.common.delete,
-                                onPressed: state.busy
-                                    ? null
-                                    : () => _deleteSelected(
-                                        context,
-                                        cubit,
-                                        state,
-                                      ),
-                                icon: const Icon(Icons.delete_outline),
-                              ),
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                tooltip: t.comicEdit.moveToChapter,
-                                onPressed: state.busy
-                                    ? null
-                                    : () =>
-                                          _moveSelected(context, cubit, state),
-                                icon: const Icon(Icons.drive_file_move_outline),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          Container(
+                            width: 1,
+                            height: 16,
+                            color: c.borderStrong,
+                          ),
+                          CalmButton(
+                            label: t.comicEdit.selectAll,
+                            icon: Icons.select_all_rounded,
+                            variant: CalmButtonVariant.ghost,
+                            size: CalmButtonSize.xs,
+                            onPressed: state.busy
+                                ? null
+                                : cubit.selectAllImages,
+                          ),
+                          CalmButton(
+                            label: t.comicEdit.moveToChapter,
+                            icon: Icons.drive_file_move_outline,
+                            variant: CalmButtonVariant.secondary,
+                            size: CalmButtonSize.xs,
+                            onPressed: state.busy
+                                ? null
+                                : () => _moveSelected(context, cubit, state),
+                          ),
+                          CalmButton(
+                            label: t.common.delete,
+                            icon: Icons.delete_outline,
+                            variant: CalmButtonVariant.danger,
+                            size: CalmButtonSize.xs,
+                            onPressed: state.busy
+                                ? null
+                                : () => _deleteSelected(context, cubit, state),
+                          ),
+                          CalmIconButton(
+                            icon: Icons.close_rounded,
+                            tooltip: t.comicEdit.clearSelection,
+                            size: 26,
+                            iconSize: 14,
+                            onPressed: cubit.clearSelection,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1050,22 +1179,25 @@ class _ImageGridPaneState extends State<_ImageGridPane> {
   ) async {
     final count = state.selectedImagePaths.length;
     if (count == 0) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.comicEdit.deleteImagesTitle),
-        content: Text(t.comicEdit.deleteImagesMessage(count: count)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(t.common.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(t.common.delete),
-          ),
-        ],
-      ),
+    final confirmed = await showCalmDialog<bool>(
+      context,
+      title: t.comicEdit.deleteImagesTitle,
+      subtitle: t.comicEdit.deleteImagesMessage(count: count),
+      icon: Icons.delete_outline_rounded,
+      tone: CalmTone.danger,
+      bodyBuilder: (ctx) => const SizedBox.shrink(),
+      actionsBuilder: (ctx) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(ctx).pop(false),
+        ),
+        CalmButton(
+          label: t.common.delete,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(ctx).pop(true),
+        ),
+      ],
     );
     if (confirmed != true) return;
     await cubit.deleteSelectedImages();
@@ -1083,38 +1215,23 @@ class _ImageGridPaneState extends State<_ImageGridPane> {
         .toList();
     if (targets.isEmpty) return;
 
-    final target = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.comicEdit.moveToChapter),
-        content: SizedBox(
-          width: 380,
-          height: 400,
-          child: ListView(
-            children: [
-              for (final chapter in targets)
-                ListTile(
-                  title: Text(
-                    chapter['name']?.toString() ?? t.comicEdit.chapterName,
-                  ),
-                  subtitle: Text(
-                    t.comicEdit.pagesCount(
-                      count: ((chapter['images'] as List?) ?? const []).length,
-                    ),
-                  ),
-                  onTap: () =>
-                      Navigator.of(context).pop(comicEditChapterId(chapter)),
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(t.common.cancel),
-          ),
-        ],
+    final target = await showCalmDialog<String>(
+      context,
+      title: t.comicEdit.moveToChapter,
+      icon: Icons.drive_file_move_outline,
+      maxWidth: 440,
+      bodyBuilder: (ctx) => _ChapterPickerList(
+        chapters: targets,
+        currentId: '',
+        onPick: (id) => Navigator.of(ctx).pop(id),
       ),
+      actionsBuilder: (ctx) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(ctx).pop(),
+        ),
+      ],
     );
     if (target == null) return;
     await cubit.moveSelectedToChapter(target);
@@ -1137,20 +1254,21 @@ class _ImageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final c = context.calm;
     return RepaintBoundary(
       child: GestureDetector(
         onTap: onTap,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+            Container(
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: c.surface2,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: localPath.isEmpty
-                  ? const ColoredBox(
-                      color: Colors.black12,
-                      child: Icon(Icons.broken_image_outlined),
-                    )
+                  ? Icon(Icons.broken_image_outlined, color: c.text3)
                   : Image.file(
                       File(localPath),
                       fit: BoxFit.cover,
@@ -1158,38 +1276,57 @@ class _ImageTile extends StatelessWidget {
                     ),
             ),
             Positioned(
-              left: 4,
-              bottom: 4,
-              child: DecoratedBox(
+              left: 5,
+              bottom: 5,
+              child: Container(
+                height: 18,
+                padding: const EdgeInsets.symmetric(horizontal: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(4),
+                  color: c.surface.withValues(alpha: 0.88),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 1,
-                  ),
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                alignment: Alignment.center,
+                child: Text(
+                  '${index + 1}',
+                  textHeightBehavior: kCalmTextHeightBehavior,
+                  strutStyle: calmStrut(10.5),
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: c.text2,
+                    height: 1.2,
+                    leadingDistribution: TextLeadingDistribution.even,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
             ),
             if (selected)
               Positioned.fill(
-                child: DecoratedBox(
+                child: Container(
                   decoration: BoxDecoration(
-                    color: primary.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: primary, width: 2),
+                    color: c.accent.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: c.accent, width: 2),
                   ),
                   child: Align(
                     alignment: Alignment.topRight,
                     child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(Icons.check_circle, color: primary),
+                      padding: const EdgeInsets.all(5),
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: c.accent,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.check_rounded,
+                          size: 13,
+                          color: c.accentFg,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1201,21 +1338,86 @@ class _ImageTile extends StatelessWidget {
   }
 }
 
-Future<void> _pickCoverFromComic(
-  BuildContext context,
-  ComicEditCubit cubit,
-  ComicEditState state,
-) async {
-  final selection = await showDialog<_CoverImageSelection>(
-    context: context,
-    builder: (context) => _CoverImagePickerDialog(
-      from: cubit.from,
-      comicId: cubit.comicId,
-      chapters: state.chapters,
-    ),
-  );
-  if (selection == null) return;
-  await cubit.saveCoverFromImage(selection.chapterId, selection.imagePath);
+// ---------------------------------------------------------------------------
+// 选择章节 / 封面图片
+// ---------------------------------------------------------------------------
+
+class _ChapterPickerList extends StatelessWidget {
+  const _ChapterPickerList({
+    required this.chapters,
+    required this.currentId,
+    required this.onPick,
+  });
+
+  final List<Map<String, dynamic>> chapters;
+  final String currentId;
+  final ValueChanged<String> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 320,
+      child: ListView(
+        children: [
+          for (final entry in chapters.asMap().entries)
+            _ChapterPickerTile(
+              chapter: entry.value,
+              index: entry.key,
+              selected: comicEditChapterId(entry.value) == currentId,
+              onTap: () => onPick(comicEditChapterId(entry.value)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChapterPickerTile extends StatelessWidget {
+  const _ChapterPickerTile({
+    required this.chapter,
+    required this.index,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Map<String, dynamic> chapter;
+  final int index;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    final count = ((chapter['images'] as List?) ?? const []).length;
+    return CalmListTile(
+      title: _chapterDisplayName(chapter),
+      subtitle: t.comicEdit.pagesCount(count: count),
+      leading: Container(
+        width: 24,
+        height: 24,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? c.accentSoft : c.surface2,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          '${index + 1}',
+          textHeightBehavior: kCalmTextHeightBehavior,
+          strutStyle: calmStrut(11),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: selected ? c.accent : c.text2,
+            height: 1.2,
+            leadingDistribution: TextLeadingDistribution.even,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ),
+      trailing: selected ? Icon(Icons.check, size: 16, color: c.accent) : null,
+      onTap: onTap,
+    );
+  }
 }
 
 class _CoverImageSelection {
@@ -1228,23 +1430,52 @@ class _CoverImageSelection {
   final String imagePath;
 }
 
-class _CoverImagePickerDialog extends StatefulWidget {
-  const _CoverImagePickerDialog({
+Future<void> _pickCoverFromComic(
+  BuildContext context,
+  ComicEditCubit cubit,
+  ComicEditState state,
+) async {
+  final selection = await showCalmDialog<_CoverImageSelection>(
+    context,
+    title: t.comicEdit.chooseCoverImage,
+    icon: Icons.collections_outlined,
+    maxWidth: 560,
+    bodyBuilder: (ctx) => _CoverImagePickerBody(
+      from: cubit.from,
+      comicId: cubit.comicId,
+      chapters: state.chapters,
+      onPick: (value) => Navigator.of(ctx).pop(value),
+    ),
+    actionsBuilder: (ctx) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(ctx).pop(),
+      ),
+    ],
+  );
+  if (selection == null) return;
+  await cubit.saveCoverFromImage(selection.chapterId, selection.imagePath);
+}
+
+class _CoverImagePickerBody extends StatefulWidget {
+  const _CoverImagePickerBody({
     required this.from,
     required this.comicId,
     required this.chapters,
+    required this.onPick,
   });
 
   final String from;
   final String comicId;
   final List<Map<String, dynamic>> chapters;
+  final ValueChanged<_CoverImageSelection> onPick;
 
   @override
-  State<_CoverImagePickerDialog> createState() =>
-      _CoverImagePickerDialogState();
+  State<_CoverImagePickerBody> createState() => _CoverImagePickerBodyState();
 }
 
-class _CoverImagePickerDialogState extends State<_CoverImagePickerDialog> {
+class _CoverImagePickerBodyState extends State<_CoverImagePickerBody> {
   String _chapterId = '';
   Future<Map<String, String>> _pathsFuture = Future.value(const {});
 
@@ -1333,107 +1564,100 @@ class _CoverImagePickerDialogState extends State<_CoverImagePickerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     final images = _images;
-    return AlertDialog(
-      title: Text(t.comicEdit.chooseCoverImage),
-      content: SizedBox(
-        width: 520,
-        height: 480,
-        child: Column(
-          children: [
-            DropdownButtonFormField<String>(
-              key: ValueKey(_chapterId),
-              initialValue: _chapterId,
-              decoration: InputDecoration(
-                labelText: t.comicEdit.selectChapter,
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
-              items: widget.chapters.map((chapter) {
-                final id = comicEditChapterId(chapter);
-                final name = chapter['name']?.toString() ?? '';
-                return DropdownMenuItem<String>(
-                  value: id,
-                  child: Text(
-                    name.isEmpty ? t.comicEdit.chapterName : name,
-                    overflow: TextOverflow.ellipsis,
+    final chapter = _chapter;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.chapters.isNotEmpty) ...[
+          FluentDropdown<String>(
+            value: _chapterId,
+            displayValue: chapter == null ? '' : _chapterDisplayName(chapter),
+            items: {
+              for (final chapter in widget.chapters)
+                comicEditChapterId(chapter): _chapterDisplayName(chapter),
+            },
+            onChanged: (value) {
+              setState(() {
+                _chapterId = value;
+                _startLoad();
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+        ],
+        SizedBox(
+          height: 380,
+          child: images.isEmpty
+              ? Align(
+                  alignment: Alignment.topCenter,
+                  child: CalmEmptyState(
+                    icon: Icons.photo_library_outlined,
+                    title: t.comicEdit.emptyChapter,
                   ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() {
-                  _chapterId = value;
-                  _startLoad();
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: images.isEmpty
-                  ? Center(child: Text(t.comicEdit.emptyChapter))
-                  : FutureBuilder<Map<String, String>>(
-                      future: _pathsFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState != ConnectionState.done) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        final paths = snapshot.data ?? const <String, String>{};
-                        return GridView.builder(
-                          gridDelegate:
-                              const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 140,
-                                mainAxisSpacing: 6,
-                                crossAxisSpacing: 6,
-                                childAspectRatio: 0.68,
+                )
+              : FutureBuilder<Map<String, String>>(
+                  future: _pathsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(child: CalmLoading(size: 20));
+                    }
+                    final paths = snapshot.data ?? const <String, String>{};
+                    return GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 130,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 0.68,
+                          ),
+                      itemCount: images.length,
+                      itemBuilder: (context, index) {
+                        final image = images[index];
+                        final path = image['path']?.toString() ?? '';
+                        final local = paths[path] ?? '';
+                        return MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () => widget.onPick(
+                              _CoverImageSelection(
+                                chapterId: _chapterId,
+                                imagePath: path,
                               ),
-                          itemCount: images.length,
-                          itemBuilder: (context, index) {
-                            final image = images[index];
-                            final path = image['path']?.toString() ?? '';
-                            final local = paths[path] ?? '';
-                            return InkWell(
-                              onTap: () => Navigator.of(context).pop(
-                                _CoverImageSelection(
-                                  chapterId: _chapterId,
-                                  imagePath: path,
-                                ),
+                            ),
+                            child: Container(
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: c.surface2,
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: local.isEmpty
-                                    ? const ColoredBox(
-                                        color: Colors.black12,
-                                        child: Icon(
-                                          Icons.broken_image_outlined,
-                                        ),
-                                      )
-                                    : Image.file(
-                                        File(local),
-                                        fit: BoxFit.cover,
-                                        cacheWidth: 280,
-                                      ),
-                              ),
-                            );
-                          },
+                              child: local.isEmpty
+                                  ? Icon(
+                                      Icons.broken_image_outlined,
+                                      color: c.text3,
+                                    )
+                                  : Image.file(
+                                      File(local),
+                                      fit: BoxFit.cover,
+                                      cacheWidth: 280,
+                                    ),
+                            ),
+                          ),
                         );
                       },
-                    ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
+                    );
+                  },
+                ),
         ),
       ],
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// 文件选择与章节弹窗
+// ---------------------------------------------------------------------------
 
 Future<void> _pickCover(ComicEditCubit cubit) async {
   const typeGroup = XTypeGroup(
@@ -1446,28 +1670,34 @@ Future<void> _pickCover(ComicEditCubit cubit) async {
 }
 
 Future<void> _importChapters(BuildContext context, ComicEditCubit cubit) async {
-  final choice = await showModalBottomSheet<String>(
-    context: context,
-    builder: (sheetContext) => SafeArea(
-      child: Column(
+  final choice = await showCalmSheet<String>(
+    context,
+    title: t.comicEdit.importChapters,
+    builder: (ctx) {
+      final c = ctx.calm;
+      return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (!Platform.isIOS && !isOhos)
-            ListTile(
-              leading: const Icon(Icons.folder_open_outlined),
-              title: Text(t.bookshelf.importExternalFolder),
-              subtitle: Text(t.bookshelf.importExternalFolderHint),
-              onTap: () => Navigator.of(sheetContext).pop('folder'),
+            CalmListTile(
+              leading: Icon(
+                Icons.folder_open_outlined,
+                size: 18,
+                color: c.text2,
+              ),
+              title: t.bookshelf.importExternalFolder,
+              subtitle: t.bookshelf.importExternalFolderHint,
+              onTap: () => Navigator.of(ctx).pop('folder'),
             ),
-          ListTile(
-            leading: const Icon(Icons.archive_outlined),
-            title: Text(t.bookshelf.importExternalArchive),
-            subtitle: Text(t.bookshelf.importExternalArchiveHint),
-            onTap: () => Navigator.of(sheetContext).pop('archive'),
+          CalmListTile(
+            leading: Icon(Icons.archive_outlined, size: 18, color: c.text2),
+            title: t.bookshelf.importExternalArchive,
+            subtitle: t.bookshelf.importExternalArchiveHint,
+            onTap: () => Navigator.of(ctx).pop('archive'),
           ),
         ],
-      ),
-    ),
+      );
+    },
   );
   if (choice == null) return;
 
@@ -1521,50 +1751,23 @@ Future<String?> _pickChapterForImport(
   final currentId = state.selectedChapterId.isNotEmpty
       ? state.selectedChapterId
       : comicEditChapterId(chapters.first);
-  return showDialog<String>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(t.comicEdit.selectChapter),
-      content: SizedBox(
-        width: 380,
-        height: 420,
-        child: ListView(
-          children: [
-            for (final entry in chapters.asMap().entries)
-              _chapterImportTile(
-                context: dialogContext,
-                chapter: entry.value,
-                index: entry.key,
-                currentId: currentId,
-              ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: Text(t.common.cancel),
-        ),
-      ],
+  return showCalmDialog<String>(
+    context,
+    title: t.comicEdit.selectChapter,
+    icon: Icons.list_alt_rounded,
+    maxWidth: 440,
+    bodyBuilder: (ctx) => _ChapterPickerList(
+      chapters: chapters,
+      currentId: currentId,
+      onPick: (id) => Navigator.of(ctx).pop(id),
     ),
-  );
-}
-
-Widget _chapterImportTile({
-  required BuildContext context,
-  required Map<String, dynamic> chapter,
-  required int index,
-  required String currentId,
-}) {
-  final id = comicEditChapterId(chapter);
-  final count = ((chapter['images'] as List?) ?? const []).length;
-  return ListTile(
-    selected: id == currentId,
-    leading: CircleAvatar(child: Text('${index + 1}')),
-    title: Text(_chapterDisplayName(chapter)),
-    subtitle: Text(t.comicEdit.pagesCount(count: count)),
-    trailing: id == currentId ? const Icon(Icons.check) : null,
-    onTap: () => Navigator.of(context).pop(id),
+    actionsBuilder: (ctx) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(ctx).pop(),
+      ),
+    ],
   );
 }
 
@@ -1624,28 +1827,33 @@ Future<String?> _showNameDialog(
   required String hint,
   String initial = '',
 }) async {
+  final controller = TextEditingController(text: initial);
   var value = initial;
-  return showDialog<String>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: TextFormField(
-        initialValue: initial,
-        autofocus: true,
-        decoration: InputDecoration(hintText: hint),
-        onChanged: (next) => value = next,
-        onFieldSubmitted: (next) => Navigator.of(context).pop(next),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(value),
-          child: Text(t.common.ok),
-        ),
-      ],
+  final result = await showCalmDialog<String>(
+    context,
+    title: title,
+    icon: Icons.edit_outlined,
+    maxWidth: 440,
+    bodyBuilder: (ctx) => CalmTextField(
+      controller: controller,
+      hintText: hint,
+      clearable: true,
+      onChanged: (next) => value = next,
+      onSubmitted: (next) => Navigator.of(ctx).pop(next),
     ),
+    actionsBuilder: (ctx) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(ctx).pop(),
+      ),
+      CalmButton(
+        label: t.common.ok,
+        variant: CalmButtonVariant.primary,
+        onPressed: () => Navigator.of(ctx).pop(value),
+      ),
+    ],
   );
+  controller.dispose();
+  return result;
 }

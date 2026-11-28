@@ -7,6 +7,7 @@ import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_info/method/export_comic.dart';
 import 'package:zephyr/type/enum.dart';
+import 'package:zephyr/ui/ui.dart';
 import 'package:zephyr/util/storage/get_path.dart';
 import 'package:zephyr/util/ohos/platform.dart';
 import 'package:zephyr/util/ohos/file_bridge.dart';
@@ -100,26 +101,42 @@ Future<String> _createBatchStagingDir() async {
 
 Future<ExportType?> _pickBatchExportType(BuildContext context) async {
   if (Platform.isIOS || isOhos) return ExportType.zip;
-  return showDialog<ExportType>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(t.bookshelf.batchExportTitle),
-      content: Text(t.bookshelf.batchExportSubtitle),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
+  // CalmUI 自适应弹窗：手机底部抽屉、平板与桌面居中卡片，与全应用选型弹窗一致。
+  return showCalmDialog<ExportType>(
+    context,
+    title: t.bookshelf.batchExportTitle,
+    subtitle: t.bookshelf.batchExportSubtitle,
+    icon: Icons.ios_share_rounded,
+    bodyBuilder: (dialogContext) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        CalmListTile(
+          leading: Icon(
+            Icons.folder_outlined,
+            size: 17,
+            color: dialogContext.calm.accent,
+          ),
+          title: t.comicInfo.folder,
+          onTap: () => Navigator.of(dialogContext).pop(ExportType.folder),
         ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(ExportType.folder),
-          child: Text(t.comicInfo.folder),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(ExportType.zip),
-          child: Text(t.comicInfo.zip),
+        CalmListTile(
+          leading: Icon(
+            Icons.folder_zip_outlined,
+            size: 17,
+            color: dialogContext.calm.accent,
+          ),
+          title: t.comicInfo.zip,
+          onTap: () => Navigator.of(dialogContext).pop(ExportType.zip),
         ),
       ],
     ),
+    actionsBuilder: (dialogContext) => [
+      CalmButton(
+        label: t.common.cancel,
+        variant: CalmButtonVariant.ghost,
+        onPressed: () => Navigator.of(dialogContext).pop(),
+      ),
+    ],
   );
 }
 

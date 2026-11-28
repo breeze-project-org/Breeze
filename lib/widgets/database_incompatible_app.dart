@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/ui/ui.dart';
 
 /// 数据库 schema 比当前代码新时的兜底界面。
 ///
@@ -12,26 +13,54 @@ class DatabaseIncompatibleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Padding(
+      debugShowCheckedModeBanner: false,
+      theme: CalmTheme.build(brightness: Brightness.light),
+      darkTheme: CalmTheme.build(brightness: Brightness.dark),
+      home: const _DatabaseIncompatibleView(),
+    );
+  }
+}
+
+/// 兜底提示页：独立最小 MaterialApp 内的单页提示，不依赖业务层与导航。
+class _DatabaseIncompatibleView extends StatelessWidget {
+  const _DatabaseIncompatibleView();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.calm;
+    return Scaffold(
+      backgroundColor: c.bg,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.storage_rounded, size: 56),
-                const SizedBox(height: 16),
-                Text(
-                  t.database.incompatible,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () => SystemNavigator.pop(),
-                  child: Text(t.common.close),
-                ),
-              ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              // 不再套一层 CalmCard：CalmEmptyState 自带柔和面板底，
+              // 再包卡片会变成“盒中盒”的厚重结构。
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const CalmEmptyState(
+                    icon: Icons.storage_rounded,
+                    title: 'Breeze',
+                  ),
+                  CalmStatusBanner(
+                    title: t.database.incompatible,
+                    tone: CalmTone.warning,
+                  ),
+                  const SizedBox(height: 18),
+                  Center(
+                    child: CalmButton(
+                      label: t.common.close,
+                      icon: Icons.power_settings_new_rounded,
+                      variant: CalmButtonVariant.primary,
+                      onPressed: () => SystemNavigator.pop(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

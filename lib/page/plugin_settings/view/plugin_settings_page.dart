@@ -12,6 +12,7 @@ import 'package:zephyr/network/http/plugin/unified_comic_plugin.dart';
 import 'package:zephyr/page/plugin_settings/cubit/plugin_settings_cubit.dart';
 import 'package:zephyr/page/plugin_settings/method/plugin_settings_web_login.dart';
 import 'package:zephyr/page/plugin_settings/widgets/plugin_settings_content.dart';
+import 'package:zephyr/page/setting/common/setting_ui.dart';
 import 'package:zephyr/plugin/plugin_cloud_update_service.dart';
 import 'package:zephyr/plugin/plugin_install_service.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
@@ -444,7 +445,6 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final pluginState = context
         .watch<PluginRegistryCubit>()
         .state
@@ -455,44 +455,34 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
     final pluginVersion = pluginState?.version ?? '';
     final state = context.watch<PluginSettingsCubit>().state;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          t.plugin.pluginSettingsTitle(name: widget.pluginDisplayName),
-        ),
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        actions: [
-          if (!deleted)
-            IconButton(
-              tooltip: t.plugin.sync,
-              onPressed: _syncPlugin,
-              icon: const Icon(Icons.sync),
-            ),
-        ],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
-          child: PluginSettingsContent(
-            from: widget.from,
-            pluginRuntimeName: widget.pluginRuntimeName,
-            state: state,
-            debugEnabled: debugEnabled,
-            debugUrl: debugUrl,
-            deleted: deleted,
-            pluginVersion: pluginVersion,
-            colorScheme: colorScheme,
-            onUpdateDebugConfig: _updateDebugConfig,
-            onConfirmDeletePlugin: _confirmDeletePlugin,
-            onUpdatePlugin: _updatePlugin,
-            onOpenLoginPage: _openLoginPage,
-            onOpenDetailPage: _openDetailPage,
-            onCommitField: _commitField,
-            onRunAction: (action) => _runAction(context, action),
+    return SettingPageShell(
+      title: t.plugin.pluginSettingsTitle(name: widget.pluginDisplayName),
+      subtitle: pluginVersion.trim().isEmpty
+          ? null
+          : t.plugin.currentVersion(version: pluginVersion.trim()),
+      actions: [
+        if (!deleted)
+          CalmIconButton(
+            icon: Icons.sync_rounded,
+            tooltip: t.plugin.sync,
+            onPressed: _syncPlugin,
           ),
-        ),
+      ],
+      child: PluginSettingsContent(
+        from: widget.from,
+        pluginRuntimeName: widget.pluginRuntimeName,
+        state: state,
+        debugEnabled: debugEnabled,
+        debugUrl: debugUrl,
+        deleted: deleted,
+        pluginVersion: pluginVersion,
+        onUpdateDebugConfig: _updateDebugConfig,
+        onConfirmDeletePlugin: _confirmDeletePlugin,
+        onUpdatePlugin: _updatePlugin,
+        onOpenLoginPage: _openLoginPage,
+        onOpenDetailPage: _openDetailPage,
+        onCommitField: _commitField,
+        onRunAction: (action) => _runAction(context, action),
       ),
     );
   }
@@ -533,25 +523,40 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
   }
 
   Future<void> _updatePlugin() async {
-    final choice = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.plugin.updateChooseSource),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(t.common.cancel),
+    final choice = await showCalmDialog<String>(
+      context,
+      title: t.plugin.updateChooseSource,
+      icon: Icons.system_update_alt_rounded,
+      bodyBuilder: (dialogContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CalmButton(
+            label: t.plugin.updateFromNetwork,
+            icon: Icons.cloud_download_outlined,
+            variant: CalmButtonVariant.primary,
+            size: CalmButtonSize.md,
+            expand: true,
+            onPressed: () => Navigator.of(dialogContext).pop('network'),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop('local'),
-            child: Text(t.plugin.updateFromLocal),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop('network'),
-            child: Text(t.plugin.updateFromNetwork),
+          const SizedBox(height: 8),
+          CalmButton(
+            label: t.plugin.updateFromLocal,
+            icon: Icons.folder_open_rounded,
+            variant: CalmButtonVariant.secondary,
+            size: CalmButtonSize.md,
+            expand: true,
+            onPressed: () => Navigator.of(dialogContext).pop('local'),
           ),
         ],
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+      ],
     );
     if (choice == null || !mounted) {
       return;
@@ -601,29 +606,34 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
   Future<String?> _showUrlInputDialog({
     required String title,
     required String hintText,
-  }) {
+  }) async {
     final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: hintText),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: Text(t.plugin.startInstall),
-          ),
-        ],
+    final result = await showCalmDialog<String>(
+      context,
+      title: title,
+      icon: Icons.link_rounded,
+      bodyBuilder: (dialogContext) => CalmTextField(
+        controller: controller,
+        hintText: hintText,
+        prefixIcon: Icons.link_rounded,
+        keyboardType: TextInputType.url,
+        onSubmitted: (value) => Navigator.of(dialogContext).pop(value),
       ),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+        CalmButton(
+          label: t.plugin.startInstall,
+          variant: CalmButtonVariant.primary,
+          onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+        ),
+      ],
     );
+    controller.dispose();
+    return result;
   }
 
   Future<void> _updatePluginFromLocal() async {
@@ -666,22 +676,25 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
   }
 
   Future<void> _confirmDeletePlugin() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.plugin.deletePlugin),
-        content: Text(t.plugin.confirmDeletePlugin),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(t.common.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(t.common.confirm),
-          ),
-        ],
-      ),
+    final ok = await showCalmDialog<bool>(
+      context,
+      title: t.plugin.deletePlugin,
+      subtitle: t.plugin.confirmDeletePlugin,
+      icon: Icons.delete_outline_rounded,
+      tone: CalmTone.danger,
+      bodyBuilder: (_) => const SizedBox.shrink(),
+      actionsBuilder: (dialogContext) => [
+        CalmButton(
+          label: t.common.cancel,
+          variant: CalmButtonVariant.ghost,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+        CalmButton(
+          label: t.common.confirm,
+          variant: CalmButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ],
     );
     if (ok != true) {
       return;

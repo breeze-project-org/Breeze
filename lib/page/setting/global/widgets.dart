@@ -10,11 +10,10 @@ import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 Widget changeThemeColor(BuildContext context) {
-  return ListTile(
-    leading: const Icon(Icons.palette_outlined),
-    title: Text(t.settings.themeColor),
-    subtitle: Text(t.settings.themeColorSubtitle),
-    trailing: const Icon(Icons.chevron_right),
+  return settingActionTile(
+    icon: Icons.palette_outlined,
+    title: t.settings.themeColor,
+    subtitle: t.settings.themeColorSubtitle,
     onTap: () {
       AutoRouter.of(context).push(const ThemeColorRoute());
     },
@@ -29,12 +28,12 @@ Widget proxyToggle(
 }) {
   return Column(
     mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      SwitchListTile(
-        secondary: const Icon(Icons.router_outlined),
-        title: Text(t.settings.proxy),
-        subtitle: Text(t.settings.proxyEnabledSubtitle),
-        thumbIcon: kSettingSwitchThumbIcon,
+      settingSwitchTile(
+        icon: Icons.router_outlined,
+        title: t.settings.proxy,
+        subtitle: t.settings.proxyEnabledSubtitle,
         value: enabled,
         onChanged: (value) async {
           final globalSettingCubit = context.read<GlobalSettingCubit>();
@@ -60,10 +59,10 @@ Widget proxyTypeEdit(BuildContext context, ProxyType type) {
     ProxyType.http: t.settings.proxyTypeHttp,
     ProxyType.socks5: t.settings.proxyTypeSocks5,
   };
-  return ListTile(
-    leading: const Icon(Icons.lan_outlined),
-    title: Text(t.settings.proxyType),
-    subtitle: Text(t.settings.proxyTypeSubtitle),
+  return CalmListTile(
+    leading: settingTileIcon(Icons.lan_outlined),
+    title: t.settings.proxyType,
+    subtitle: t.settings.proxyTypeSubtitle,
     trailing: FluentDropdown<ProxyType>(
       value: type,
       displayValue: items[type]!,
@@ -85,46 +84,47 @@ Widget proxyTypeEdit(BuildContext context, ProxyType type) {
 }
 
 Widget proxyAddressEdit(BuildContext context, String currentProxy) {
-  return ListTile(
-    leading: const Icon(Icons.link_outlined),
-    title: Text(t.settings.proxyAddress),
-    subtitle: Text(
-      currentProxy.isEmpty
-          ? t.settings.proxySubtitle
-          : t.settings.proxyCurrent(currentProxy: currentProxy),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    ),
-    trailing: const Icon(Icons.chevron_right),
+  return settingActionTile(
+    icon: Icons.link_outlined,
+    title: t.settings.proxyAddress,
+    subtitle: currentProxy.isEmpty
+        ? t.settings.proxySubtitle
+        : t.settings.proxyCurrent(currentProxy: currentProxy),
     onTap: () async {
       final globalSettingCubit = context.read<GlobalSettingCubit>();
-      var inputValue = currentProxy;
+      final controller = TextEditingController(text: currentProxy);
 
-      final result = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(t.settings.proxyAddress),
-          content: TextFormField(
-            initialValue: currentProxy,
-            autofocus: true,
-            onChanged: (value) => inputValue = value.trim(),
-            decoration: InputDecoration(
-              hintText: t.settings.proxyHint,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: Text(t.common.cancel),
-              onPressed: () => Navigator.pop(context),
-            ),
-            TextButton(
-              child: Text(t.common.ok),
-              onPressed: () => Navigator.pop(context, inputValue),
-            ),
-          ],
+      final result = await showCalmDialog<String>(
+        context,
+        title: t.settings.proxyAddress,
+        subtitle: t.settings.proxySubtitle,
+        icon: Icons.link_outlined,
+        bodyBuilder: (dialogContext) => CalmTextField(
+          controller: controller,
+          hintText: t.settings.proxyHint,
+          prefixIcon: Icons.link_rounded,
+          onSubmitted: (value) =>
+              Navigator.of(dialogContext).pop(value.trim()),
         ),
+        actionsBuilder: (dialogContext) => [
+          CalmButton(
+            label: t.common.cancel,
+            variant: CalmButtonVariant.ghost,
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+          CalmButton(
+            label: t.common.ok,
+            variant: CalmButtonVariant.primary,
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(controller.text.trim()),
+          ),
+        ],
       );
+
+      if (!context.mounted) {
+        controller.dispose();
+        return;
+      }
 
       if (result != null && result != currentProxy) {
         final next = globalSettingCubit.state.proxySetting.copyWith(
@@ -136,6 +136,7 @@ Widget proxyAddressEdit(BuildContext context, String currentProxy) {
         applyProxySetting(next);
         showSuccessToast(t.common.settingSaved);
       }
+      controller.dispose();
     },
   );
 }
@@ -152,11 +153,10 @@ Widget webdavSync(BuildContext context, SyncServiceType syncServiceType) {
     ),
   };
 
-  return ListTile(
-    leading: const Icon(Icons.cloud_outlined),
-    title: Text(title),
-    subtitle: Text(t.settings.syncConfigSubtitle),
-    trailing: const Icon(Icons.chevron_right),
+  return settingActionTile(
+    icon: Icons.cloud_outlined,
+    title: title,
+    subtitle: t.settings.syncConfigSubtitle,
     onTap: () {
       AutoRouter.of(context).push(const WebDavSyncRoute());
     },
@@ -207,17 +207,17 @@ Widget _keywordManagementTile(
   required _KeywordListSelector readKeywords,
   required _KeywordListUpdater writeKeywords,
 }) {
-  return ListTile(
-    leading: Icon(icon),
-    title: Text(title),
-    subtitle: Text(subtitle),
-    trailing: const Icon(Icons.chevron_right),
+  return settingActionTile(
+    icon: icon,
+    title: title,
+    subtitle: subtitle,
     onTap: () {
-      showDialog(
-        context: context,
-        builder: (context) => _KeywordManagementDialog(
-          title: title,
-          subtitle: subtitle,
+      showCalmDialog<void>(
+        context,
+        title: title,
+        subtitle: subtitle,
+        icon: icon,
+        bodyBuilder: (dialogContext) => _KeywordManagementDialog(
           emptyText: emptyText,
           inputHint: inputHint,
           readKeywords: readKeywords,
@@ -228,18 +228,15 @@ Widget _keywordManagementTile(
   );
 }
 
+/// 关键词管理弹窗主体（CalmUI 胶囊标签 + 输入框 + 圆形加号按钮）。
 class _KeywordManagementDialog extends StatefulWidget {
   const _KeywordManagementDialog({
-    required this.title,
-    required this.subtitle,
     required this.emptyText,
     required this.inputHint,
     required this.readKeywords,
     required this.writeKeywords,
   });
 
-  final String title;
-  final String subtitle;
   final String emptyText;
   final String inputHint;
   final _KeywordListSelector readKeywords;
@@ -261,190 +258,78 @@ class _KeywordManagementDialogState extends State<_KeywordManagementDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.calm;
     // 只需要在这里获取 Cubit
     final globalSettingCubit = context.read<GlobalSettingCubit>();
 
     return BlocBuilder<GlobalSettingCubit, GlobalSettingState>(
       builder: (context, state) {
         final keywords = widget.readKeywords(state);
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Container(
-            width: double.maxFinite,
-            constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  constraints: const BoxConstraints(
-                    minHeight: 120,
-                    maxHeight: 240,
-                  ),
-                  width: double.infinity,
-                  child: SingleChildScrollView(
-                    child: keywords.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 36),
-                              child: Text(
-                                widget.emptyText,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          )
-                        : Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: List.generate(keywords.length, (index) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                constraints: const BoxConstraints(
-                                  maxWidth: 280,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        keywords[index],
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimaryContainer,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    MouseRegion(
-                                      cursor: SystemMouseCursors.click,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          globalSettingCubit.updateState((
-                                            current,
-                                          ) {
-                                            final newList = List<String>.from(
-                                              widget.readKeywords(current),
-                                            )..removeAt(index);
-                                            return widget.writeKeywords(
-                                              current,
-                                              newList,
-                                            );
-                                          });
-                                        },
-                                        child: Icon(
-                                          Icons.close,
-                                          size: 14,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimaryContainer
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        style: const TextStyle(fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: widget.inputHint,
-                          hintStyle: const TextStyle(fontSize: 14),
-                          filled: true,
-                          fillColor: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest
-                              .withValues(alpha: 0.5),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              constraints: const BoxConstraints(minHeight: 96, maxHeight: 240),
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: c.bg,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: SingleChildScrollView(
+                child: keywords.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 28),
+                          child: Text(
+                            widget.emptyText,
+                            style: TextStyle(fontSize: 12, color: c.text3),
                           ),
                         ),
-                        onSubmitted: (_) =>
-                            _addKeyword(globalSettingCubit, state),
+                      )
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: List.generate(keywords.length, (index) {
+                          return CalmInputChip(
+                            label: keywords[index],
+                            onDeleted: () {
+                              globalSettingCubit.updateState((current) {
+                                final newList = List<String>.from(
+                                  widget.readKeywords(current),
+                                )..removeAt(index);
+                                return widget.writeKeywords(current, newList);
+                              });
+                            },
+                          );
+                        }),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filledTonal(
-                      onPressed: () => _addKeyword(globalSettingCubit, state),
-                      icon: const Icon(Icons.add, size: 20),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: Text(t.common.done),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: CalmTextField(
+                    controller: _controller,
+                    hintText: widget.inputHint,
+                    prefixIcon: Icons.tag_rounded,
+                    onSubmitted: (_) => _addKeyword(globalSettingCubit, state),
                   ),
+                ),
+                const SizedBox(width: 8),
+                CalmIconButton(
+                  icon: Icons.add_rounded,
+                  tooltip: t.common.add,
+                  selected: true,
+                  size: 36,
+                  iconSize: 18,
+                  onPressed: () => _addKeyword(globalSettingCubit, state),
                 ),
               ],
             ),
-          ),
+          ],
         );
       },
     );

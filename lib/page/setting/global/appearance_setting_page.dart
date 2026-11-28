@@ -25,26 +25,40 @@ class AppearanceSettingPage extends StatelessWidget {
     return SettingPageShell(
       title: t.settings.appearance,
       child: ListView(
+        padding: kSettingPagePadding,
         children: [
           settingSectionTitle(
             context,
             t.settings.appearance,
             icon: Icons.palette_outlined,
           ),
-          _languageTile(context, state, cubit),
-          _systemTheme(state, cubit),
-          if (!isOhos) _dynamicColor(state, cubit),
-          if (isOhos || !state.dynamicColor) changeThemeColor(context),
-          _comicReadTopContainer(state, cubit),
-          _isAMOLED(state, cubit),
-          _detailLayout(state, cubit),
-          _comicDetail(context),
-          _showPluginHome(state, cubit),
-          _showPluginCloudFavorite(state, cubit),
-          _showSearchBookmark(state, cubit),
-          _showScrollbar(state, cubit),
-          if (state.effectiveShowScrollbar) _alwaysShowScrollbar(state, cubit),
-          _fontSettings(context),
+          settingCardGroup([
+            _languageTile(context, state, cubit),
+            _systemTheme(state, cubit),
+            if (!isOhos) _dynamicColor(state, cubit),
+            if (isOhos || !state.dynamicColor) changeThemeColor(context),
+            _fontSettings(context),
+          ]),
+          settingSectionTitle(
+            context,
+            t.settings.content,
+            icon: Icons.view_list_outlined,
+          ),
+          settingCardGroup([
+            _comicReadTopContainer(state, cubit),
+            _isAMOLED(state, cubit),
+            _detailLayout(state, cubit),
+            _comicDetail(context),
+            _showPluginHome(state, cubit),
+            _showPluginCloudFavorite(state, cubit),
+            _showSearchBookmark(state, cubit),
+            // 滚动条两项不再单独分组：分组标题与条目标题同名会让同一屏
+            // 连出现两次「显示滚动条」，并入同一张卡片更紧凑也不再重名。
+            _showScrollbar(state, cubit),
+            if (state.effectiveShowScrollbar)
+              _alwaysShowScrollbar(state, cubit),
+          ]),
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -66,10 +80,10 @@ class AppearanceSettingPage extends StatelessWidget {
     final currentValue = state.localeFollowsSystem ? null : state.locale;
     final currentLabel = labels[currentValue]!;
 
-    return ListTile(
-      leading: const Icon(Icons.language_outlined),
-      title: Text(t.settings.language),
-      subtitle: Text(t.settings.languageSubtitle),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.language_outlined),
+      title: t.settings.language,
+      subtitle: t.settings.languageSubtitle,
       trailing: FluentDropdown<Locale?>(
         value: currentValue,
         displayValue: currentLabel,
@@ -97,10 +111,10 @@ class AppearanceSettingPage extends StatelessWidget {
       ThemeMode.dark: t.common.darkMode,
     };
 
-    return ListTile(
-      leading: const Icon(Icons.dark_mode_outlined),
-      title: Text(t.settings.theme),
-      subtitle: Text(t.settings.themeSubtitle),
+    return CalmListTile(
+      leading: settingTileIcon(Icons.dark_mode_outlined),
+      title: t.settings.theme,
+      subtitle: t.settings.themeSubtitle,
       trailing: FluentDropdown<ThemeMode>(
         value: state.themeMode,
         displayValue: themeItems[state.themeMode]!,
@@ -113,11 +127,10 @@ class AppearanceSettingPage extends StatelessWidget {
   }
 
   Widget _dynamicColor(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.color_lens_outlined),
-      title: Text(t.settings.dynamicColor),
-      subtitle: Text(t.settings.dynamicColorSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.color_lens_outlined,
+      title: t.settings.dynamicColor,
+      subtitle: t.settings.dynamicColorSubtitle,
       value: state.dynamicColor,
       onChanged: (bool value) {
         cubit.updateState((current) => current.copyWith(dynamicColor: value));
@@ -126,11 +139,10 @@ class AppearanceSettingPage extends StatelessWidget {
   }
 
   Widget _fontSettings(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.font_download_outlined),
-      title: Text(t.settings.fontSettings),
-      subtitle: Text(t.settings.fontSettingsSubtitle),
-      trailing: const Icon(Icons.chevron_right),
+    return settingActionTile(
+      icon: Icons.font_download_outlined,
+      title: t.settings.fontSettings,
+      subtitle: t.settings.fontSettingsSubtitle,
       onTap: () {
         Navigator.of(context)
             .push(MaterialPageRoute(builder: (_) => const FontSettingPage()));
@@ -139,11 +151,10 @@ class AppearanceSettingPage extends StatelessWidget {
   }
 
   Widget _isAMOLED(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.contrast_outlined),
-      title: Text(t.settings.amoled),
-      subtitle: Text(t.settings.amoledSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.contrast_outlined,
+      title: t.settings.amoled,
+      subtitle: t.settings.amoledSubtitle,
       value: state.isAMOLED,
       onChanged: (bool value) {
         cubit.updateState((current) => current.copyWith(isAMOLED: value));
@@ -155,11 +166,10 @@ class AppearanceSettingPage extends StatelessWidget {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.smartphone_outlined),
-      title: Text(t.settings.notchAdaptation),
-      subtitle: Text(t.settings.notchAdaptationSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.smartphone_outlined,
+      title: t.settings.notchAdaptation,
+      subtitle: t.settings.notchAdaptationSubtitle,
       value: state.readSetting.comicReadTopContainer,
       onChanged: (bool value) {
         cubit.updateReadSetting(
@@ -170,11 +180,10 @@ class AppearanceSettingPage extends StatelessWidget {
   }
 
   Widget _detailLayout(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.view_list_outlined),
-      title: Text(t.settings.detailLayout),
-      subtitle: Text(t.settings.detailLayoutSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.view_list_outlined,
+      title: t.settings.detailLayout,
+      subtitle: t.settings.detailLayoutSubtitle,
       value: state.bookshelfSetting.detailLayout,
       onChanged: (bool value) {
         cubit.updateBookshelfSetting(
@@ -195,11 +204,10 @@ class AppearanceSettingPage extends StatelessWidget {
   }
 
   Widget _showPluginHome(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.home_outlined),
-      title: Text(t.settings.showPluginHome),
-      subtitle: Text(t.settings.showPluginHomeSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.home_outlined,
+      title: t.settings.showPluginHome,
+      subtitle: t.settings.showPluginHomeSubtitle,
       value: state.showPluginHome,
       onChanged: (bool value) {
         cubit.updateState((current) => current.copyWith(showPluginHome: value));
@@ -211,11 +219,10 @@ class AppearanceSettingPage extends StatelessWidget {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.cloud_outlined),
-      title: Text(t.settings.showPluginCloudFavorite),
-      subtitle: Text(t.settings.showPluginCloudFavoriteSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.cloud_outlined,
+      title: t.settings.showPluginCloudFavorite,
+      subtitle: t.settings.showPluginCloudFavoriteSubtitle,
       value: state.showPluginCloudFavorite,
       onChanged: (bool value) {
         cubit.updateState(
@@ -229,11 +236,10 @@ class AppearanceSettingPage extends StatelessWidget {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.bookmark_outline),
-      title: Text(t.settings.showSearchBookmark),
-      subtitle: Text(t.settings.showSearchBookmarkSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.bookmark_outline,
+      title: t.settings.showSearchBookmark,
+      subtitle: t.settings.showSearchBookmarkSubtitle,
       value: state.showSearchBookmark,
       onChanged: (bool value) {
         cubit.updateState(
@@ -244,11 +250,10 @@ class AppearanceSettingPage extends StatelessWidget {
   }
 
   Widget _showScrollbar(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.swap_vert),
-      title: Text(t.settings.showScrollbar),
-      subtitle: Text(t.settings.showScrollbarSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.swap_vert,
+      title: t.settings.showScrollbar,
+      subtitle: t.settings.showScrollbarSubtitle,
       value: state.effectiveShowScrollbar,
       onChanged: (bool value) {
         cubit.updateState((current) => current.copyWith(showScrollbar: value));
@@ -260,11 +265,10 @@ class AppearanceSettingPage extends StatelessWidget {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.push_pin_outlined),
-      title: Text(t.settings.alwaysShowScrollbar),
-      subtitle: Text(t.settings.alwaysShowScrollbarSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return settingSwitchTile(
+      icon: Icons.push_pin_outlined,
+      title: t.settings.alwaysShowScrollbar,
+      subtitle: t.settings.alwaysShowScrollbarSubtitle,
       value: state.alwaysShowScrollbar,
       onChanged: (bool value) {
         cubit.updateState(

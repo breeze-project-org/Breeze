@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart' hide SearchBar;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/page/search/cubit/search_cubit.dart';
+import 'package:zephyr/ui/ui.dart';
 
 import 'package:zephyr/page/search/view/search_scheme_renderer.dart';
 
@@ -57,10 +58,8 @@ class _SearchPageState extends State<_SearchPageContent> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: context.calm.bg,
       body: SafeArea(child: _renderer.build()),
     );
   }

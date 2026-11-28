@@ -1,7 +1,5 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_list/cubit/comic_list_cubit.dart';
@@ -11,6 +9,8 @@ import 'package:zephyr/page/comic_list/view/plugin_paged_comic_list_view.dart';
 import 'package:zephyr/page/discover/service/discover_router.dart';
 import 'package:zephyr/page/discover/view/discover_scheme_renderer.dart';
 import 'package:zephyr/page/plugin_home/plugin_home_bundle.dart';
+import 'package:zephyr/ui/ui.dart';
+import 'package:zephyr/widgets/error_view.dart';
 
 /// tab 内容：scene 走 ComicList 现成渲染管线（无独立 Scaffold/AppBar），
 /// page 走 DiscoverSchemeRenderer。
@@ -47,7 +47,7 @@ class _PluginHomeTabBodyState extends State<PluginHomeTabBody>
       return _PluginHomeSceneBody(scene: scene, cubit: sceneCubit);
     }
     if (scene != null) {
-      return const Center(child: CircularProgressIndicator());
+      return const _CalmBooting();
     }
     return _PluginHomePageBody(pluginId: widget.pluginId, tab: widget.tab);
   }
@@ -72,92 +72,30 @@ class _PluginHomeSceneBody extends StatelessWidget {
   Widget _buildBody(BuildContext context, ComicListState state) {
     final from = state.currentFrom;
     if (from.isEmpty) {
-      return Center(child: Text(t.comicList.missingSource));
+      return _missingSource();
     }
     if (state.sceneLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CalmLoading(label: t.common.loading));
     }
     if (state.sceneError != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(state.sceneError!),
-            const SizedBox(height: 12),
-            if (state.sceneLoginPluginId.isNotEmpty)
-              Wrap(
-                spacing: 12,
-                alignment: WrapAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () async {
-                      await context.pushRoute(
-                        LoginRoute(from: state.sceneLoginPluginId),
-                      );
-                      cubit.reload();
-                    },
-                    icon: const Icon(Icons.login_outlined),
-                    label: Text(t.login.loginButton),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => cubit.reload(),
-                    icon: const Icon(Icons.refresh),
-                    label: Text(t.comicList.reload),
-                  ),
-                ],
-              )
-            else
-              ElevatedButton(
-                onPressed: () => cubit.reload(),
-                child: Text(t.comicList.reload),
-              ),
-          ],
-        ),
+      return ErrorView(
+        errorMessage: state.sceneError!,
+        loginPluginId: state.sceneLoginPluginId,
+        onRetry: () => cubit.reload(),
       );
     }
     if (state.requiresFilter &&
         state.filterLoading &&
         !state.hasResolvedFilter) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CalmLoading(label: t.common.loading));
     }
     if (state.requiresFilter &&
         state.filterError != null &&
         !state.hasResolvedFilter) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(state.filterError!),
-            const SizedBox(height: 12),
-            if (state.filterLoginPluginId.isNotEmpty)
-              Wrap(
-                spacing: 12,
-                alignment: WrapAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () async {
-                      await context.pushRoute(
-                        LoginRoute(from: state.filterLoginPluginId),
-                      );
-                      cubit.loadFilter();
-                    },
-                    icon: const Icon(Icons.login_outlined),
-                    label: Text(t.login.loginButton),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => cubit.loadFilter(),
-                    icon: const Icon(Icons.refresh),
-                    label: Text(t.comicList.reload),
-                  ),
-                ],
-              )
-            else
-              ElevatedButton(
-                onPressed: () => cubit.loadFilter(),
-                child: Text(t.comicList.reload),
-              ),
-          ],
-        ),
+      return ErrorView(
+        errorMessage: state.filterError!,
+        loginPluginId: state.filterLoginPluginId,
+        onRetry: () => cubit.loadFilter(),
       );
     }
     final loadedScene = state.scene;
@@ -166,7 +104,7 @@ class _PluginHomeSceneBody extends StatelessWidget {
     }
     final request = loadedScene.body.request;
     if (request == null) {
-      return Center(child: Text(t.comicList.missingSource));
+      return _missingSource();
     }
     final filterCore = state.resolvedFilterCore;
     final filterExtern = state.resolvedFilterExtern;
@@ -209,6 +147,29 @@ class _PluginHomePageBody extends StatelessWidget {
       showLoadMoreRetry: false,
       onRetryLoadMore: () {},
     );
+  }
+}
+
+/// scene 尚未就绪 / 缺数据源时的轻盈空态。
+Widget _missingSource() {
+  return Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 440),
+      child: CalmEmptyState(
+        icon: Icons.link_off_rounded,
+        title: t.comicList.missingSource,
+      ),
+    ),
+  );
+}
+
+/// scene cubit 尚未注册时的启动占位（避免裸转圈）。
+class _CalmBooting extends StatelessWidget {
+  const _CalmBooting();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: CalmLoading(label: t.common.loading));
   }
 }
 

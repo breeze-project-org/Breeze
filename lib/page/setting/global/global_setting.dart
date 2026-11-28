@@ -53,6 +53,14 @@ class _GlobalSettingPageState extends State<GlobalSettingPage> {
     return state.locale.toLanguageTag();
   }
 
+  /// 把若干入口行塞进一张零内边距 CalmCard，行间用细分割线。
+  Widget _categoryCard(List<Widget> tiles) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: settingCardGroup(tiles),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<GlobalSettingCubit>().state;
@@ -60,84 +68,106 @@ class _GlobalSettingPageState extends State<GlobalSettingPage> {
     return SettingPageShell(
       title: t.settings.globalTitle,
       child: ListView(
+        padding: kSettingPagePadding,
         children: [
-          settingCategoryTile(
+          settingSectionTitle(
+            context,
+            t.settings.appearance,
             icon: Icons.palette_outlined,
-            title: t.settings.appearance,
-            subtitle:
-                '${_languageLabel(state)} · ${_themeLabel(state.themeMode)}',
-            onTap: () => _openSubPage(const AppearanceSettingRoute()),
           ),
-          const Divider(height: 1, thickness: 0.3),
-          settingCategoryTile(
-            icon: Icons.menu_book_outlined,
-            title: t.reader.settings,
-            subtitle: '${t.reader.readingMode} · ${t.reader.doubleTapAction}',
-            onTap: () => showReaderSettingsSheet(context),
-          ),
-          const Divider(height: 1, thickness: 0.3),
-          settingCategoryTile(
+          _categoryCard([
+            settingCategoryTile(
+              icon: Icons.palette_outlined,
+              title: t.settings.appearance,
+              subtitle:
+                  '${_languageLabel(state)} · ${_themeLabel(state.themeMode)}',
+              onTap: () => _openSubPage(const AppearanceSettingRoute()),
+            ),
+            settingCategoryTile(
+              icon: Icons.menu_book_outlined,
+              title: t.reader.settings,
+              subtitle:
+                  '${t.reader.readingMode} · ${t.reader.doubleTapAction}',
+              onTap: () => showReaderSettingsSheet(context),
+            ),
+            settingCategoryTile(
+              icon: Icons.tablet_mac_outlined,
+              title: t.settings.eink,
+              subtitle: state.eInkSetting.enabled
+                  ? '${t.settings.einkEnabled} · ${state.eInkSetting.refreshMode.label}'
+                  : t.settings.einkSubtitle,
+              onTap: () => _openSubPage(const EInkSettingRoute()),
+            ),
+          ]),
+          settingSectionTitle(
+            context,
+            t.settings.contentAndNetwork,
             icon: Icons.tune_outlined,
-            title: t.settings.contentAndNetwork,
-            subtitle: '${t.settings.maskedKeywords} · ${t.settings.proxy}',
-            onTap: () => _openSubPage(const ContentNetworkSettingRoute()),
           ),
-          const Divider(height: 1, thickness: 0.3),
-          settingCategoryTile(
-            icon: Icons.settings_outlined,
-            title: t.settings.appBehavior,
-            subtitle: '${t.settings.splashPage} · ${t.settings.appLock}',
-            onTap: () => _openSubPage(const AppBehaviorSettingRoute()),
-          ),
-          const Divider(height: 1, thickness: 0.3),
-          settingCategoryTile(
-            icon: Icons.tablet_mac_outlined,
-            title: t.settings.eink,
-            subtitle: state.eInkSetting.enabled
-                ? '${t.settings.einkEnabled} · ${state.eInkSetting.refreshMode.label}'
-                : t.settings.einkSubtitle,
-            onTap: () => _openSubPage(const EInkSettingRoute()),
-          ),
-          const Divider(height: 1, thickness: 0.3),
-          settingCategoryTile(
+          _categoryCard([
+            settingCategoryTile(
+              icon: Icons.tune_outlined,
+              title: t.settings.contentAndNetwork,
+              subtitle: '${t.settings.maskedKeywords} · ${t.settings.proxy}',
+              onTap: () => _openSubPage(const ContentNetworkSettingRoute()),
+            ),
+            settingCategoryTile(
+              icon: Icons.settings_outlined,
+              title: t.settings.appBehavior,
+              subtitle: '${t.settings.splashPage} · ${t.settings.appLock}',
+              onTap: () => _openSubPage(const AppBehaviorSettingRoute()),
+            ),
+          ]),
+          settingSectionTitle(
+            context,
+            t.settings.bookshelf,
             icon: Icons.collections_bookmark_outlined,
-            title: t.settings.bookshelf,
-            subtitle: t.settings.bookshelfSubtitle,
-            onTap: () => _openSubPage(const BookshelfSettingRoute()),
           ),
-          const Divider(height: 1, thickness: 0.3),
-          settingCategoryTile(
-            icon: Icons.storage_outlined,
-            title: t.settings.storage,
-            subtitle: '${t.settings.cache} · ${t.settings.dataBackup}',
-            onTap: () => _openSubPage(const StorageSettingRoute()),
-          ),
+          _categoryCard([
+            settingCategoryTile(
+              icon: Icons.collections_bookmark_outlined,
+              title: t.settings.bookshelf,
+              subtitle: t.settings.bookshelfSubtitle,
+              onTap: () => _openSubPage(const BookshelfSettingRoute()),
+            ),
+            settingCategoryTile(
+              icon: Icons.storage_outlined,
+              title: t.settings.storage,
+              subtitle: '${t.settings.cache} · ${t.settings.dataBackup}',
+              onTap: () => _openSubPage(const StorageSettingRoute()),
+            ),
+          ]),
           FutureBuilder<bool>(
             future: _realSrAvailable,
             builder: (context, snapshot) {
-              if (snapshot.data != true) {
-                return const SizedBox.shrink();
-              }
+              final realSrAvailable = snapshot.data == true;
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Divider(height: 1, thickness: 0.3),
-                  settingCategoryTile(
-                    icon: Icons.auto_fix_high_outlined,
-                    title: t.settings.realSr,
-                    subtitle: t.settings.realSrSubtitle,
-                    onTap: () => _openSubPage(const RealSrSettingRoute()),
+                  settingSectionTitle(
+                    context,
+                    t.settings.debug,
+                    icon: Icons.bug_report_outlined,
                   ),
+                  _categoryCard([
+                    if (realSrAvailable)
+                      settingCategoryTile(
+                        icon: Icons.auto_fix_high_outlined,
+                        title: t.settings.realSr,
+                        subtitle: t.settings.realSrSubtitle,
+                        onTap: () => _openSubPage(const RealSrSettingRoute()),
+                      ),
+                    settingCategoryTile(
+                      icon: Icons.bug_report_outlined,
+                      title: t.settings.debug,
+                      subtitle: t.settings.logAddress,
+                      onTap: () => _openSubPage(const DebugSettingRoute()),
+                    ),
+                  ]),
                 ],
               );
             },
-          ),
-          const Divider(height: 1, thickness: 0.3),
-          settingCategoryTile(
-            icon: Icons.bug_report_outlined,
-            title: t.settings.debug,
-            subtitle: t.settings.logAddress,
-            onTap: () => _openSubPage(const DebugSettingRoute()),
           ),
           const SizedBox(height: 32),
         ],

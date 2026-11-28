@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/bookshelf/models/shelf_page_mode.dart';
 import 'package:zephyr/page/bookshelf/widgets/bookshelf_filter_dialog.dart';
+import 'package:zephyr/ui/ui.dart';
 
 /// 记录弹窗回来的结果：`completed` 用来区分「取消返回 null」与「还没关」。
 class _SheetOutcome {
@@ -59,7 +60,7 @@ BookshelfFilterSourceOption _option(String id) {
   return BookshelfFilterSourceOption(pluginId: id, title: '源$id');
 }
 
-/// 顶部拖拽条：宽 36 高 4 的圆角横条。
+/// 顶部拖拽条：宽 36 高 4 的圆角横条（由 CalmDialogSurface 提供）。
 final Finder _dragHandle = find.byWidgetPredicate(
   (widget) =>
       widget is Container &&
@@ -113,33 +114,39 @@ void main() {
     return outcome;
   }
 
-  FilledButton applyButton(WidgetTester tester) {
-    return tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, t.common.apply),
+  CalmButton applyButton(WidgetTester tester) {
+    return tester.widget<CalmButton>(
+      find.widgetWithText(CalmButton, t.common.apply),
     );
   }
 
-  /// 计数胶囊的装饰：`Text` 的父级 Container 才是带背景色的胶囊本体。
-  BoxDecoration countCapsuleDecoration(WidgetTester tester, String label) {
-    final container = tester.widget<Container>(
-      find
-          .ancestor(
-            of: find.text(label),
-            matching: find.byWidgetPredicate(
-              (widget) => widget is Container && widget.decoration != null,
-            ),
-          )
-          .first,
+  Finder resetButton() => find.widgetWithText(CalmButton, t.common.reset);
+
+  /// 漫画源计数徽章的语义色调：正常态 tonal，一个源都没选时切到 danger。
+  CalmBadge countBadge(WidgetTester tester, String label) {
+    return tester.widget<CalmBadge>(
+      find.byWidgetPredicate(
+        (widget) => widget is CalmBadge && widget.label == label,
+      ),
     );
-    return container.decoration! as BoxDecoration;
   }
 
-  /// 芯片可能被压到滚动区可视范围之外，先滚进视野再正常点击。
-  Future<void> tapChip(WidgetTester tester, Finder finder) async {
+  /// 选项行可能被压到滚动区可视范围之外，先滚进视野再正常点击。
+  Future<void> tapOption(WidgetTester tester, Finder finder) async {
     await tester.ensureVisible(finder);
     await tester.pumpAndSettle();
     await tester.tap(finder);
     await tester.pumpAndSettle();
+  }
+
+  /// 读选项行最外层 AnimatedContainer 的装饰，用来校验选中态配色。
+  BoxDecoration optionDecoration(WidgetTester tester, Finder finder) {
+    final container = tester.widget<AnimatedContainer>(
+      find
+          .descendant(of: finder, matching: find.byType(AnimatedContainer))
+          .first,
+    );
+    return container.decoration! as BoxDecoration;
   }
 
   testWidgets('窄屏以底部弹层展示，含拖拽条与完整分区', (tester) async {
@@ -191,10 +198,10 @@ void main() {
       availableSources: sources,
       sourceOptions: options,
     );
-    expect(find.byType(ChoiceChip), findsNWidgets(4));
+    expect(find.byType(CalmRadioTile<String>), findsNWidgets(4));
     expect(find.text(t.bookshelf.viewSortDesc), findsOneWidget);
     expect(find.text(t.bookshelf.viewSortAsc), findsOneWidget);
-    expect(find.byType(SwitchListTile), findsOneWidget);
+    expect(find.byType(CalmSwitch), findsOneWidget);
     expect(find.text(t.bookshelf.display), findsOneWidget);
     expect(find.text(t.bookshelf.hideFolders), findsOneWidget);
 
@@ -204,9 +211,9 @@ void main() {
       availableSources: sources,
       sourceOptions: options,
     );
-    expect(find.byType(ChoiceChip), findsNWidgets(4));
+    expect(find.byType(CalmRadioTile<String>), findsNWidgets(4));
     expect(find.text(t.bookshelf.viewSortDesc), findsOneWidget);
-    expect(find.byType(SwitchListTile), findsOneWidget);
+    expect(find.byType(CalmSwitch), findsOneWidget);
 
     await openSheet(
       tester,
@@ -214,12 +221,12 @@ void main() {
       availableSources: sources,
       sourceOptions: options,
     );
-    expect(find.byType(ChoiceChip), findsNWidgets(2));
+    expect(find.byType(CalmRadioTile<String>), findsNWidgets(2));
     expect(find.text(t.bookshelf.viewSortDesc), findsNothing);
     expect(find.text(t.bookshelf.viewSortAsc), findsNothing);
     expect(find.text(t.bookshelf.sortDesc), findsOneWidget);
     expect(find.text(t.bookshelf.sortAsc), findsOneWidget);
-    expect(find.byType(SwitchListTile), findsNothing);
+    expect(find.byType(CalmSwitch), findsNothing);
     expect(find.text(t.bookshelf.display), findsNothing);
     expect(find.text(t.bookshelf.hideFolders), findsNothing);
   });
@@ -237,11 +244,11 @@ void main() {
 
     await tester.tap(find.text(t.bookshelf.sortAsc));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(SwitchListTile));
+    await tester.tap(find.byType(CalmSwitch));
     await tester.pumpAndSettle();
-    await tapChip(tester, find.widgetWithText(FilterChip, '源c'));
+    await tapOption(tester, find.widgetWithText(CalmFilterChip, '源c'));
 
-    await tester.tap(find.widgetWithText(FilledButton, t.common.apply));
+    await tester.tap(find.widgetWithText(CalmButton, t.common.apply));
     await tester.pumpAndSettle();
 
     expect(outcome.completed, isTrue);
@@ -268,12 +275,10 @@ void main() {
 
     expect(find.text('3/3'), findsOneWidget);
     expect(applyButton(tester).onPressed, isNotNull);
-
-    final colorScheme = Theme.of(tester.element(find.text('3/3'))).colorScheme;
     expect(
-      countCapsuleDecoration(tester, '3/3').color,
-      colorScheme.secondaryContainer.withValues(alpha: 0.7),
-      reason: '有选中时胶囊是常规强调色',
+      countBadge(tester, '3/3').tone,
+      CalmBadgeTone.tonal,
+      reason: '有选中时徽章是常规强调色',
     );
 
     await tester.tap(find.text(t.bookshelf.deselectAll));
@@ -282,20 +287,15 @@ void main() {
     expect(find.text('0/3'), findsOneWidget);
     expect(applyButton(tester).onPressed, isNull);
     expect(
-      countCapsuleDecoration(tester, '0/3').color,
-      colorScheme.errorContainer,
-      reason: '一个源都没选时胶囊切到 errorContainer 背景',
-    );
-    expect(
-      tester.widget<Text>(find.text('0/3')).style?.color,
-      colorScheme.onErrorContainer,
-      reason: 'errorContainer 背景配 onErrorContainer 文字',
+      countBadge(tester, '0/3').tone,
+      CalmBadgeTone.danger,
+      reason: '一个源都没选时徽章切到危险色提示',
     );
 
     // 应用按钮此时是禁用的（onPressed 为 null），命中测试必然不落在按钮上，
     // 这里刻意用 warnIfMissed: false 验证「点了没反应」。
     await tester.tap(
-      find.widgetWithText(FilledButton, t.common.apply),
+      find.widgetWithText(CalmButton, t.common.apply),
       warnIfMissed: false,
     );
     await tester.pumpAndSettle();
@@ -303,10 +303,11 @@ void main() {
     expect(outcome.completed, isFalse);
     expect(outcome.result, isNull);
 
-    await tapChip(tester, find.widgetWithText(FilterChip, '源a'));
+    await tapOption(tester, find.widgetWithText(CalmFilterChip, '源a'));
 
     expect(find.text('1/3'), findsOneWidget);
     expect(applyButton(tester).onPressed, isNotNull);
+    expect(countBadge(tester, '1/3').tone, CalmBadgeTone.tonal);
   });
 
   testWidgets('initialSources 里的失效源被过滤，计数不越界且不出现在返回值里', (tester) async {
@@ -325,7 +326,7 @@ void main() {
       reason: '有效源已全选，全选按钮应显示「取消全选」',
     );
 
-    await tester.tap(find.widgetWithText(FilledButton, t.common.apply));
+    await tester.tap(find.widgetWithText(CalmButton, t.common.apply));
     await tester.pumpAndSettle();
 
     expect(outcome.result, isNotNull);
@@ -366,7 +367,7 @@ void main() {
     expect(_dragHandle, findsOneWidget, reason: '拖拽条跟随宿主路由，不能消失');
     expect(find.text('2/2'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilledButton, t.common.apply));
+    await tester.tap(find.widgetWithText(CalmButton, t.common.apply));
     await tester.pumpAndSettle();
     expect(outcome.completed, isTrue);
     expect(outcome.result, isNotNull);
@@ -391,56 +392,7 @@ void main() {
     expect(find.text('2/2'), findsOneWidget);
   });
 
-  testWidgets('排序与漫画源 chip 共用同一套外观（圆角 / 描边 / 选中配色）', (tester) async {
-    await openSheet(
-      tester,
-      initialSources: const <String>{'a'},
-      availableSources: const <String>['a', 'b'],
-      sourceOptions: <BookshelfFilterSourceOption>[_option('a'), _option('b')],
-    );
-
-    final colorScheme = Theme.of(tester.element(find.byType(FilterChip).first))
-        .colorScheme;
-
-    /// chip 的最终外观由 RawChip 解析 ChipTheme 后落到 Ink 的
-    /// ShapeDecoration 上，读它才能验证统一样式真的生效。
-    ShapeDecoration chipDecoration(Finder chipFinder) {
-      final ink = tester.widget<Ink>(
-        find.descendant(of: chipFinder, matching: find.byType(Ink)).first,
-      );
-      return ink.decoration! as ShapeDecoration;
-    }
-
-    RoundedRectangleBorder chipShape(Finder chipFinder) {
-      return chipDecoration(chipFinder).shape as RoundedRectangleBorder;
-    }
-
-    final selectedChip = find.widgetWithText(FilterChip, '源a');
-    final unselectedChip = find.widgetWithText(FilterChip, '源b');
-    final sortChip = find.widgetWithText(ChoiceChip, t.bookshelf.sortDesc);
-
-    for (final finder in [selectedChip, unselectedChip, sortChip]) {
-      expect(chipShape(finder).borderRadius, BorderRadius.circular(12));
-    }
-
-    expect(
-      chipDecoration(unselectedChip).color,
-      colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-    );
-    expect(chipShape(unselectedChip).side.width, 1);
-    expect(
-      chipDecoration(selectedChip).color,
-      colorScheme.primaryContainer.withValues(alpha: 0.92),
-    );
-    expect(chipShape(selectedChip).side.width, 1.4);
-    expect(
-      chipDecoration(selectedChip).color,
-      chipDecoration(sortChip).color,
-      reason: '排序 chip 与漫画源 chip 选中态配色一致',
-    );
-  });
-
-  testWidgets('头部「重置」与关闭按钮之间留有间距', (tester) async {
+  testWidgets('排序单选行与漫画源勾选行选中态统一使用主色高亮', (tester) async {
     await openSheet(
       tester,
       initialSort: 'da',
@@ -449,24 +401,84 @@ void main() {
       sourceOptions: <BookshelfFilterSourceOption>[_option('a'), _option('b')],
     );
 
-    final resetRect = tester.getRect(
-      find.widgetWithText(TextButton, t.common.reset),
+    final calm = tester.element(find.byType(CalmRadioTile<String>).first).calm;
+
+    final selectedSort = find.byWidgetPredicate(
+      (widget) => widget is CalmRadioTile<String> && widget.value == 'da',
     );
-    final closeRect = tester.getRect(
-      find
-          .ancestor(
-            of: find.byIcon(Icons.close_rounded),
-            matching: find.byType(IconButton),
-          )
-          .first,
+    final unselectedSort = find.byWidgetPredicate(
+      (widget) => widget is CalmRadioTile<String> && widget.value == 'dd',
+    );
+    final selectedSource = find.widgetWithText(CalmFilterChip, '源a');
+    final unselectedSource = find.widgetWithText(CalmFilterChip, '源b');
+
+    for (final finder in [selectedSort, unselectedSort, selectedSource]) {
+      expect(finder, findsOneWidget);
+    }
+
+    expect(
+      optionDecoration(tester, selectedSort).color,
+      calm.accentSoft,
+      reason: '选中的排序行用柔和主色底',
+    );
+    expect(
+      optionDecoration(tester, selectedSource).color,
+      calm.accentSoft,
+      reason: '选中的漫画源行与排序行共用同一套选中配色',
+    );
+    expect(
+      optionDecoration(tester, unselectedSort).color,
+      isNot(calm.accentSoft),
+    );
+    expect(
+      optionDecoration(tester, unselectedSource).color,
+      isNot(calm.accentSoft),
+    );
+
+    // 两种控件的选中态都落到同一个主色上（图标 / 圆点取 c.accent）。
+    final selectedSortText = tester.widget<Text>(
+      find.descendant(
+        of: selectedSort,
+        matching: find.text(t.bookshelf.sortAsc),
+      ),
+    );
+    expect(selectedSortText.style?.color, calm.accent);
+    final selectedSourceText = tester.widget<Text>(
+      find.descendant(of: selectedSource, matching: find.text('源a')),
+    );
+    expect(selectedSourceText.style?.color, calm.accent);
+  });
+
+  testWidgets('底部重置 / 取消 / 应用按钮之间留有间距且不重叠', (tester) async {
+    await openSheet(
+      tester,
+      initialSort: 'da',
+      initialSources: const <String>{'a'},
+      availableSources: const <String>['a', 'b'],
+      sourceOptions: <BookshelfFilterSourceOption>[_option('a'), _option('b')],
+    );
+
+    final resetRect = tester.getRect(resetButton());
+    final cancelRect = tester.getRect(
+      find.widgetWithText(CalmButton, t.common.cancel),
+    );
+    final applyRect = tester.getRect(
+      find.widgetWithText(CalmButton, t.common.apply),
     );
 
     expect(
-      closeRect.left - resetRect.right,
+      (cancelRect.left - resetRect.right).abs(),
       greaterThanOrEqualTo(4),
       reason: '两个按钮紧贴会误触，至少保留 4px 间距',
     );
-    expect(resetRect.overlaps(closeRect), isFalse);
+    expect(
+      (applyRect.left - cancelRect.right).abs(),
+      greaterThanOrEqualTo(4),
+      reason: '两个按钮紧贴会误触，至少保留 4px 间距',
+    );
+    expect(resetRect.overlaps(cancelRect), isFalse);
+    expect(cancelRect.overlaps(applyRect), isFalse);
+    expect(resetRect.overlaps(applyRect), isFalse);
   });
 
   testWidgets('无可用漫画源时给出提示、隐藏全选按钮且应用仍可用', (tester) async {
@@ -476,10 +488,10 @@ void main() {
     expect(find.text(t.bookshelf.noFilterSource), findsOneWidget);
     expect(find.text(t.common.selectAll), findsNothing);
     expect(find.text(t.bookshelf.deselectAll), findsNothing);
-    expect(find.byType(FilterChip), findsNothing);
+    expect(find.byType(CalmFilterChip), findsNothing);
     expect(applyButton(tester).onPressed, isNotNull);
 
-    await tester.tap(find.widgetWithText(FilledButton, t.common.apply));
+    await tester.tap(find.widgetWithText(CalmButton, t.common.apply));
     await tester.pumpAndSettle();
 
     expect(outcome.completed, isTrue);
@@ -503,27 +515,28 @@ void main() {
       ],
     );
 
-    final resetButton = find.widgetWithText(TextButton, t.common.reset);
     expect(
-      tester.widget<TextButton>(resetButton).onPressed,
+      tester.widget<CalmButton>(resetButton()).onPressed,
       isNotNull,
       reason: '非默认草稿下重置可用',
     );
     expect(find.text('1/3'), findsOneWidget);
 
-    await tester.tap(resetButton);
+    await tester.tap(resetButton());
     await tester.pumpAndSettle();
 
     expect(find.byType(BottomSheet), findsOneWidget);
     expect(
-      tester.widget<TextButton>(resetButton).onPressed,
+      tester.widget<CalmButton>(resetButton()).onPressed,
       isNull,
       reason: '恢复默认后重置按钮禁用',
     );
     expect(find.text('3/3'), findsOneWidget);
     expect(find.text(t.bookshelf.deselectAll), findsOneWidget);
+    // 隐藏文件夹开关也一并回到关闭状态。
+    expect(tester.widget<CalmSwitch>(find.byType(CalmSwitch)).value, isFalse);
 
-    await tester.tap(find.widgetWithText(FilledButton, t.common.apply));
+    await tester.tap(find.widgetWithText(CalmButton, t.common.apply));
     await tester.pumpAndSettle();
 
     expect(outcome.result, isNotNull);
@@ -532,7 +545,7 @@ void main() {
     expect(outcome.result!.sources.length, 3);
   });
 
-  testWidgets('取消与头部关闭按钮都返回 null', (tester) async {
+  testWidgets('取消与关闭按钮都返回 null', (tester) async {
     final sources = <String>['a'];
     final options = <BookshelfFilterSourceOption>[_option('a')];
 
@@ -541,7 +554,7 @@ void main() {
       availableSources: sources,
       sourceOptions: options,
     );
-    await tester.tap(find.widgetWithText(OutlinedButton, t.common.cancel));
+    await tester.tap(find.widgetWithText(CalmButton, t.common.cancel));
     await tester.pumpAndSettle();
     expect(outcome.completed, isTrue);
     expect(outcome.result, isNull);
@@ -552,7 +565,7 @@ void main() {
       availableSources: sources,
       sourceOptions: options,
     );
-    await tester.tap(find.byTooltip(t.common.close));
+    await tester.tap(find.byIcon(Icons.close_rounded));
     await tester.pumpAndSettle();
     expect(outcome.completed, isTrue);
     expect(outcome.result, isNull);
@@ -564,7 +577,7 @@ void main() {
       availableSources: sources,
       sourceOptions: options,
     );
-    await tester.tap(find.widgetWithText(TextButton, t.common.cancel));
+    await tester.tap(find.widgetWithText(CalmButton, t.common.cancel));
     await tester.pumpAndSettle();
     expect(outcome.result, isNull);
     expect(find.byType(Dialog), findsNothing);
